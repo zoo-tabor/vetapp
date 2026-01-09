@@ -1,0 +1,798 @@
+<?php $layout = 'main'; ?>
+
+<div class="page-header">
+    <div class="breadcrumb">
+        <a href="/">Pracoviště</a> / Administrace
+    </div>
+    <h1>⚙️ Administrace systému</h1>
+</div>
+
+<!-- Tabs for Users and Animals -->
+<div class="tabs">
+    <button class="tab active" onclick="switchTab('users')">👤 Uživatelé</button>
+    <button class="tab" onclick="switchTab('animals')">🦁 Přiřazení zvířat</button>
+</div>
+
+<!-- Users Tab Content -->
+<div id="users-content" class="tab-content active">
+    <div class="card">
+    <div class="card-header">
+        <h2>Správa uživatelů</h2>
+        <button type="button" class="btn btn-sm btn-primary" onclick="openUserModal()">
+            ➕ Přidat uživatele
+        </button>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Uživatelské jméno</th>
+                        <th>Celé jméno</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Stav</th>
+                        <th>Vytvořeno</th>
+                        <th>Akce</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($users as $user): ?>
+                    <tr>
+                        <td><?= htmlspecialchars($user['username']) ?></td>
+                        <td><?= htmlspecialchars($user['full_name'] ?? '-') ?></td>
+                        <td><?= htmlspecialchars($user['email'] ?? '-') ?></td>
+                        <td>
+                            <?php
+                            $roles = [
+                                'admin' => ['Admin', 'admin'],
+                                'user_edit' => ['Editace', 'warning'],
+                                'user_read' => ['Čtení', 'info']
+                            ];
+                            $role = $roles[$user['role']] ?? ['Neznámá', 'secondary'];
+                            ?>
+                            <span class="badge badge-<?= $role[1] ?>"><?= $role[0] ?></span>
+                        </td>
+                        <td>
+                            <?php if ($user['is_active']): ?>
+                                <span class="badge badge-success">Aktivní</span>
+                            <?php else: ?>
+                                <span class="badge badge-secondary">Neaktivní</span>
+                            <?php endif; ?>
+                        </td>
+                        <td><?= date('d.m.Y', strtotime($user['created_at'])) ?></td>
+                        <td>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="editUser(<?= $user['id'] ?>)">
+                                ✏️ Upravit
+                            </button>
+                            <button type="button" class="btn btn-sm btn-outline" onclick="managePermissions(<?= $user['id'] ?>)">
+                                🔐 Oprávnění
+                            </button>
+                            <?php if (!empty($user['email'])): ?>
+                                <button type="button" class="btn btn-sm btn-outline" onclick="resendPasswordSetup(<?= $user['id'] ?>)" title="Znovu odeslat odkaz pro nastavení hesla">
+                                    📧 Odeslat heslo
+                                </button>
+                            <?php endif; ?>
+                            <button type="button" class="btn btn-sm btn-outline" style="color: #e74c3c;" onclick="deleteUser(<?= $user['id'] ?>, '<?= htmlspecialchars($user['username'], ENT_QUOTES) ?>')" title="Smazat uživatele">
+                                🗑️ Smazat
+                            </button>
+                        </td>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    </div>
+</div>
+
+<!-- Animals Assignment Tab Content -->
+<div id="animals-content" class="tab-content">
+    <div class="card">
+        <div class="card-header">
+            <h2>Přiřazení zvířat k ošetřovatelům</h2>
+        </div>
+        <div class="card-body">
+            <div class="filter-controls">
+                <div class="filter-group">
+                    <label for="workplaceFilter">Filtr pracoviště:</label>
+                    <select id="workplaceFilter" class="form-control">
+                        <option value="">Všechna pracoviště</option>
+                        <?php foreach ($workplaces as $workplace): ?>
+                            <option value="<?= $workplace['id'] ?>"><?= htmlspecialchars($workplace['name']) ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="searchAnimalInput">Vyhledat zvíře:</label>
+                    <input type="text" id="searchAnimalInput" class="form-control" placeholder="Jméno, ID, druh...">
+                </div>
+            </div>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Pracoviště</th>
+                            <th>Jméno zvířete</th>
+                            <th>ID zvířete</th>
+                            <th>Druh</th>
+                            <th>Přiřazený ošetřovatel</th>
+                            <th>Akce</th>
+                        </tr>
+                    </thead>
+                    <tbody id="animalsTableBody">
+                        <?php foreach ($animals as $animal): ?>
+                        <tr data-workplace-id="<?= $animal['workplace_id'] ?>"
+                            data-search="<?= strtolower(htmlspecialchars($animal['name'] . ' ' . $animal['identifier'] . ' ' . $animal['species'])) ?>">
+                            <td>
+                                <span class="badge badge-info"><?= htmlspecialchars($animal['workplace_name']) ?></span>
+                            </td>
+                            <td><?= htmlspecialchars($animal['name'] ?: '-') ?></td>
+                            <td class="animal-id"><?= htmlspecialchars($animal['identifier'] ?: '-') ?></td>
+                            <td><?= htmlspecialchars($animal['species']) ?></td>
+                            <td>
+                                <?php if ($animal['assigned_user']): ?>
+                                    <span class="badge badge-success">
+                                        <?= htmlspecialchars($animal['assigned_user']) ?>
+                                    </span>
+                                <?php else: ?>
+                                    <span class="badge badge-secondary">Nepřiřazeno</span>
+                                <?php endif; ?>
+                            </td>
+                            <td>
+                                <button type="button" class="btn btn-sm btn-outline" onclick="assignKeeper(<?= $animal['id'] ?>, '<?= htmlspecialchars($animal['name'] ?: $animal['species'], ENT_QUOTES) ?>')">
+                                    ✏️ Přiřadit
+                                </button>
+                            </td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- User Modal -->
+<div id="userModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2 id="userModalTitle">Přidat uživatele</h2>
+            <span class="modal-close" onclick="closeUserModal()">&times;</span>
+        </div>
+        <form id="userForm">
+            <input type="hidden" id="user_id" name="user_id">
+
+            <div class="form-group">
+                <label for="username">Uživatelské jméno: *</label>
+                <input type="text" id="username" name="username" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="full_name">Celé jméno:</label>
+                <input type="text" id="full_name" name="full_name" class="form-control">
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email: *</label>
+                <input type="email" id="email" name="email" class="form-control" required>
+                <small class="form-text">Na tento e-mail bude zaslán odkaz pro nastavení hesla</small>
+            </div>
+
+            <div class="form-group">
+                <label for="role">Role: *</label>
+                <select id="role" name="role" class="form-control" required>
+                    <option value="user_read">Čtení (pouze prohlížení)</option>
+                    <option value="user_edit">Editace (prohlížení a úpravy)</option>
+                    <option value="admin">Admin (plná správa)</option>
+                </select>
+            </div>
+
+            <div class="form-group" id="passwordGroup" style="display: none;">
+                <label for="password">Nové heslo:</label>
+                <input type="password" id="password" name="password" class="form-control">
+                <small class="form-text">Ponechte prázdné pro zachování stávajícího hesla</small>
+            </div>
+
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="is_active" name="is_active" checked>
+                    Aktivní účet
+                </label>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Uložit</button>
+                <button type="button" class="btn btn-outline" onclick="closeUserModal()">Zrušit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Permissions Modal -->
+<div id="permissionsModal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
+        <div class="modal-header">
+            <h2>Oprávnění uživatele: <span id="permissionsUserName"></span></h2>
+            <span class="modal-close" onclick="closePermissionsModal()">&times;</span>
+        </div>
+        <div style="padding: 20px;">
+            <p style="margin-bottom: 20px;">Nastavte přístupová práva k jednotlivým pracovištím:</p>
+
+            <div class="table-responsive">
+                <table class="table">
+                    <thead>
+                        <tr>
+                            <th>Pracoviště</th>
+                            <th style="text-align: center;">Čtení</th>
+                            <th style="text-align: center;">Editace</th>
+                        </tr>
+                    </thead>
+                    <tbody id="permissionsTableBody">
+                        <!-- Will be populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="form-actions">
+                <button type="button" class="btn btn-primary" onclick="savePermissions()">Uložit oprávnění</button>
+                <button type="button" class="btn btn-outline" onclick="closePermissionsModal()">Zrušit</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Keeper Assignment Modal -->
+<div id="keeperModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Přiřadit ošetřovatele: <span id="keeperAnimalName"></span></h2>
+            <span class="modal-close" onclick="closeKeeperModal()">&times;</span>
+        </div>
+        <form id="keeperForm">
+            <input type="hidden" id="keeper_animal_id" name="animal_id">
+
+            <div class="form-group">
+                <label for="assigned_user">Ošetřovatel (uživatelské jméno): *</label>
+                <select id="assigned_user" name="assigned_user" class="form-control" required>
+                    <option value="">-- Nepřiřazeno --</option>
+                    <?php foreach ($users as $user): ?>
+                        <?php if ($user['is_active']): ?>
+                            <option value="<?= htmlspecialchars($user['username']) ?>">
+                                <?= htmlspecialchars($user['full_name'] ? $user['full_name'] . ' (' . $user['username'] . ')' : $user['username']) ?>
+                            </option>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </select>
+                <small class="form-text">Vyberte uživatele, který bude zodpovídat za péči o toto zvíře</small>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Uložit</button>
+                <button type="button" class="btn btn-outline" onclick="closeKeeperModal()">Zrušit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+/* Tabs */
+.tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 30px;
+    border-bottom: 2px solid #ecf0f1;
+}
+
+.tab {
+    background: none;
+    border: none;
+    padding: 12px 24px;
+    font-size: 16px;
+    font-weight: 600;
+    color: #7f8c8d;
+    cursor: pointer;
+    border-bottom: 3px solid transparent;
+    transition: all 0.3s;
+    margin-bottom: -2px;
+}
+
+.tab:hover {
+    color: #3498db;
+}
+
+.tab.active {
+    color: #3498db;
+    border-bottom-color: #3498db;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+/* Filter Controls */
+.filter-controls {
+    background: white;
+    padding: 20px;
+    border-radius: 8px;
+    margin-bottom: 20px;
+    display: flex;
+    gap: 20px;
+    flex-wrap: wrap;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.filter-group {
+    flex: 1;
+    min-width: 200px;
+}
+
+.filter-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.animal-id {
+    font-family: 'Courier New', monospace;
+    color: #7f8c8d;
+}
+
+<style>
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 600px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    padding: 20px;
+    background-color: #3498db;
+    color: white;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.modal-close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-close:hover {
+    color: #ecf0f1;
+}
+
+.modal-content form {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-text {
+    display: block;
+    margin-top: 5px;
+    font-size: 0.875rem;
+    color: #666;
+}
+
+.form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+</style>
+
+<script>
+let currentEditingUserId = null;
+let currentPermissionsUserId = null;
+
+// User Modal Functions
+function openUserModal() {
+    currentEditingUserId = null;
+    document.getElementById('userModalTitle').textContent = 'Přidat uživatele';
+    document.getElementById('userForm').reset();
+    document.getElementById('user_id').value = '';
+    document.getElementById('passwordGroup').style.display = 'none';
+    document.getElementById('password').required = false;
+    document.getElementById('email').required = true;
+    document.getElementById('userModal').style.display = 'block';
+}
+
+function closeUserModal() {
+    document.getElementById('userModal').style.display = 'none';
+    document.getElementById('userForm').reset();
+}
+
+function editUser(userId) {
+    currentEditingUserId = userId;
+
+    // Fetch user data
+    fetch(`/admin/users/${userId}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                const user = data.user;
+                document.getElementById('userModalTitle').textContent = 'Upravit uživatele';
+                document.getElementById('user_id').value = user.id;
+                document.getElementById('username').value = user.username;
+                document.getElementById('full_name').value = user.full_name || '';
+                document.getElementById('email').value = user.email || '';
+                document.getElementById('role').value = user.role;
+                document.getElementById('is_active').checked = user.is_active == 1;
+
+                // Password field is shown for manual password reset in edit mode
+                document.getElementById('passwordGroup').style.display = 'block';
+                document.getElementById('password').required = false;
+                document.getElementById('password').value = '';
+
+                document.getElementById('userModal').style.display = 'block';
+            } else {
+                alert('Chyba při načítání uživatele: ' + (data.error || 'Neznámá chyba'));
+            }
+        })
+        .catch(error => {
+            alert('Chyba při komunikaci se serverem: ' + error.message);
+            console.error('Error:', error);
+        });
+}
+
+// Handle user form submission
+document.getElementById('userForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const userId = formData.get('user_id');
+    const url = userId ? `/admin/users/${userId}` : '/admin/users/create';
+
+    fetch(url, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeUserModal();
+            location.reload();
+        } else {
+            alert('Chyba: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+    });
+});
+
+// Permissions Modal Functions
+function managePermissions(userId) {
+    currentPermissionsUserId = userId;
+
+    // Fetch user and permissions data
+    fetch(`/admin/users/${userId}/permissions`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('permissionsUserName').textContent = data.user.full_name || data.user.username;
+
+                const tbody = document.getElementById('permissionsTableBody');
+                tbody.innerHTML = '';
+
+                data.workplaces.forEach(workplace => {
+                    const perm = data.permissions.find(p => p.workplace_id == workplace.id) || {};
+
+                    const row = document.createElement('tr');
+                    row.innerHTML = `
+                        <td>${htmlEscape(workplace.name)}</td>
+                        <td style="text-align: center;">
+                            <input type="checkbox"
+                                   data-workplace-id="${workplace.id}"
+                                   data-permission="view"
+                                   ${perm.can_view ? 'checked' : ''}>
+                        </td>
+                        <td style="text-align: center;">
+                            <input type="checkbox"
+                                   data-workplace-id="${workplace.id}"
+                                   data-permission="edit"
+                                   ${perm.can_edit ? 'checked' : ''}>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+
+                document.getElementById('permissionsModal').style.display = 'block';
+            } else {
+                alert('Chyba při načítání oprávnění: ' + (data.error || 'Neznámá chyba'));
+            }
+        })
+        .catch(error => {
+            alert('Chyba při komunikaci se serverem: ' + error.message);
+            console.error('Error:', error);
+        });
+}
+
+function closePermissionsModal() {
+    document.getElementById('permissionsModal').style.display = 'none';
+}
+
+function savePermissions() {
+    const permissions = [];
+    const checkboxes = document.querySelectorAll('#permissionsTableBody input[type="checkbox"]');
+
+    const workplacePermissions = {};
+    checkboxes.forEach(checkbox => {
+        const workplaceId = checkbox.getAttribute('data-workplace-id');
+        const permission = checkbox.getAttribute('data-permission');
+
+        if (!workplacePermissions[workplaceId]) {
+            workplacePermissions[workplaceId] = { workplace_id: workplaceId, can_view: false, can_edit: false };
+        }
+
+        if (permission === 'view') {
+            workplacePermissions[workplaceId].can_view = checkbox.checked;
+        } else if (permission === 'edit') {
+            workplacePermissions[workplaceId].can_edit = checkbox.checked;
+        }
+    });
+
+    Object.values(workplacePermissions).forEach(perm => {
+        permissions.push(perm);
+    });
+
+    fetch(`/admin/users/${currentPermissionsUserId}/permissions`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ permissions })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closePermissionsModal();
+            alert('Oprávnění byla úspěšně uložena');
+        } else {
+            alert('Chyba při ukládání oprávnění: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+    });
+}
+
+function htmlEscape(str) {
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
+// Resend password setup email
+function resendPasswordSetup(userId) {
+    if (!confirm('Opravdu chcete odeslat e-mail s odkazem pro nastavení hesla?')) {
+        return;
+    }
+
+    fetch(`/admin/users/${userId}/resend-password`, {
+        method: 'POST'
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'E-mail byl úspěšně odeslán');
+        } else {
+            alert('Chyba: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+    });
+}
+
+// Delete user
+function deleteUser(userId, username) {
+    if (!confirm(`Opravdu chcete smazat uživatele "${username}"?\n\nTato akce je nevratná a vymaže:\n- Uživatelský účet\n- Všechna oprávnění\n- Všechny související záznamy`)) {
+        return;
+    }
+
+    // Double confirmation for safety
+    if (!confirm(`POZOR: Poslední potvrzení!\n\nOpravdu smazat uživatele "${username}"?`)) {
+        return;
+    }
+
+    fetch(`/admin/users/${userId}/delete`, {
+        method: 'POST'
+    })
+    .then(response => {
+        if (!response.ok && response.status !== 400 && response.status !== 403 && response.status !== 404) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.success) {
+            alert(data.message || 'Uživatel byl úspěšně smazán');
+            location.reload();
+        } else {
+            alert('Chyba: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+    });
+}
+
+// Close modals when clicking outside
+window.addEventListener('click', function(event) {
+    const userModal = document.getElementById('userModal');
+    const permissionsModal = document.getElementById('permissionsModal');
+    const keeperModal = document.getElementById('keeperModal');
+
+    if (event.target === userModal) {
+        closeUserModal();
+    }
+    if (event.target === permissionsModal) {
+        closePermissionsModal();
+    }
+    if (event.target === keeperModal) {
+        closeKeeperModal();
+    }
+});
+
+// Tab switching function
+function switchTab(tabName) {
+    // Hide all tab contents
+    const tabContents = document.querySelectorAll('.tab-content');
+    tabContents.forEach(content => {
+        content.classList.remove('active');
+    });
+
+    // Remove active class from all tabs
+    const tabs = document.querySelectorAll('.tab');
+    tabs.forEach(tab => {
+        tab.classList.remove('active');
+    });
+
+    // Show selected tab content
+    document.getElementById(tabName + '-content').classList.add('active');
+
+    // Mark selected tab as active
+    event.target.classList.add('active');
+}
+
+// Keeper Assignment Functions
+let currentAnimalId = null;
+
+function assignKeeper(animalId, animalName) {
+    currentAnimalId = animalId;
+    document.getElementById('keeperAnimalName').textContent = animalName;
+    document.getElementById('keeper_animal_id').value = animalId;
+
+    // Fetch current assignment
+    fetch(`/admin/animals/${animalId}/keeper`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                document.getElementById('assigned_user').value = data.assigned_user || '';
+                document.getElementById('keeperModal').style.display = 'block';
+            } else {
+                alert('Chyba při načítání přiřazení: ' + (data.error || 'Neznámá chyba'));
+            }
+        })
+        .catch(error => {
+            alert('Chyba při komunikaci se serverem: ' + error.message);
+            console.error('Error:', error);
+        });
+}
+
+function closeKeeperModal() {
+    document.getElementById('keeperModal').style.display = 'none';
+    document.getElementById('keeperForm').reset();
+}
+
+// Handle keeper assignment form submission
+document.getElementById('keeperForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+    const animalId = formData.get('animal_id');
+
+    fetch(`/admin/animals/${animalId}/keeper`, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeKeeperModal();
+            location.reload();
+        } else {
+            alert('Chyba: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+    });
+});
+
+// Animals table filtering
+document.addEventListener('DOMContentLoaded', function() {
+    const workplaceFilter = document.getElementById('workplaceFilter');
+    const searchAnimalInput = document.getElementById('searchAnimalInput');
+    const animalsTableBody = document.getElementById('animalsTableBody');
+
+    if (workplaceFilter && searchAnimalInput && animalsTableBody) {
+        function filterAnimalsTable() {
+            const workplaceId = workplaceFilter.value;
+            const searchTerm = searchAnimalInput.value.toLowerCase();
+
+            const rows = animalsTableBody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const rowWorkplaceId = row.getAttribute('data-workplace-id');
+                const searchData = row.getAttribute('data-search');
+
+                let show = true;
+
+                // Filter by workplace
+                if (workplaceId && rowWorkplaceId !== workplaceId) {
+                    show = false;
+                }
+
+                // Filter by search term
+                if (searchTerm && !searchData.includes(searchTerm)) {
+                    show = false;
+                }
+
+                row.style.display = show ? '' : 'none';
+            });
+        }
+
+        workplaceFilter.addEventListener('change', filterAnimalsTable);
+        searchAnimalInput.addEventListener('input', filterAnimalsTable);
+    }
+});
+</script>

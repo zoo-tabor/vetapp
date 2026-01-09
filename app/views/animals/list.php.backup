@@ -1,0 +1,1519 @@
+<?php
+$layout = 'main';
+$hideFooter = true; // Hide footer for this page to avoid double scrolling
+?>
+
+<style>
+.main-content .container {
+    max-width: 100% !important;
+    padding: 0 !important;
+}
+
+/* Custom button colors */
+.btn-light-blue {
+    background-color: #5dade2;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn-light-blue:hover {
+    background-color: #3498db;
+}
+
+.btn-dark-blue {
+    background-color: #2874a6;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn-dark-blue:hover {
+    background-color: #1f618d;
+}
+
+.btn-green {
+    background-color: #27ae60;
+    color: white;
+    border: none;
+    padding: 10px 20px;
+    cursor: pointer;
+    border-radius: 4px;
+    font-size: 14px;
+    transition: background-color 0.3s;
+}
+
+.btn-green:hover {
+    background-color: #229954;
+}
+
+.section-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+/* Clickable examination header */
+.exam-header-clickable {
+    cursor: pointer;
+    transition: background-color 0.2s;
+    padding: 2px 4px;
+    border-radius: 3px;
+    display: inline-block;
+}
+
+.exam-header-clickable:hover {
+    background-color: rgba(52, 152, 219, 0.1);
+}
+
+.exam-header-clickable strong {
+    text-decoration: underline;
+    text-decoration-style: dotted;
+}
+
+/* Examination entry cards */
+.exam-entry-card {
+    border: 1px solid #ddd;
+    padding: 15px;
+    margin-bottom: 10px;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+    position: relative;
+}
+
+.exam-entry-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.exam-entry-remove {
+    background-color: #e74c3c;
+    color: white;
+    border: none;
+    padding: 5px 10px;
+    cursor: pointer;
+    border-radius: 3px;
+    font-size: 12px;
+}
+
+.exam-entry-remove:hover {
+    background-color: #c0392b;
+}
+
+.exam-entry-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.exam-entry-fields .form-group {
+    margin-bottom: 0;
+}
+
+/* Modal styles */
+.modal {
+    display: none;
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+    background-color: rgba(0, 0, 0, 0.5);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 5% auto;
+    padding: 0;
+    border: 1px solid #888;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.modal-header {
+    padding: 20px;
+    background-color: #3498db;
+    color: white;
+    border-radius: 8px 8px 0 0;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h2 {
+    margin: 0;
+    font-size: 1.5rem;
+}
+
+.modal-close {
+    color: white;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+    line-height: 1;
+}
+
+.modal-close:hover,
+.modal-close:focus {
+    color: #ecf0f1;
+}
+
+.modal-content form {
+    padding: 20px;
+}
+
+.form-group {
+    margin-bottom: 15px;
+}
+
+.form-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 600;
+    color: #2c3e50;
+}
+
+.form-actions {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.section-header {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 15px;
+}
+
+/* Wide modal for examination form */
+.modal-content-wide {
+    max-width: 700px;
+}
+
+/* Form rows for side-by-side inputs */
+.form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+/* Tab buttons for switching between animals/enclosures */
+.exam-target-tabs {
+    display: flex;
+    gap: 10px;
+    margin-top: 10px;
+}
+
+.tab-btn {
+    padding: 8px 16px;
+    border: 2px solid #3498db;
+    background: white;
+    color: #3498db;
+    cursor: pointer;
+    border-radius: 4px;
+    font-weight: 600;
+    transition: all 0.2s;
+}
+
+.tab-btn:hover {
+    background: #ecf0f1;
+}
+
+.tab-btn.active {
+    background: #3498db;
+    color: white;
+}
+
+/* Checkbox list for animals/enclosures */
+.target-selection {
+    margin-top: 15px;
+}
+
+.checkbox-list {
+    max-height: 200px;
+    overflow-y: auto;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    padding: 10px;
+    background: #f9f9f9;
+}
+
+.checkbox-item {
+    display: block;
+    padding: 8px;
+    margin-bottom: 5px;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.checkbox-item:hover {
+    background: #e8f4f8;
+}
+
+.checkbox-item input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.modal-body {
+    padding: 20px;
+}
+
+.form-help {
+    display: block;
+    font-size: 0.85em;
+    color: #7f8c8d;
+    margin-top: 4px;
+}
+
+/* Sticky column positioning for 4th column */
+.sticky-col-4 {
+    position: sticky !important;
+    left: 450px !important;
+    z-index: 10 !important;
+    background-color: white !important;
+}
+
+/* Sticky header for 4th column */
+th.sticky-col-4 {
+    position: sticky !important;
+    left: 450px !important;
+    z-index: 100 !important;
+    background-color: #34495e !important;
+}
+
+/* Sticky header row */
+.sticky-header-row {
+    position: sticky;
+    top: 60px; /* Below the blue nav bar */
+    z-index: 60;
+    background: white;
+    border-bottom: 2px solid #ddd;
+    padding: 15px 20px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 20px;
+}
+
+.header-left {
+    flex: 0 0 auto;
+}
+
+.header-right {
+    flex: 1 1 auto;
+    display: flex;
+    justify-content: flex-end;
+}
+
+.breadcrumb {
+    margin: 0;
+    font-size: 14px;
+}
+
+.page-title {
+    margin: 5px 0 0 0;
+    font-size: 24px;
+    font-weight: bold;
+}
+
+/* Filters form horizontal */
+.filters-form {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.filter-group {
+    margin: 0;
+}
+
+/* Action buttons row - also sticky */
+.sticky-actions-row {
+    position: sticky;
+    top: 125px; /* Below header */
+    z-index: 55;
+    padding: 10px 20px;
+    background: #f5f5f5;
+    border-bottom: 1px solid #ddd;
+}
+
+/* Table wrapper - no special positioning */
+.table-wrapper {
+    padding: 20px;
+}
+
+/* Table headers stick below action buttons */
+.examination-history-table thead th {
+    position: sticky;
+    top: 175px; /* Below header + actions */
+    z-index: 30;
+    background-color: #34495e;
+}
+
+/* Sticky columns in header have higher z-index */
+.examination-history-table thead th.sticky-col,
+.examination-history-table thead th.sticky-col-2,
+.examination-history-table thead th.sticky-col-3,
+.examination-history-table thead th.sticky-col-4 {
+    z-index: 100;
+}
+
+/* Editable cell - Google Sheets style */
+.editable-cell {
+    cursor: text;
+    position: relative;
+    min-height: 20px;
+}
+
+.editable-cell span {
+    display: block;
+    width: 100%;
+    text-align: inherit;
+}
+
+.editable-cell:hover {
+    background-color: #f0f8ff;
+}
+
+.editable-cell.editing {
+    padding: 0 !important;
+    background-color: white;
+}
+
+.editable-cell input {
+    width: 100%;
+    height: 100%;
+    border: 2px solid #4285f4;
+    padding: 6px 8px;
+    font-size: 13px;
+    font-family: inherit;
+    box-sizing: border-box;
+    outline: none;
+    text-align: inherit;
+}
+
+.editable-cell.saving {
+    background-color: #fff3cd;
+}
+
+.editable-cell.success {
+    background-color: #d4edda;
+}
+
+.editable-cell.error {
+    background-color: #f8d7da;
+}
+</style>
+
+<!-- Sticky header with breadcrumb and search -->
+<div class="sticky-header-row">
+    <div class="header-left">
+        <div class="breadcrumb">
+            <a href="/">Pracoviště</a> /
+            <a href="/workplace/<?= $workplace['id'] ?>"><?= htmlspecialchars($workplace['name']) ?></a> /
+            Přehled zvířat
+        </div>
+        <h1 class="page-title">Přehled zvířat</h1>
+    </div>
+
+    <div class="header-right">
+        <form method="GET" class="filters-form">
+            <div class="filter-group">
+                <input
+                    type="text"
+                    name="search"
+                    placeholder="Hledat (jméno, identifikátor, druh)..."
+                    value="<?= htmlspecialchars($filters['search']) ?>"
+                    class="form-control"
+                >
+            </div>
+
+            <div class="filter-group">
+                <select name="status" class="form-control">
+                    <option value="">Všechny stavy</option>
+                    <option value="active" <?= $filters['status'] === 'active' ? 'selected' : '' ?>>Aktivní</option>
+                    <option value="transferred" <?= $filters['status'] === 'transferred' ? 'selected' : '' ?>>Přesunuté</option>
+                    <option value="deceased" <?= $filters['status'] === 'deceased' ? 'selected' : '' ?>>Uhynulé</option>
+                    <option value="removed" <?= $filters['status'] === 'removed' ? 'selected' : '' ?>>Vyřazené</option>
+                </select>
+            </div>
+
+            <div class="filter-group">
+                <select name="enclosure_id" class="form-control">
+                    <option value="">Všechny výběhy</option>
+                    <?php foreach ($enclosures as $enclosure): ?>
+                        <option value="<?= $enclosure['id'] ?>" <?= $filters['enclosure_id'] == $enclosure['id'] ? 'selected' : '' ?>>
+                            <?= htmlspecialchars($enclosure['name']) ?>
+                        </option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+
+            <button type="submit" class="btn btn-primary">Filtrovat</button>
+            <a href="/workplace/<?= $workplace['id'] ?>/animals" class="btn btn-outline">Zrušit</a>
+        </form>
+    </div>
+</div>
+
+<!-- Sticky action buttons row -->
+<?php if ($canEdit): ?>
+<div class="sticky-actions-row">
+    <div class="section-header" style="margin: 0;">
+        <button type="button" class="btn-light-blue" onclick="openAnimalModal()">
+            ➕ Přidat zvíře
+        </button>
+        <button type="button" class="btn-dark-blue" onclick="openEnclosureModal()">
+            ➕ Přidat výběh
+        </button>
+        <button type="button" class="btn-green" onclick="openExaminationModal()">
+            ➕ Přidat záznam
+        </button>
+    </div>
+</div>
+<?php endif; ?>
+
+<!-- Table (no wrapper) -->
+<div class="table-wrapper">
+
+    <?php if (empty($animals)): ?>
+        <div class="alert alert-info">
+            Nebyla nalezena žádná zvířata odpovídající zadaným kritériím.
+        </div>
+    <?php else: ?>
+        <div class="examination-table-wrapper">
+            <table class="examination-history-table" id="examinationTable">
+                <thead>
+                    <tr>
+                        <th class="sticky-col sortable" rowspan="2" data-column="name" data-sort="none">
+                            Jméno <span class="sort-icon">⇅</span>
+                        </th>
+                        <th class="sticky-col-2 sortable" rowspan="2" data-column="species" data-sort="none">
+                            Druh <span class="sort-icon">⇅</span>
+                        </th>
+                        <th class="sticky-col-3 sortable" rowspan="2" data-column="enclosure" data-sort="none">
+                            Výběh <span class="sort-icon">⇅</span>
+                        </th>
+                        <th class="sticky-col-4 sortable" rowspan="2" data-column="next_test" data-sort="none">
+                            Další test <span class="sort-icon">⇅</span>
+                        </th>
+                        <th colspan="100">Historie vyšetření (seřazeno od nejnovějších)</th>
+                    </tr>
+                    <tr>
+                        <!-- Dynamic examination columns will be generated -->
+                        <?php
+                        // Find maximum number of GROUPED examinations for any animal
+                        $maxExams = 0;
+                        foreach ($animals as $animal) {
+                            // Group by date + institution to count unique examination sessions
+                            $grouped = [];
+                            foreach ($animal['examinations'] ?? [] as $exam) {
+                                $key = $exam['examination_date'] . '|' . ($exam['institution'] ?? '');
+                                $grouped[$key] = true;
+                            }
+                            $examCount = count($grouped);
+                            if ($examCount > $maxExams) {
+                                $maxExams = $examCount;
+                            }
+                        }
+
+                        // Generate column headers
+                        for ($i = 1; $i <= $maxExams; $i++):
+                        ?>
+                            <th class="exam-col">Vyšetření <?= $i ?></th>
+                        <?php endfor; ?>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($animals as $animal): ?>
+                    <tr>
+                        <td class="sticky-col" data-sort-value="<?= htmlspecialchars($animal['name'] ?? $animal['identifier'] ?? '') ?>">
+                            <a href="/workplace/<?= $workplace['id'] ?>/animals/<?= $animal['animal_id'] ?>" class="animal-link" title="ID: <?= $animal['animal_id'] ?>">
+                                <strong><?= htmlspecialchars($animal['name'] ?? '-') ?></strong><br>
+                                <small class="text-muted"><?= htmlspecialchars($animal['identifier'] ?? '-') ?></small>
+                            </a>
+                        </td>
+                        <td class="sticky-col-2" data-sort-value="<?= htmlspecialchars($animal['species']) ?>">
+                            <?= htmlspecialchars($animal['species']) ?>
+                        </td>
+                        <td class="sticky-col-3" data-sort-value="<?= htmlspecialchars($animal['enclosure_name'] ?? '') ?>">
+                            <?= htmlspecialchars($animal['enclosure_name'] ?? '-') ?>
+                        </td>
+                        <td class="sticky-col-4 editable-cell"
+                            data-animal-id="<?= $animal['animal_id'] ?>"
+                            data-sort-value="<?= htmlspecialchars($animal['next_test'] ?? '') ?>"
+                            onclick="editNextTest(this)"
+                            title="Klikněte pro úpravu">
+                            <?php if (!empty($animal['next_test'])): ?>
+                                <?= htmlspecialchars($animal['next_test']) ?>
+                            <?php else: ?>
+                                <span style="color: #999;">např. 15.12.2025</span>
+                            <?php endif; ?>
+                        </td>
+
+                        <!-- Examination history cells -->
+                        <?php
+                        // Group examinations by date and institution
+                        $examinations = $animal['examinations'] ?? [];
+                        $groupedExams = [];
+                        foreach ($examinations as $exam) {
+                            $key = $exam['examination_date'] . '|' . ($exam['institution'] ?? '');
+                            if (!isset($groupedExams[$key])) {
+                                $groupedExams[$key] = [
+                                    'date' => $exam['examination_date'],
+                                    'institution' => $exam['institution'] ?? '',
+                                    'notes' => $exam['notes'] ?? '',
+                                    'exams' => []
+                                ];
+                            }
+                            $groupedExams[$key]['exams'][] = $exam;
+                        }
+
+                        // Sort by date descending
+                        uasort($groupedExams, function($a, $b) {
+                            return strtotime($b['date']) - strtotime($a['date']);
+                        });
+
+                        $groupedExams = array_values($groupedExams);
+
+                        for ($i = 0; $i < $maxExams; $i++):
+                            if (isset($groupedExams[$i])):
+                                $group = $groupedExams[$i];
+                                // Determine cell class based on whether any exam is positive
+                                $hasPositive = false;
+                                foreach ($group['exams'] as $e) {
+                                    if ($e['finding_status'] === 'positive') {
+                                        $hasPositive = true;
+                                        break;
+                                    }
+                                }
+                                $cellClass = $hasPositive ? 'finding-positive' : 'finding-negative';
+                        ?>
+                            <td class="exam-cell <?= $cellClass ?>">
+                                <?php
+                                // Collect all examination IDs in this group
+                                $examIds = array_column($group['exams'], 'id');
+                                $examIdsJson = htmlspecialchars(json_encode($examIds));
+                                ?>
+                                <div class="exam-header exam-header-clickable" onclick="openEditExaminationModal(<?= $examIdsJson ?>)" title="Klikněte pro úpravu nebo smazání">
+                                    <strong><?= date('d.m.Y', strtotime($group['date'])) ?><?= $group['institution'] ? ' ' . htmlspecialchars($group['institution']) : '' ?></strong>
+                                </div>
+                                <?php foreach ($group['exams'] as $exam): ?>
+                                    <div class="exam-details">
+                                        <?= htmlspecialchars($exam['sample_type']) ?>:
+                                        <?php
+                                        $parasiteFound = $exam['parasite_found'] ?? '';
+                                        $intensity = $exam['intensity'] ?? '';
+                                        ?>
+                                        <?php if ($exam['finding_status'] === 'positive'): ?>
+                                            <?php if ($parasiteFound): ?>
+                                                <?= htmlspecialchars($parasiteFound) ?>
+                                                <?= $intensity ? ' ' . htmlspecialchars($intensity) : '' ?>
+                                            <?php else: ?>
+                                                pozitivní<?= $intensity ? ' ' . htmlspecialchars($intensity) : '' ?>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            negativní<?= $intensity && $intensity !== 'neg.' ? ' ' . htmlspecialchars($intensity) : '' ?>
+                                        <?php endif; ?>
+                                    </div>
+                                <?php endforeach; ?>
+                                <?php if ($group['notes']): ?>
+                                    <div class="exam-notes"><?= htmlspecialchars($group['notes']) ?></div>
+                                <?php endif; ?>
+                            </td>
+                        <?php
+                            else:
+                        ?>
+                            <td class="exam-cell exam-cell-empty"></td>
+                        <?php
+                            endif;
+                        endfor;
+                        ?>
+                    </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    <?php endif; ?>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const table = document.getElementById('examinationTable');
+    if (!table) return;
+
+    const headers = table.querySelectorAll('th.sortable');
+
+    headers.forEach((header, columnIndex) => {
+        header.style.cursor = 'pointer';
+        header.addEventListener('click', function() {
+            sortTable(columnIndex);
+        });
+    });
+
+    function sortTable(columnIndex) {
+        const tbody = table.querySelector('tbody');
+        const rows = Array.from(tbody.querySelectorAll('tr'));
+        const header = headers[columnIndex];
+        const currentSort = header.getAttribute('data-sort');
+
+        // Reset all other headers
+        headers.forEach(h => {
+            if (h !== header) {
+                h.setAttribute('data-sort', 'none');
+                h.querySelector('.sort-icon').textContent = '⇅';
+            }
+        });
+
+        // Determine new sort direction
+        let newSort = 'asc';
+        if (currentSort === 'none' || currentSort === 'desc') {
+            newSort = 'asc';
+        } else {
+            newSort = 'desc';
+        }
+
+        header.setAttribute('data-sort', newSort);
+        header.querySelector('.sort-icon').textContent = newSort === 'asc' ? '↑' : '↓';
+
+        // Sort rows
+        rows.sort((a, b) => {
+            const cellA = a.children[columnIndex];
+            const cellB = b.children[columnIndex];
+
+            let valueA = cellA.getAttribute('data-sort-value') || cellA.textContent.trim();
+            let valueB = cellB.getAttribute('data-sort-value') || cellB.textContent.trim();
+
+            // Handle dates (format: YYYY-MM-DD or DD.MM.YYYY)
+            if (valueA.match(/^\d{4}-\d{2}-\d{2}$/) || valueA.match(/^\d{2}\.\d{2}\.\d{4}$/)) {
+                valueA = new Date(valueA.replace(/(\d{2})\.(\d{2})\.(\d{4})/, '$3-$2-$1')).getTime() || 0;
+                valueB = new Date(valueB.replace(/(\d{2})\.(\d{2})\.(\d{4})/, '$3-$2-$1')).getTime() || 0;
+            }
+
+            // Empty values go to the end
+            if (valueA === '' || valueA === '-') return 1;
+            if (valueB === '' || valueB === '-') return -1;
+
+            // Compare
+            if (typeof valueA === 'number' && typeof valueB === 'number') {
+                return newSort === 'asc' ? valueA - valueB : valueB - valueA;
+            } else {
+                valueA = String(valueA).toLowerCase();
+                valueB = String(valueB).toLowerCase();
+                if (newSort === 'asc') {
+                    return valueA.localeCompare(valueB, 'cs');
+                } else {
+                    return valueB.localeCompare(valueA, 'cs');
+                }
+            }
+        });
+
+        // Re-append sorted rows
+        rows.forEach(row => tbody.appendChild(row));
+    }
+});
+
+// Modal functions for adding animal
+function openAnimalModal() {
+    document.getElementById('animalModal').style.display = 'block';
+}
+
+function closeAnimalModal() {
+    document.getElementById('animalModal').style.display = 'none';
+}
+
+// Modal functions for adding enclosure
+function openEnclosureModal() {
+    document.getElementById('enclosureModal').style.display = 'block';
+}
+
+function closeEnclosureModal() {
+    document.getElementById('enclosureModal').style.display = 'none';
+    document.getElementById('enclosureForm').reset();
+}
+
+// Modal functions for adding examination
+// (moved to script section below with dynamic entry logic)
+
+function closeExaminationModal() {
+    document.getElementById('examinationModal').style.display = 'none';
+    document.getElementById('examinationForm').reset();
+    // Clear all examination entries
+    document.getElementById('examinationEntries').innerHTML = '';
+    examEntryCounter = 0;
+}
+
+// Close modal when clicking outside of it
+window.onclick = function(event) {
+    if (event.target.classList.contains('modal')) {
+        closeAnimalModal();
+        closeEnclosureModal();
+        closeExaminationModal();
+    }
+}
+
+// Handle form submission
+document.getElementById('enclosureForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    fetch('/workplace/<?= $workplace['id'] ?>/enclosures/create', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeEnclosureModal();
+            location.reload(); // Reload to show new enclosure in filter
+        } else {
+            alert('Chyba při vytváření výběhu: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem');
+        console.error('Error:', error);
+    });
+});
+</script>
+
+<!-- Modal for adding enclosure -->
+<div id="enclosureModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Přidat výběh</h2>
+            <span class="modal-close" onclick="closeEnclosureModal()">&times;</span>
+        </div>
+        <form id="enclosureForm">
+            <div class="form-group">
+                <label for="enclosure_name">Název výběhu: *</label>
+                <input type="text" id="enclosure_name" name="name" class="form-control" required>
+            </div>
+
+            <div class="form-group">
+                <label for="enclosure_description">Popis:</label>
+                <textarea id="enclosure_description" name="description" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Vytvořit výběh</button>
+                <button type="button" class="btn btn-outline" onclick="closeEnclosureModal()">Zrušit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Modal for adding animal -->
+<div id="animalModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Přidat zvíře</h2>
+            <span class="modal-close" onclick="closeAnimalModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <p>Otevírá se formulář pro přidání zvířete...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+// Redirect to animal creation form when modal opens
+function openAnimalModal() {
+    window.location.href = '/workplace/<?= $workplace['id'] ?>/animals/create';
+}
+</script>
+
+<!-- Modal for adding examination record -->
+<div id="examinationModal" class="modal">
+    <div class="modal-content modal-content-wide">
+        <div class="modal-header">
+            <h2>Přidat záznam vyšetření</h2>
+            <span class="modal-close" onclick="closeExaminationModal()">&times;</span>
+        </div>
+        <form id="examinationForm">
+            <div class="form-row">
+                <div class="form-group">
+                    <label for="examination_date">Datum vyšetření: *</label>
+                    <input type="date" id="examination_date" name="examination_date" class="form-control" required value="<?= date('Y-m-d') ?>">
+                </div>
+
+                <div class="form-group">
+                    <label for="institution">Instituce: *</label>
+                    <select id="institution" name="institution" class="form-control" required>
+                        <option value="">Vyberte instituci...</option>
+                        <option value="SVÚ Jihlava">SVÚ Jihlava</option>
+                        <option value="SVÚ Praha">SVÚ Praha</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Vyšetření: *</label>
+                <div id="examinationEntries">
+                    <!-- Examination entries will be added here -->
+                </div>
+                <button type="button" class="btn btn-outline" onclick="addExaminationEntry()" style="margin-top: 10px;">
+                    ➕ Přidat typ vyšetření
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label>Vyšetření pro: *</label>
+                <div class="exam-target-tabs">
+                    <button type="button" class="tab-btn active" onclick="switchExamTarget('animals')">Zvířata</button>
+                    <button type="button" class="tab-btn" onclick="switchExamTarget('enclosures')">Výběhy</button>
+                </div>
+            </div>
+
+            <div id="animalsTarget" class="target-selection">
+                <label>Vyberte zvířata: *</label>
+                <input type="text" id="animalSearch" class="form-control" placeholder="Hledat zvíře..." onkeyup="filterAnimals()">
+                <div class="checkbox-list" id="animalsList">
+                    <?php foreach ($animals as $animal): ?>
+                        <label class="checkbox-item" data-name="<?= htmlspecialchars(strtolower($animal['name'] ?? $animal['identifier'])) ?>" data-species="<?= htmlspecialchars(strtolower($animal['species'])) ?>">
+                            <input type="checkbox" name="animal_ids[]" value="<?= $animal['animal_id'] ?>">
+                            <span><?= htmlspecialchars($animal['name'] ?? $animal['identifier']) ?> (<?= htmlspecialchars($animal['species']) ?>)</span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div id="enclosuresTarget" class="target-selection" style="display: none;">
+                <label>Vyberte výběhy: *</label>
+                <input type="text" id="enclosureSearch" class="form-control" placeholder="Hledat výběh..." onkeyup="filterEnclosures()">
+                <div class="checkbox-list" id="enclosuresList">
+                    <?php foreach ($enclosures as $enclosure): ?>
+                        <label class="checkbox-item" data-name="<?= htmlspecialchars(strtolower($enclosure['name'])) ?>">
+                            <input type="checkbox" name="enclosure_ids[]" value="<?= $enclosure['id'] ?>">
+                            <span><?= htmlspecialchars($enclosure['name']) ?></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label for="examination_notes">Poznámky:</label>
+                <textarea id="examination_notes" name="notes" class="form-control" rows="3"></textarea>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="btn btn-primary">Vytvořit záznam</button>
+                <button type="button" class="btn btn-outline" onclick="closeExaminationModal()">Zrušit</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- Edit/Delete Examination Modal -->
+<div id="editExaminationModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h2>Upravit nebo smazat vyšetření</h2>
+            <span class="modal-close" onclick="closeEditExaminationModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <div id="editExaminationContent">
+                <p style="text-align: center; padding: 20px;">Načítání...</p>
+            </div>
+            <div class="form-actions" style="margin-top: 20px; display: flex; gap: 10px; justify-content: space-between;">
+                <button type="button" class="btn btn-danger" onclick="deleteExaminations()" id="deleteBtn">Smazat všechny záznamy</button>
+                <div style="display: flex; gap: 10px;">
+                    <button type="button" class="btn btn-primary" onclick="saveExaminations()">Uložit změny</button>
+                    <button type="button" class="btn btn-outline" onclick="closeEditExaminationModal()">Zavřít</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let examEntryCounter = 0;
+
+// Add first examination entry when modal opens
+function openExaminationModal() {
+    document.getElementById('examinationModal').style.display = 'block';
+    // Add first entry if none exist
+    if (document.getElementById('examinationEntries').children.length === 0) {
+        addExaminationEntry();
+    }
+}
+
+function addExaminationEntry() {
+    examEntryCounter++;
+    const container = document.getElementById('examinationEntries');
+    const entryId = 'examEntry' + examEntryCounter;
+    const currentCounter = examEntryCounter; // Capture for closure
+
+    const entryHtml = `
+        <div class="exam-entry-card" id="${entryId}">
+            <div class="exam-entry-header">
+                <span>Vyšetření #${examEntryCounter}</span>
+                <button type="button" class="exam-entry-remove" onclick="removeExaminationEntry('${entryId}')">
+                    ✕ Odstranit
+                </button>
+            </div>
+            <div class="exam-entry-fields">
+                <div class="form-group">
+                    <label>Typ vyšetření: *</label>
+                    <select name="examinations[${examEntryCounter}][sample_type]" class="form-control exam-sample-type" required>
+                        <option value="">Vyberte typ...</option>
+                        <option value="Flotace">Flotace</option>
+                        <option value="Larvoskopie">Larvoskopie</option>
+                        <option value="Sedimentace">Sedimentace</option>
+                        <option value="EPG">EPG</option>
+                        <option value="OPG">OPG</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label>Intenzita: *</label>
+                    <select name="examinations[${examEntryCounter}][intensity]" class="form-control exam-intensity" required data-entry-id="${currentCounter}">
+                        <option value="">Vyberte intenzitu...</option>
+                        <option value="neg.">neg.</option>
+                        <option value="+">+</option>
+                        <option value="++">++</option>
+                        <option value="+++">+++</option>
+                        <option value="++++">++++</option>
+                        <option value="+++++">+++++</option>
+                        <option value="!!!!!!">!!!!!!</option>
+                        <option value="custom">Vlastní číslo (EPG/OPG)</option>
+                    </select>
+                </div>
+            </div>
+            <div class="form-group" id="customIntensityGroup${examEntryCounter}" style="display: none; margin-top: 10px;">
+                <label>Vlastní hodnota (číslo):</label>
+                <input type="number" name="examinations[${examEntryCounter}][custom_intensity]" class="form-control" min="0">
+            </div>
+            <div class="form-group" style="margin-top: 10px;">
+                <label>Nalezený parazit/červ:</label>
+                <input type="text" name="examinations[${examEntryCounter}][parasite_found]" class="form-control" placeholder="Např. Ascaris, Toxocara...">
+            </div>
+        </div>
+    `;
+
+    container.insertAdjacentHTML('beforeend', entryHtml);
+
+    // Attach event listener to the newly created select
+    const newEntry = document.getElementById(entryId);
+    const intensitySelect = newEntry.querySelector('.exam-intensity');
+    const customGroup = document.getElementById(`customIntensityGroup${currentCounter}`);
+
+    intensitySelect.addEventListener('change', function() {
+        if (this.value === 'custom') {
+            customGroup.style.display = 'block';
+            customGroup.querySelector('input').required = true;
+        } else {
+            customGroup.style.display = 'none';
+            customGroup.querySelector('input').required = false;
+        }
+    });
+}
+
+function removeExaminationEntry(entryId) {
+    const entry = document.getElementById(entryId);
+    if (entry) {
+        // Don't allow removing the last entry
+        const container = document.getElementById('examinationEntries');
+        if (container.children.length > 1) {
+            entry.remove();
+        } else {
+            alert('Musíte mít alespoň jedno vyšetření');
+        }
+    }
+}
+
+function toggleCustomIntensity() {
+    const intensity = document.getElementById('intensity').value;
+    const customGroup = document.getElementById('customIntensityGroup');
+    if (intensity === 'custom') {
+        customGroup.style.display = 'block';
+        document.getElementById('custom_intensity').required = true;
+    } else {
+        customGroup.style.display = 'none';
+        document.getElementById('custom_intensity').required = false;
+    }
+}
+
+function switchExamTarget(target) {
+    const tabs = document.querySelectorAll('.tab-btn');
+    tabs.forEach(tab => tab.classList.remove('active'));
+    event.target.classList.add('active');
+
+    if (target === 'animals') {
+        document.getElementById('animalsTarget').style.display = 'block';
+        document.getElementById('enclosuresTarget').style.display = 'none';
+        // Clear enclosure checkboxes
+        document.querySelectorAll('#enclosuresTarget input[type="checkbox"]').forEach(cb => cb.checked = false);
+    } else {
+        document.getElementById('animalsTarget').style.display = 'none';
+        document.getElementById('enclosuresTarget').style.display = 'block';
+        // Clear animal checkboxes
+        document.querySelectorAll('#animalsTarget input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+}
+
+function filterAnimals() {
+    const searchTerm = document.getElementById('animalSearch').value.toLowerCase();
+    const items = document.querySelectorAll('#animalsList .checkbox-item');
+
+    items.forEach(item => {
+        const name = item.getAttribute('data-name');
+        const species = item.getAttribute('data-species');
+
+        if (name.includes(searchTerm) || species.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+function filterEnclosures() {
+    const searchTerm = document.getElementById('enclosureSearch').value.toLowerCase();
+    const items = document.querySelectorAll('#enclosuresList .checkbox-item');
+
+    items.forEach(item => {
+        const name = item.getAttribute('data-name');
+
+        if (name.includes(searchTerm)) {
+            item.style.display = 'block';
+        } else {
+            item.style.display = 'none';
+        }
+    });
+}
+
+// Handle examination form submission
+document.getElementById('examinationForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+
+    const formData = new FormData(this);
+
+    // Handle custom intensity for each examination entry
+    const intensitySelects = document.querySelectorAll('.exam-intensity');
+    intensitySelects.forEach((select, index) => {
+        if (select.value === 'custom') {
+            const customInput = select.closest('.exam-entry-card').querySelector('input[name*="[custom_intensity]"]');
+            if (customInput && customInput.value) {
+                // Replace the intensity value with the custom number
+                const intensityFieldName = select.name;
+                formData.set(intensityFieldName, customInput.value);
+            }
+        }
+    });
+
+    // DEBUG: Log what we're sending to console
+    let debugInfo = 'FormData contents:\n';
+    for (let [key, value] of formData.entries()) {
+        debugInfo += `${key}: ${value}\n`;
+    }
+    console.log(debugInfo);
+
+    fetch('/workplace/<?= $workplace['id'] ?>/examinations/create', {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => {
+        console.log('Response status:', response.status);
+        return response.text().then(text => {
+            console.log('Response text:', text);
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('Failed to parse JSON:', e);
+                throw new Error('Server returned invalid JSON: ' + text.substring(0, 200));
+            }
+        });
+    })
+    .then(data => {
+        console.log('Parsed data:', data);
+        if (data.success) {
+            closeExaminationModal();
+            location.reload();
+        } else {
+            alert('Chyba při vytváření záznamu: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+    });
+});
+
+// Edit/Delete examination functions
+let currentExaminationIds = [];
+
+function openEditExaminationModal(examIds) {
+    currentExaminationIds = examIds;
+    document.getElementById('editExaminationModal').style.display = 'block';
+
+    // Fetch examination details
+    fetch(`/examinations/details?ids=${examIds.join(',')}`)
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                displayExaminationDetails(data.examinations);
+            } else {
+                alert('Chyba při načítání vyšetření: ' + (data.error || 'Neznámá chyba'));
+                closeEditExaminationModal();
+            }
+        })
+        .catch(error => {
+            alert('Chyba při komunikaci se serverem: ' + error.message);
+            console.error('Error:', error);
+            closeEditExaminationModal();
+        });
+}
+
+function displayExaminationDetails(examinations) {
+    const container = document.getElementById('editExaminationContent');
+    let html = '';
+
+    examinations.forEach((exam, index) => {
+        html += `
+            <div class="exam-entry-card" style="margin-bottom: 15px;" data-exam-id="${exam.id}">
+                <div class="exam-entry-header" style="margin-bottom: 15px;">
+                    <span>Vyšetření #${index + 1}</span>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label><strong>Typ vyšetření: *</strong></label>
+                    <select class="form-control" data-field="sample_type" required>
+                        <option value="">Vyberte typ...</option>
+                        <option value="Flotace" ${exam.sample_type === 'Flotace' ? 'selected' : ''}>Flotace</option>
+                        <option value="Larvoskopie" ${exam.sample_type === 'Larvoskopie' ? 'selected' : ''}>Larvoskopie</option>
+                        <option value="Sedimentace" ${exam.sample_type === 'Sedimentace' ? 'selected' : ''}>Sedimentace</option>
+                        <option value="EPG" ${exam.sample_type === 'EPG' ? 'selected' : ''}>EPG</option>
+                        <option value="OPG" ${exam.sample_type === 'OPG' ? 'selected' : ''}>OPG</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label><strong>Datum: *</strong></label>
+                    <input type="date" class="form-control" data-field="examination_date" value="${exam.examination_date}" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label><strong>Instituce: *</strong></label>
+                    <input type="text" class="form-control" data-field="institution" value="${escapeHtml(exam.institution || '')}" required>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label><strong>Nalezený parazit:</strong></label>
+                    <input type="text" class="form-control" data-field="parasite_found" value="${escapeHtml(exam.parasite_found || '')}">
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label><strong>Intenzita: *</strong></label>
+                    <select class="form-control" data-field="intensity" required>
+                        <option value="">Vyberte intenzitu...</option>
+                        <option value="neg." ${exam.intensity === 'neg.' ? 'selected' : ''}>neg.</option>
+                        <option value="+" ${exam.intensity === '+' ? 'selected' : ''}>+</option>
+                        <option value="++" ${exam.intensity === '++' ? 'selected' : ''}>++</option>
+                        <option value="+++" ${exam.intensity === '+++' ? 'selected' : ''}>+++</option>
+                        <option value="++++" ${exam.intensity === '++++' ? 'selected' : ''}>++++</option>
+                        <option value="+++++" ${exam.intensity === '+++++' ? 'selected' : ''}>+++++</option>
+                        <option value="!!!!!!" ${exam.intensity === '!!!!!!' ? 'selected' : ''}>!!!!!!</option>
+                        <option value="custom" ${!['neg.', '+', '++', '+++', '++++', '+++++', '!!!!!!'].includes(exam.intensity) && exam.intensity ? 'selected' : ''}>Vlastní číslo (EPG/OPG)</option>
+                    </select>
+                </div>
+                <div class="form-group" style="margin-bottom: 10px; ${!exam.intensity || ['neg.', '+', '++', '+++', '++++', '+++++', '!!!!!!'].includes(exam.intensity) ? 'display: none;' : ''}" data-custom-intensity-group>
+                    <label><strong>Vlastní hodnota (číslo):</strong></label>
+                    <input type="number" class="form-control" data-field="custom_intensity" value="${!['neg.', '+', '++', '+++', '++++', '+++++', '!!!!!!'].includes(exam.intensity) && exam.intensity ? exam.intensity : ''}" min="0">
+                </div>
+                <div class="form-group" style="margin-bottom: 10px;">
+                    <label><strong>Poznámky:</strong></label>
+                    <textarea class="form-control" data-field="notes" rows="2">${escapeHtml(exam.notes || '')}</textarea>
+                </div>
+            </div>
+        `;
+    });
+
+    container.innerHTML = html;
+
+    // Add event listeners for intensity dropdowns
+    container.querySelectorAll('[data-field="intensity"]').forEach(select => {
+        select.addEventListener('change', function() {
+            const card = this.closest('.exam-entry-card');
+            const customGroup = card.querySelector('[data-custom-intensity-group]');
+            if (this.value === 'custom') {
+                customGroup.style.display = 'block';
+                customGroup.querySelector('input').required = true;
+            } else {
+                customGroup.style.display = 'none';
+                customGroup.querySelector('input').required = false;
+            }
+        });
+    });
+}
+
+function closeEditExaminationModal() {
+    document.getElementById('editExaminationModal').style.display = 'none';
+    currentExaminationIds = [];
+}
+
+function saveExaminations() {
+    const container = document.getElementById('editExaminationContent');
+    const examCards = container.querySelectorAll('.exam-entry-card');
+    const updates = [];
+
+    // Collect data from all examination cards
+    examCards.forEach(card => {
+        const examId = card.dataset.examId;
+        const sampleType = card.querySelector('[data-field="sample_type"]').value;
+        const examinationDate = card.querySelector('[data-field="examination_date"]').value;
+        const institution = card.querySelector('[data-field="institution"]').value;
+        const parasiteFound = card.querySelector('[data-field="parasite_found"]').value;
+        const intensitySelect = card.querySelector('[data-field="intensity"]');
+        let intensity = intensitySelect.value;
+
+        // If custom intensity is selected, get the custom value
+        if (intensity === 'custom') {
+            const customIntensity = card.querySelector('[data-field="custom_intensity"]').value;
+            intensity = customIntensity;
+        }
+
+        const notes = card.querySelector('[data-field="notes"]').value;
+
+        // Validate required fields
+        if (!sampleType || !examinationDate || !institution || !intensity) {
+            alert('Vyplňte všechna povinná pole');
+            return;
+        }
+
+        updates.push({
+            id: examId,
+            sample_type: sampleType,
+            examination_date: examinationDate,
+            institution: institution,
+            parasite_found: parasiteFound || null,
+            intensity: intensity,
+            notes: notes || null
+        });
+    });
+
+    if (updates.length === 0) {
+        alert('Žádné změny k uložení');
+        return;
+    }
+
+    // Send updates to server
+    fetch('/examinations/update', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ examinations: updates })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeEditExaminationModal();
+            location.reload();
+        } else {
+            alert('Chyba při ukládání změn: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+    });
+}
+
+function deleteExaminations() {
+    if (!confirm(`Opravdu chcete smazat ${currentExaminationIds.length === 1 ? 'tento záznam' : 'tyto ' + currentExaminationIds.length + ' záznamy'}?`)) {
+        return;
+    }
+
+    fetch('/examinations/delete', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ ids: currentExaminationIds })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            closeEditExaminationModal();
+            location.reload();
+        } else {
+            alert('Chyba při mazání záznamů: ' + (data.error || 'Neznámá chyba'));
+        }
+    })
+    .catch(error => {
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+    });
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function formatDate(dateString) {
+    const date = new Date(dateString);
+    const day = String(date.getDate()).padStart(2, '0');
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const year = date.getFullYear();
+    return `${day}.${month}.${year}`;
+}
+
+// Google Sheets-style editable cell
+let currentEditingCell = null;
+
+function editNextTest(cell) {
+    // If already editing this cell, do nothing
+    if (cell.classList.contains('editing')) {
+        return;
+    }
+
+    // Save any other cell being edited
+    if (currentEditingCell && currentEditingCell !== cell) {
+        finishEditing(currentEditingCell, true);
+    }
+
+    currentEditingCell = cell;
+    const animalId = cell.dataset.animalId;
+
+    // Get actual value from data attribute, not from text content (which might be placeholder)
+    const currentValue = cell.dataset.sortValue || '';
+
+    // Store original value and HTML
+    cell.dataset.originalValue = currentValue;
+    cell.dataset.originalHtml = cell.innerHTML;
+
+    // Create input element
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.value = currentValue;
+    input.placeholder = 'např. 15.12.2025';
+
+    // Mark cell as editing
+    cell.classList.add('editing');
+    cell.textContent = '';
+    cell.appendChild(input);
+
+    // Focus and select
+    input.focus();
+    input.select();
+
+    // Handle blur (save)
+    input.addEventListener('blur', () => {
+        finishEditing(cell, true);
+    });
+
+    // Handle Enter key (save)
+    input.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            finishEditing(cell, true);
+        } else if (e.key === 'Escape') {
+            e.preventDefault();
+            finishEditing(cell, false);
+        }
+    });
+}
+
+function finishEditing(cell, save) {
+    if (!cell.classList.contains('editing')) {
+        return;
+    }
+
+    const input = cell.querySelector('input');
+    const newValue = input ? input.value.trim() : '';
+    const originalValue = cell.dataset.originalValue || '';
+    const animalId = cell.dataset.animalId;
+
+    // Remove input
+    cell.classList.remove('editing');
+
+    if (!save) {
+        // Cancelled - restore original HTML
+        cell.innerHTML = cell.dataset.originalHtml || '';
+        currentEditingCell = null;
+        return;
+    }
+
+    // Check if value changed
+    if (newValue === originalValue) {
+        // Restore original HTML
+        cell.innerHTML = cell.dataset.originalHtml || '';
+        currentEditingCell = null;
+        return;
+    }
+
+    // Show saving state with new value or placeholder
+    if (newValue) {
+        cell.textContent = newValue;
+    } else {
+        cell.innerHTML = '<span style="color: #999;">např. 15.12.2025</span>';
+    }
+    cell.classList.add('saving');
+
+    // Save to server
+    fetch('/animals/' + animalId + '/update-next-test', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ next_test: newValue })
+    })
+    .then(response => response.json())
+    .then(data => {
+        cell.classList.remove('saving');
+        if (data.success) {
+            cell.classList.add('success');
+            cell.dataset.sortValue = newValue;
+            // Update the display
+            if (newValue) {
+                cell.textContent = newValue;
+            } else {
+                cell.innerHTML = '<span style="color: #999;">např. 15.12.2025</span>';
+            }
+            setTimeout(() => {
+                cell.classList.remove('success');
+            }, 1000);
+        } else {
+            cell.classList.add('error');
+            alert('Chyba při ukládání: ' + (data.error || 'Neznámá chyba'));
+            // Restore original HTML on error
+            cell.innerHTML = cell.dataset.originalHtml || '';
+            setTimeout(() => {
+                cell.classList.remove('error');
+            }, 2000);
+        }
+        currentEditingCell = null;
+    })
+    .catch(error => {
+        cell.classList.remove('saving');
+        cell.classList.add('error');
+        alert('Chyba při komunikaci se serverem: ' + error.message);
+        console.error('Error:', error);
+        // Restore original HTML on error
+        cell.innerHTML = cell.dataset.originalHtml || '';
+        setTimeout(() => {
+            cell.classList.remove('error');
+        }, 2000);
+        currentEditingCell = null;
+    });
+}
+</script>
+
+</div> <!-- End table-wrapper -->

@@ -1,0 +1,52 @@
+# Claude Code folder
+.claude/
+
+# IDE and editor files
+.vscode/
+.idea/
+*.sublime-project
+*.sublime-workspace
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# PHP
+vendor/
+composer.lock
+
+# Environment and config files with secrets
+.env
+*.local.php
+config/database.local.php
+
+# Log files
+*.log
+php_errors.log
+error.log
+access.log
+
+# Cache and temporary files
+cache/
+tmp/
+temp/
+*.tmp
+*.cache
+
+# Uploads and user-generated content (optional - decide if you want to track these)
+# uploads/
+# public/uploads/
+
+# Database backups
+*.sql.gz
+*.sql.zip
+database/backups/
+
+# Node modules (if you use npm)
+node_modules/
+package-lock.json
+
+# Build files
+dist/
+build/

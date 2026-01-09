@@ -1,0 +1,10 @@
+﻿animal_code;test_type;test_date;parameter_name;value;unit;test_location;reference_source;notes
+A001;biochemistry;2024-01-15;ALT;45.2;U/L;Idexx;Idexx;
+A001;biochemistry;2024-01-15;AST;32.1;U/L;Idexx;Idexx;
+A001;biochemistry;2024-01-15;ALKP;78.5;U/L;Idexx;Idexx;
+A001;biochemistry;2024-01-15;Bilirubin;5.2;µmol/L;Idexx;Idexx;
+A002;hematology;2024-01-16;WBC;8.5;10^9/L;Idexx;Idexx;Kontrola po nemoci
+A002;hematology;2024-01-16;RBC;6.2;10^12/L;Idexx;Idexx;
+A002;hematology;2024-01-16;HGB;145;g/L;Idexx;Idexx;
+A002;hematology;2024-01-16;HCT;42.5;%;Idexx;Idexx;
+A003;biochemistry;2024-01-17;Test parasit;neg.;;Idexx;Idexx;Textová hodnota
