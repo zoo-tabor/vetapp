@@ -34,22 +34,9 @@
 
             foreach ($workplaces as $workplace):
                 $code = $workplaceCodes[$workplace['name']] ?? substr(strtoupper($workplace['name']), 0, 3);
-
-                // Determine gradient color
-                if ($workplace['name'] == 'ZOO Tábor') {
-                    $gradient = 'linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%)';
-                } elseif ($workplace['name'] == 'Babice') {
-                    $gradient = 'linear-gradient(135deg, #3498db 0%, #5dade2 100%)';
-                } elseif ($workplace['name'] == 'Lipence') {
-                    $gradient = 'linear-gradient(135deg, #e74c3c 0%, #ec7063 100%)';
-                } elseif ($workplace['name'] == 'Deponace') {
-                    $gradient = 'linear-gradient(135deg, #95a5a6 0%, #b2babb 100%)';
-                } else {
-                    $gradient = 'linear-gradient(135deg, #34495e 0%, #2c3e50 100%)';
-                }
             ?>
                 <a href="/biochemistry/workplace/<?= $workplace['id'] ?>" class="workplace-card">
-                    <div class="card-header" style="background: <?= $gradient ?>;">
+                    <div class="card-header">
                         <span class="workplace-code"><?= $code ?></span>
                     </div>
                     <div class="card-body">
@@ -138,6 +125,7 @@
     display: flex;
     justify-content: center;
     align-items: center;
+    background: linear-gradient(135deg, #c0392b 0%, #e74c3c 100%);
 }
 
 .workplace-code {
