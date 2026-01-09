@@ -24,31 +24,33 @@
     <?php else: ?>
         <div class="workplaces-grid">
             <?php
-            // Map workplace names to emojis and styles
-            $workplaceStyles = [
-                'ZOO Tábor' => ['emoji' => '🔬', 'code' => 'ZOO'],
-                'Babice' => ['emoji' => '🧬', 'code' => 'BAB'],
-                'Lipence' => ['emoji' => '🩺', 'code' => 'LIP'],
-                'Deponace' => ['emoji' => '📊', 'code' => 'DEP']
+            // Map workplace names to codes
+            $workplaceCodes = [
+                'ZOO Tábor' => 'ZOO',
+                'Babice' => 'BAB',
+                'Lipence' => 'LIP',
+                'Deponace' => 'DEP'
             ];
 
             foreach ($workplaces as $workplace):
-                $style = $workplaceStyles[$workplace['name']] ?? ['emoji' => '🏢', 'code' => substr($workplace['name'], 0, 3)];
+                $code = $workplaceCodes[$workplace['name']] ?? substr(strtoupper($workplace['name']), 0, 3);
+
+                // Determine gradient color
+                if ($workplace['name'] == 'ZOO Tábor') {
+                    $gradient = 'linear-gradient(135deg, #8e44ad 0%, #9b59b6 100%)';
+                } elseif ($workplace['name'] == 'Babice') {
+                    $gradient = 'linear-gradient(135deg, #3498db 0%, #5dade2 100%)';
+                } elseif ($workplace['name'] == 'Lipence') {
+                    $gradient = 'linear-gradient(135deg, #e74c3c 0%, #ec7063 100%)';
+                } elseif ($workplace['name'] == 'Deponace') {
+                    $gradient = 'linear-gradient(135deg, #95a5a6 0%, #b2babb 100%)';
+                } else {
+                    $gradient = 'linear-gradient(135deg, #34495e 0%, #2c3e50 100%)';
+                }
             ?>
                 <a href="/biochemistry/workplace/<?= $workplace['id'] ?>" class="workplace-card">
-                    <div class="card-header" style="background: linear-gradient(135deg,
-                        <?php if ($workplace['name'] == 'ZOO Tábor'): ?>
-                            #8e44ad 0%, #9b59b6 100%
-                        <?php elseif ($workplace['name'] == 'Babice'): ?>
-                            #3498db 0%, #5dade2 100%
-                        <?php elseif ($workplace['name'] == 'Lipence'): ?>
-                            #e74c3c 0%, #ec7063 100%
-                        <?php elseif ($workplace['name'] == 'Deponace'): ?>
-                            #95a5a6 0%, #b2babb 100%
-                        <?php endif; ?>
-                    );">
-                        <div class="card-icon"><?= $style['emoji'] ?></div>
-                        <div class="workplace-code"><?= $style['code'] ?></div>
+                    <div class="card-header" style="background: <?= $gradient ?>;">
+                        <span class="workplace-code"><?= $code ?></span>
                     </div>
                     <div class="card-body">
                         <h3><?= htmlspecialchars($workplace['name']) ?></h3>
@@ -130,24 +132,18 @@
 }
 
 .card-header {
-    padding: 30px 24px;
+    padding: 40px 24px;
     color: white;
     position: relative;
     display: flex;
-    justify-content: space-between;
+    justify-content: center;
     align-items: center;
 }
 
-.card-icon {
-    font-size: 48px;
-    line-height: 1;
-}
-
 .workplace-code {
-    font-size: 20px;
+    font-size: 32px;
     font-weight: 700;
-    opacity: 0.9;
-    letter-spacing: 1px;
+    letter-spacing: 2px;
 }
 
 .card-body {
