@@ -1,7 +1,8 @@
 <?php
 /**
  * Environment variable loader
- * Loads .env file and makes variables available via getenv()
+ * Loads .env file and makes variables available via env() function
+ * Compatible with hosting environments where putenv() is disabled
  */
 
 function loadEnv($path) {
@@ -28,9 +29,8 @@ function loadEnv($path) {
                 $value = $matches[2];
             }
 
-            // Set environment variable
+            // Set environment variable (only $_ENV and $_SERVER, no putenv() for compatibility)
             if (!array_key_exists($key, $_ENV)) {
-                putenv("$key=$value");
                 $_ENV[$key] = $value;
                 $_SERVER[$key] = $value;
             }
@@ -42,9 +42,23 @@ function loadEnv($path) {
  * Get environment variable with optional default
  */
 function env($key, $default = null) {
-    $value = getenv($key);
-
-    if ($value === false) {
+    // Check $_ENV first
+    if (isset($_ENV[$key])) {
+        $value = $_ENV[$key];
+    }
+    // Then check $_SERVER
+    elseif (isset($_SERVER[$key])) {
+        $value = $_SERVER[$key];
+    }
+    // Finally try getenv() if available
+    elseif (function_exists('getenv')) {
+        $value = getenv($key);
+        if ($value === false) {
+            return $default;
+        }
+    }
+    // No value found
+    else {
         return $default;
     }
 
