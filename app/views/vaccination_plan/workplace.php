@@ -13,6 +13,12 @@
             <a href="/vaccination-plan/planning-grid/<?= $workplace['id'] ?>" class="btn btn-primary">
                 📋 Plánovací mřížka
             </a>
+            <button onclick="openCategoryManager()" class="btn btn-info">
+                🏷️ Správa kategorií
+            </button>
+            <button onclick="openAnimalCategoryAssigner()" class="btn btn-info">
+                🐾 Kategorie zvířat
+            </button>
             <a href="/vaccination-plan" class="btn btn-secondary">← Zpět</a>
         </div>
     </div>
@@ -392,6 +398,15 @@
     background: linear-gradient(135deg, #229954 0%, #1e8449 100%);
 }
 
+.btn-danger {
+    background: linear-gradient(135deg, #e74c3c 0%, #c0392b 100%);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
+}
+
 .btn-sm {
     padding: 6px 12px;
     font-size: 13px;
@@ -415,6 +430,15 @@
 }
 
 .btn-primary:hover {
+    background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+}
+
+.btn-info:hover {
     background: linear-gradient(135deg, #2980b9 0%, #21618c 100%);
 }
 
@@ -628,9 +652,407 @@ function closeCompletionModal() {
 
 // Close modal when clicking outside
 window.onclick = function(event) {
-    const modal = document.getElementById('completionModal');
-    if (event.target === modal) {
+    const completionModal = document.getElementById('completionModal');
+    const categoryModal = document.getElementById('categoryManagerModal');
+    const assignerModal = document.getElementById('animalCategoryAssignerModal');
+
+    if (event.target === completionModal) {
         closeCompletionModal();
+    }
+    if (event.target === categoryModal) {
+        closeCategoryManager();
+    }
+    if (event.target === assignerModal) {
+        closeAnimalCategoryAssigner();
+    }
+}
+
+// Open category manager
+function openCategoryManager() {
+    loadCategories();
+    document.getElementById('categoryManagerModal').style.display = 'block';
+}
+
+// Close category manager
+function closeCategoryManager() {
+    document.getElementById('categoryManagerModal').style.display = 'none';
+}
+
+// Load existing categories for this workplace
+async function loadCategories() {
+    try {
+        const response = await fetch('/vaccination-plan/categories/<?= $workplace['id'] ?>');
+        const data = await response.json();
+
+        const tbody = document.getElementById('categoriesTableBody');
+        tbody.innerHTML = '';
+
+        if (data.categories && data.categories.length > 0) {
+            data.categories.forEach(cat => {
+                const row = document.createElement('tr');
+                row.innerHTML = `
+                    <td><strong>${escapeHtml(cat.category)}</strong></td>
+                    <td>${cat.animal_count}</td>
+                    <td>
+                        <button type="button" onclick="removeCategory('${escapeHtml(cat.category)}')" class="btn btn-sm btn-danger">
+                            Odebrat
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        } else {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; color: #7f8c8d;">Žádné kategorie zvířat v tomto pracovišti</td></tr>';
+        }
+    } catch (error) {
+        console.error('Error loading categories:', error);
+        alert('Chyba při načítání kategorií.');
+    }
+}
+
+// Add new category
+async function addCategory() {
+    const input = document.getElementById('newCategoryInput');
+    const category = input.value.trim();
+
+    if (!category) {
+        alert('Zadejte název kategorie.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/vaccination-plan/categories/<?= $workplace['id'] ?>/add', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ category })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            input.value = '';
+            loadCategories();
+        } else {
+            alert(result.error || 'Chyba při přidávání kategorie.');
+        }
+    } catch (error) {
+        console.error('Error adding category:', error);
+        alert('Chyba při přidávání kategorie.');
+    }
+}
+
+// Remove category
+async function removeCategory(category) {
+    if (!confirm(`Opravdu chcete odebrat kategorii "${category}"?\n\nPozor: Toto odstraní kategorii ze všech zvířat v tomto pracovišti!`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/vaccination-plan/categories/<?= $workplace['id'] ?>/remove', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({ category })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            loadCategories();
+        } else {
+            alert(result.error || 'Chyba při odebírání kategorie.');
+        }
+    } catch (error) {
+        console.error('Error removing category:', error);
+        alert('Chyba při odebírání kategorie.');
+    }
+}
+
+// HTML escape helper
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ===== Animal Category Assigner =====
+
+async function openAnimalCategoryAssigner() {
+    document.getElementById('animalCategoryAssignerModal').style.display = 'block';
+    await loadCategoriesDropdown();
+    await loadAnimalsForCategoryAssignment();
+}
+
+async function loadCategoriesDropdown() {
+    try {
+        const response = await fetch('/vaccination-plan/categories/<?= $workplace['id'] ?>');
+        const data = await response.json();
+
+        const select = document.getElementById('targetCategorySelect');
+        select.innerHTML = '<option value="">-- Vyberte kategorii --</option>';
+
+        if (data.categories && data.categories.length > 0) {
+            data.categories.forEach(cat => {
+                const option = document.createElement('option');
+                option.value = cat.category;
+                option.textContent = cat.category;
+                select.appendChild(option);
+            });
+        }
+    } catch (error) {
+        console.error('Error loading categories dropdown:', error);
+    }
+}
+
+function closeAnimalCategoryAssigner() {
+    document.getElementById('animalCategoryAssignerModal').style.display = 'none';
+}
+
+async function loadAnimalsForCategoryAssignment() {
+    try {
+        // Load categories with their animals
+        const response = await fetch('/vaccination-plan/categories-with-animals/<?= $workplace['id'] ?>');
+        const data = await response.json();
+
+        if (!data.success) {
+            throw new Error(data.error || 'Failed to load data');
+        }
+
+        displayCategoriesWithAnimals(data.categories || [], data.uncategorized || []);
+    } catch (error) {
+        console.error('Error loading animals:', error);
+        document.getElementById('animalsAssignmentList').innerHTML =
+            '<p style="color: #7f8c8d; text-align: center;">Chyba při načítání: ' + escapeHtml(error.message) + '</p>';
+    }
+}
+
+function displayCategoriesWithAnimals(categories, uncategorized) {
+    const container = document.getElementById('animalsAssignmentList');
+
+    let html = '';
+
+    // Display categories from animal_categories table
+    if (categories && categories.length > 0) {
+        categories.forEach(cat => {
+            html += `<div class="category-group">`;
+            html += `<h4 style="margin: 15px 0 10px 0; color: #3498db; display: flex; align-items: center; justify-content: space-between;">`;
+            html += `<span>${escapeHtml(cat.name)} (${cat.animals ? cat.animals.length : 0})</span>`;
+            html += `</h4>`;
+
+            if (cat.animals && cat.animals.length > 0) {
+                cat.animals.forEach(animal => {
+                    html += `
+                        <div class="animal-assignment-item">
+                            <label>
+                                <input type="checkbox" class="animal-checkbox" data-animal-id="${animal.id}" data-animal-name="${escapeHtml(animal.name)}" data-current-category="${cat.id}">
+                                <strong>${escapeHtml(animal.name)}</strong> (${escapeHtml(animal.identifier)}) - ${escapeHtml(animal.species)}
+                            </label>
+                        </div>
+                    `;
+                });
+            } else {
+                html += `<p style="color: #95a5a6; font-style: italic; margin: 5px 0;">Žádná zvířata v této kategorii</p>`;
+            }
+
+            html += `</div>`;
+        });
+    }
+
+    // Display uncategorized animals
+    if (uncategorized && uncategorized.length > 0) {
+        html += `<div class="category-group">`;
+        html += `<h4 style="margin: 15px 0 10px 0; color: #95a5a6;">Bez kategorie (${uncategorized.length})</h4>`;
+
+        uncategorized.forEach(animal => {
+            html += `
+                <div class="animal-assignment-item">
+                    <label>
+                        <input type="checkbox" class="animal-checkbox" data-animal-id="${animal.id}" data-animal-name="${escapeHtml(animal.name)}" data-current-category="">
+                        <strong>${escapeHtml(animal.name)}</strong> (${escapeHtml(animal.identifier)}) - ${escapeHtml(animal.species)}
+                    </label>
+                </div>
+            `;
+        });
+
+        html += `</div>`;
+    }
+
+    if (html === '') {
+        html = '<p style="color: #7f8c8d; text-align: center;">Žádná aktivní zvířata v tomto pracovišti</p>';
+    }
+
+    container.innerHTML = html;
+}
+
+async function assignSelectedAnimalsToCategory() {
+    const checkboxes = document.querySelectorAll('.animal-checkbox:checked');
+    const categorySelect = document.getElementById('targetCategorySelect');
+    const targetCategory = categorySelect.value;
+
+    if (!targetCategory) {
+        alert('Vyberte cílovou kategorii.');
+        return;
+    }
+
+    if (checkboxes.length === 0) {
+        alert('Vyberte alespoň jedno zvíře.');
+        return;
+    }
+
+    const animalIds = Array.from(checkboxes).map(cb => cb.dataset.animalId);
+    const animalNames = Array.from(checkboxes).map(cb => cb.dataset.animalName);
+
+    if (!confirm(`Přiřadit ${animalIds.length} zvířat do kategorie "${targetCategory}"?\n\nZvířata: ${animalNames.join(', ')}`)) {
+        return;
+    }
+
+    try {
+        const response = await fetch('/vaccination-plan/bulk-assign-category', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                animal_ids: animalIds,
+                category: targetCategory,
+                workplace_id: <?= $workplace['id'] ?>
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.success) {
+            alert(`Úspěšně přiřazeno ${animalIds.length} zvířat do kategorie "${targetCategory}"`);
+            loadAnimalsForCategoryAssignment(); // Reload
+            loadCategories(); // Update category counts
+        } else {
+            alert(result.error || 'Chyba při přiřazování kategorií.');
+        }
+    } catch (error) {
+        console.error('Error assigning categories:', error);
+        alert('Chyba při přiřazování kategorií.');
     }
 }
 </script>
+
+<!-- Category Manager Modal -->
+<div id="categoryManagerModal" class="modal">
+    <div class="modal-content" style="max-width: 700px;">
+        <div class="modal-header">
+            <h3>🏷️ Správa kategorií zvířat</h3>
+        </div>
+        <div class="modal-body">
+            <p style="color: #7f8c8d; margin-bottom: 20px;">
+                Zde můžete vidět, jaké kategorie zvířat jsou v tomto pracovišti. Kategorie se přiřazují jednotlivým zvířatům při jejich úpravě.
+            </p>
+
+            <!-- Add new category -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="newCategoryInput" class="form-control" placeholder="Zadejte novou kategorii..." list="common_categories">
+                <datalist id="common_categories">
+                    <option value="Šelmy Kočkovité">
+                    <option value="Šelmy Psovité">
+                    <option value="Šelmy Medvědovití">
+                    <option value="Kopytníci Sudokopytníci">
+                    <option value="Kopytníci Lichokopytníci">
+                    <option value="Primáti">
+                    <option value="Ptáci Dravci">
+                    <option value="Ptáci Vodní">
+                    <option value="Plazi">
+                    <option value="Hlodavci">
+                    <option value="Vačnatci">
+                </datalist>
+                <button onclick="addCategory()" class="btn btn-success" style="white-space: nowrap;">+ Přidat</button>
+            </div>
+
+            <!-- Categories table -->
+            <div class="plans-table-wrapper">
+                <table class="plans-table">
+                    <thead>
+                        <tr>
+                            <th>Kategorie</th>
+                            <th style="width: 120px;">Počet zvířat</th>
+                            <th style="width: 100px;">Akce</th>
+                        </tr>
+                    </thead>
+                    <tbody id="categoriesTableBody">
+                        <tr>
+                            <td colspan="3" style="text-align: center; color: #7f8c8d;">Načítání...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" onclick="closeCategoryManager()" class="btn btn-secondary">Zavřít</button>
+        </div>
+    </div>
+</div>
+
+<!-- Animal Category Assigner Modal -->
+<div id="animalCategoryAssignerModal" class="modal">
+    <div class="modal-content" style="max-width: 900px;">
+        <div class="modal-header">
+            <h3>🐾 Přiřazení zvířat do kategorií</h3>
+        </div>
+        <div class="modal-body">
+            <p style="color: #7f8c8d; margin-bottom: 20px;">
+                Vyberte zvířata a přiřaďte je do kategorie. Zvířata jsou seskupena podle jejich aktuální kategorie.
+            </p>
+
+            <!-- Category selection -->
+            <div style="display: flex; gap: 10px; margin-bottom: 20px; align-items: center;">
+                <label for="targetCategorySelect" style="font-weight: 600; white-space: nowrap;">Přesunout do:</label>
+                <select id="targetCategorySelect" class="form-control" style="flex: 1;">
+                    <option value="">-- Načítání... --</option>
+                </select>
+                <button onclick="assignSelectedAnimalsToCategory()" class="btn btn-success" style="white-space: nowrap;">✓ Přesunout</button>
+            </div>
+
+            <!-- Animals list -->
+            <div id="animalsAssignmentList" style="max-height: 400px; overflow-y: auto; border: 1px solid #ddd; border-radius: 8px; padding: 15px; background: #f9f9f9;">
+                <p style="color: #7f8c8d; text-align: center;">Načítání zvířat...</p>
+            </div>
+        </div>
+        <div class="modal-footer">
+            <button type="button" onclick="closeAnimalCategoryAssigner()" class="btn btn-secondary">Zavřít</button>
+        </div>
+    </div>
+</div>
+
+<style>
+.animal-assignment-item {
+    padding: 8px 12px;
+    margin: 5px 0;
+    background: white;
+    border-radius: 6px;
+    border: 1px solid #e0e0e0;
+    transition: all 0.2s ease;
+}
+
+.animal-assignment-item:hover {
+    background: #f0f8ff;
+    border-color: #3498db;
+}
+
+.animal-assignment-item label {
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 0;
+}
+
+.animal-checkbox {
+    width: 18px;
+    height: 18px;
+    cursor: pointer;
+}
+
+.category-group {
+    margin-bottom: 15px;
+}
+</style>

@@ -247,6 +247,70 @@ $router->post('/urineanalysis/reference-ranges/save', function() {
     $controller->saveReferenceRanges();
 });
 
+// Vaccination Plan routes
+
+// Category Management API routes (must come BEFORE other routes)
+$router->get('/vaccination-plan/categories/:workplaceId', function($workplaceId) {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->getCategories($workplaceId);
+});
+
+$router->post('/vaccination-plan/categories/:workplaceId/add', function($workplaceId) {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->addCategory($workplaceId);
+});
+
+$router->post('/vaccination-plan/categories/:workplaceId/remove', function($workplaceId) {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->removeCategory($workplaceId);
+});
+
+// Main vaccination plan routes
+$router->get('/vaccination-plan', function() {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->index();
+});
+
+$router->get('/vaccination-plan/workplace/:id', function($id) {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->workplace($id);
+});
+
+$router->get('/vaccination-plan/planning-grid/:id', function($id) {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->planningGrid($id);
+});
+
+$router->post('/vaccination-plan/save', function() {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->save();
+});
+
+$router->post('/vaccination-plan/mark-completed/:id', function($id) {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->markCompleted($id);
+});
+
+$router->post('/vaccination-plan/batch-mark-completed', function() {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->batchMarkCompleted();
+});
+
+$router->post('/vaccination-plan/delete/:id', function($id) {
+    require_once __DIR__ . '/../app/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->delete($id);
+});
+
 // App switching route
 $router->get('/switch-app/:app', function($app) {
     require_once __DIR__ . '/../app/controllers/AppController.php';

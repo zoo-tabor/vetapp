@@ -457,6 +457,46 @@ $router->post('/urineanalysis/result/:id/update', function($id) {
 });
 
 // Vaccination Plan routes
+
+// Category Management API routes (must come BEFORE other routes)
+$router->get('/vaccination-plan/categories/:workplaceId', function($workplaceId) {
+    require_once APP_PATH . '/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->getCategories($workplaceId);
+});
+
+$router->post('/vaccination-plan/categories/:workplaceId/add', function($workplaceId) {
+    require_once APP_PATH . '/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->addCategory($workplaceId);
+});
+
+$router->post('/vaccination-plan/categories/:workplaceId/remove', function($workplaceId) {
+    require_once APP_PATH . '/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->removeCategory($workplaceId);
+});
+
+$router->get('/vaccination-plan/categories-with-animals/:workplaceId', function($workplaceId) {
+    require_once APP_PATH . '/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->getCategoriesWithAnimals($workplaceId);
+});
+
+// API routes for bulk animal category assignment
+$router->get('/api/workplace/:workplaceId/animals', function($workplaceId) {
+    require_once APP_PATH . '/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->getAnimalsForWorkplace($workplaceId);
+});
+
+$router->post('/vaccination-plan/bulk-assign-category', function() {
+    require_once APP_PATH . '/controllers/VaccinationPlanController.php';
+    $controller = new VaccinationPlanController();
+    $controller->bulkAssignCategory();
+});
+
+// Main vaccination plan routes
 $router->get('/vaccination-plan', function() {
     require_once APP_PATH . '/controllers/VaccinationPlanController.php';
     $controller = new VaccinationPlanController();

@@ -82,12 +82,12 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease;
     text-align: center;
-    border-top: 4px solid #16a085;
+    border-top: 4px solid #3498db;
 }
 
 .workplace-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 4px 16px rgba(22, 160, 133, 0.3);
+    box-shadow: 0 4px 16px rgba(52, 152, 219, 0.3);
 }
 
 .card-icon {
@@ -97,7 +97,7 @@
 
 .workplace-card h3 {
     margin: 0 0 15px 0;
-    color: #16a085;
+    color: #3498db;
     font-size: 20px;
     font-weight: 600;
 }

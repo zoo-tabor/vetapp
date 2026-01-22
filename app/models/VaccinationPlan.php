@@ -19,13 +19,14 @@ class VaccinationPlan {
                 a.name as animal_name,
                 a.identifier as animal_identifier,
                 a.species as animal_species,
-                a.animal_category,
+                ac.name as animal_category,
                 m.name as vaccine_name,
                 m.unit as vaccine_unit,
                 u_admin.full_name as administered_by_name,
                 u_created.full_name as created_by_name
             FROM vaccination_plans vp
             JOIN animals a ON vp.animal_id = a.id
+            LEFT JOIN animal_categories ac ON a.animal_category_id = ac.id
             LEFT JOIN warehouse_items m ON vp.vaccine_id = m.item_code
             LEFT JOIN users u_admin ON vp.administered_by = u_admin.id
             LEFT JOIN users u_created ON vp.created_by = u_created.id
@@ -42,7 +43,7 @@ class VaccinationPlan {
 
         // Filter by animal category
         if (!empty($filters['animal_category'])) {
-            $sql .= " AND a.animal_category = ?";
+            $sql .= " AND ac.name = ?";
             $params[] = $filters['animal_category'];
         }
 
@@ -52,7 +53,7 @@ class VaccinationPlan {
             $params[] = $filters['year'];
         }
 
-        $sql .= " ORDER BY vp.planned_date ASC, a.animal_category, a.name";
+        $sql .= " ORDER BY vp.planned_date ASC, ac.name, a.name";
 
         $stmt = $this->db->prepare($sql);
         $stmt->execute($params);
@@ -72,19 +73,20 @@ class VaccinationPlan {
                 a.name as animal_name,
                 a.identifier as animal_identifier,
                 a.species as animal_species,
-                a.animal_category,
+                ac.name as animal_category,
                 m.id as vaccine_id,
                 m.name as vaccine_name,
                 vt.color_hex as vaccine_color,
                 vt.abbreviation as vaccine_abbr
             FROM animals a
+            LEFT JOIN animal_categories ac ON a.animal_category_id = ac.id
             LEFT JOIN vaccination_plans vp ON a.id = vp.animal_id
                 AND YEAR(vp.planned_date) = ?
                 AND vp.status != 'cancelled'
             LEFT JOIN warehouse_items m ON vp.vaccine_id = m.item_code
             LEFT JOIN vaccine_type_colors vt ON vt.vaccine_type = m.name
             WHERE a.workplace_id = ? AND a.current_status = 'active'
-            ORDER BY a.animal_category, a.name, vp.planned_date
+            ORDER BY ac.name, a.name, vp.planned_date
         ";
 
         $stmt = $this->db->prepare($sql);
@@ -403,10 +405,11 @@ class VaccinationPlan {
                 a.name as animal_name,
                 a.identifier as animal_identifier,
                 a.species as animal_species,
-                a.animal_category,
+                ac.name as animal_category,
                 m.name as vaccine_name
             FROM vaccination_plans vp
             JOIN animals a ON vp.animal_id = a.id
+            LEFT JOIN animal_categories ac ON a.animal_category_id = ac.id
             LEFT JOIN warehouse_items m ON vp.vaccine_id = m.item_code
             WHERE vp.id = ?
         ";

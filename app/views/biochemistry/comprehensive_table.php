@@ -39,7 +39,7 @@
     <?php else: ?>
         <!-- Biochemistry Section -->
         <?php if (!empty($biochemTests)): ?>
-            <div class="table-area section">
+            <div class="table-area section" data-section-type="biochemistry">
                 <h2 class="section-title">Biochemie</h2>
                 <div class="table-responsive">
                     <table class="examination-history-table">
@@ -61,31 +61,36 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <!-- Reference Source Selector Row -->
+                            <tr class="source-selector-row">
+                                <td class="sticky-col">
+                                    <select id="biochemReferenceSourceSelect" class="reference-source-select" onchange="switchReferenceSource('biochemistry', this.value)">
+                                        <?php
+                                        $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
+                                        foreach ($sources as $source):
+                                        ?>
+                                            <option value="<?= $source ?>" <?= $source === 'Laboklin' ? 'selected' : '' ?>><?= $source ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                                <td class="sticky-col-2"></td>
+                                <?php foreach ($biochemTests as $test): ?>
+                                    <td colspan="2"></td>
+                                <?php endforeach; ?>
+                            </tr>
+
                             <?php
                             // Filter only biochemistry parameters
                             $biochemParams = array_filter($allParameters, function($param) {
                                 return $param['type'] === 'biochemistry';
                             });
 
-                            $rowIndex = 0;
                             foreach ($biochemParams as $paramName => $paramInfo):
-                                $rowIndex++;
                             ?>
-                                <tr class="result-row" data-parameter="<?= htmlspecialchars($paramName) ?>">
-                                    <?php if ($rowIndex === 1): ?>
-                                        <td class="sticky-col" rowspan="<?= count($biochemParams) ?>">
-                                            <div class="source-selector">
-                                                <?php
-                                                $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
-                                                foreach ($sources as $index => $source):
-                                                ?>
-                                                    <button class="badge-source <?= $index === 0 ? 'active' : '' ?>" data-source="<?= $source ?>" onclick="switchReferenceSource('biochemistry', '<?= $source ?>')">
-                                                        <?= $source ?>
-                                                    </button>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </td>
-                                    <?php endif; ?>
+                                <tr class="result-row" data-parameter="<?= htmlspecialchars($paramName) ?>" data-test-type="biochemistry">
+                                    <td class="sticky-col reference-range-cell" data-param="<?= htmlspecialchars($paramName) ?>" data-test-type="biochemistry">
+                                        -
+                                    </td>
                                     <td class="sticky-col-2">
                                         <strong><?= htmlspecialchars($paramName) ?></strong>
                                         <span class="unit"><?= htmlspecialchars($paramInfo['unit']) ?></span>
@@ -101,7 +106,7 @@
                                             data-test-key="<?= $test['key'] ?>"
                                             data-value="<?= $value ?>"
                                             data-species="<?= htmlspecialchars($animal['species']) ?>"
-                                            data-source="<?= htmlspecialchars($test['reference_source']) ?>"
+                                            data-source="Laboklin"
                                             data-test-type="biochemistry"
                                             data-result-id="<?= $resultId ?>"
                                             data-parameter="<?= htmlspecialchars($paramName) ?>"
@@ -135,7 +140,7 @@
 
         <!-- Hematology Section -->
         <?php if (!empty($hematoTests)): ?>
-            <div class="table-area section">
+            <div class="table-area section" data-section-type="hematology">
                 <h2 class="section-title">Hematologie</h2>
                 <div class="table-responsive">
                     <table class="examination-history-table">
@@ -157,31 +162,36 @@
                             </tr>
                         </thead>
                         <tbody>
+                            <!-- Reference Source Selector Row -->
+                            <tr class="source-selector-row">
+                                <td class="sticky-col">
+                                    <select id="hematoReferenceSourceSelect" class="reference-source-select" onchange="switchReferenceSource('hematology', this.value)">
+                                        <?php
+                                        $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
+                                        foreach ($sources as $source):
+                                        ?>
+                                            <option value="<?= $source ?>" <?= $source === 'Laboklin' ? 'selected' : '' ?>><?= $source ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </td>
+                                <td class="sticky-col-2"></td>
+                                <?php foreach ($hematoTests as $test): ?>
+                                    <td colspan="2"></td>
+                                <?php endforeach; ?>
+                            </tr>
+
                             <?php
                             // Filter only hematology parameters
                             $hematoParams = array_filter($allParameters, function($param) {
                                 return $param['type'] === 'hematology';
                             });
 
-                            $rowIndex = 0;
                             foreach ($hematoParams as $paramName => $paramInfo):
-                                $rowIndex++;
                             ?>
-                                <tr class="result-row" data-parameter="<?= htmlspecialchars($paramName) ?>">
-                                    <?php if ($rowIndex === 1): ?>
-                                        <td class="sticky-col" rowspan="<?= count($hematoParams) ?>">
-                                            <div class="source-selector">
-                                                <?php
-                                                $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
-                                                foreach ($sources as $index => $source):
-                                                ?>
-                                                    <button class="badge-source <?= $index === 0 ? 'active' : '' ?>" data-source="<?= $source ?>" onclick="switchReferenceSource('hematology', '<?= $source ?>')">
-                                                        <?= $source ?>
-                                                    </button>
-                                                <?php endforeach; ?>
-                                            </div>
-                                        </td>
-                                    <?php endif; ?>
+                                <tr class="result-row" data-parameter="<?= htmlspecialchars($paramName) ?>" data-test-type="hematology">
+                                    <td class="sticky-col reference-range-cell" data-param="<?= htmlspecialchars($paramName) ?>" data-test-type="hematology">
+                                        -
+                                    </td>
                                     <td class="sticky-col-2">
                                         <strong><?= htmlspecialchars($paramName) ?></strong>
                                         <span class="unit"><?= htmlspecialchars($paramInfo['unit']) ?></span>
@@ -197,7 +207,7 @@
                                             data-test-key="<?= $test['key'] ?>"
                                             data-value="<?= $value ?>"
                                             data-species="<?= htmlspecialchars($animal['species']) ?>"
-                                            data-source="<?= htmlspecialchars($test['reference_source']) ?>"
+                                            data-source="Laboklin"
                                             data-test-type="hematology"
                                             data-result-id="<?= $resultId ?>"
                                             data-parameter="<?= htmlspecialchars($paramName) ?>"
@@ -469,31 +479,42 @@ th.sticky-col-2 {
     padding: 10px;
 }
 
-.badge-source {
-    background: white;
-    color: #c0392b;
-    border: 2px solid #c0392b;
+.reference-source-select {
+    width: 100%;
     padding: 8px 12px;
+    border: 2px solid #c0392b;
     border-radius: 4px;
-    font-size: 12px;
+    font-size: 14px;
     font-weight: 600;
+    background: white;
+    color: #2c3e50;
     cursor: pointer;
     transition: all 0.2s;
-    width: 100%;
-    text-align: center;
 }
 
-.badge-source:hover {
-    background: #c0392b;
-    color: white;
-    transform: translateY(-1px);
-    box-shadow: 0 2px 8px rgba(192, 57, 43, 0.3);
+.reference-source-select option {
+    color: #2c3e50;
+    background: white;
 }
 
-.badge-source.active {
-    background: linear-gradient(135deg, #c0392b 0%, #a93226 100%);
-    color: white;
+.reference-source-select:hover {
+    background: #fef5f5;
+}
+
+.reference-source-select:focus {
+    outline: none;
     border-color: #a93226;
+}
+
+.source-selector-row td {
+    background-color: #fef5f5;
+    font-weight: 600;
+}
+
+.reference-range-cell {
+    text-align: center;
+    font-size: 13px;
+    color: #7f8c8d;
 }
 
 .unit {
@@ -834,17 +855,50 @@ async function loadEvaluations() {
 }
 
 // Switch reference source for all evaluations in a section
-function switchReferenceSource(testType, newSource) {
-    // Update active state of buttons
-    const section = event.target.closest('.section');
-    const buttons = section.querySelectorAll('.badge-source');
-    buttons.forEach(btn => {
-        if (btn.dataset.source === newSource) {
-            btn.classList.add('active');
+async function switchReferenceSource(testType, newSource) {
+    // Find the section based on test type
+    const section = document.querySelector(`.section[data-section-type="${testType}"]`);
+    if (!section) return;
+
+    const species = document.querySelector('[data-species]')?.dataset.species;
+    if (!species) return;
+
+    // Update reference range cells
+    const refCells = section.querySelectorAll('.reference-range-cell');
+
+    for (const cell of refCells) {
+        const parameter = cell.dataset.param;
+        const cacheKey = `${testType}-${parameter}-${species}-${newSource}`;
+
+        let range;
+        if (referenceRangesCache[cacheKey]) {
+            range = referenceRangesCache[cacheKey];
         } else {
-            btn.classList.remove('active');
+            try {
+                const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${newSource}`);
+                if (response.ok) {
+                    range = await response.json();
+                    referenceRangesCache[cacheKey] = range;
+                } else {
+                    range = null;
+                }
+            } catch (error) {
+                console.error('Error fetching reference range:', error);
+                range = null;
+            }
         }
-    });
+
+        let referenceText = '-';
+        if (range && range.min_value !== null && range.max_value !== null) {
+            referenceText = range.min_value + ' - ' + range.max_value;
+        } else if (range && range.min_value !== null) {
+            referenceText = '> ' + range.min_value;
+        } else if (range && range.max_value !== null) {
+            referenceText = '< ' + range.max_value;
+        }
+
+        cell.textContent = referenceText;
+    }
 
     // Update all value cells to use the new reference source
     const valueCells = section.querySelectorAll('.value-col[data-test-type]');
@@ -921,10 +975,69 @@ async function loadEvaluationsForSection(section, testType) {
     }
 }
 
-// Load evaluations on page load
+// Load evaluations and reference ranges on page load
 document.addEventListener('DOMContentLoaded', function() {
     loadEvaluations();
+    // Load initial reference ranges for both sections
+    loadInitialReferenceRanges();
 });
+
+async function loadInitialReferenceRanges() {
+    const species = document.querySelector('[data-species]')?.dataset.species;
+    if (!species) return;
+
+    // Load biochemistry reference ranges
+    const biochemSection = document.querySelector('.section[data-section-type="biochemistry"]');
+    if (biochemSection) {
+        const biochemSource = document.getElementById('biochemReferenceSourceSelect')?.value || 'Laboklin';
+        await loadReferenceRangesForSection(biochemSection, 'biochemistry', biochemSource, species);
+    }
+
+    // Load hematology reference ranges
+    const hematoSection = document.querySelector('.section[data-section-type="hematology"]');
+    if (hematoSection) {
+        const hematoSource = document.getElementById('hematoReferenceSourceSelect')?.value || 'Laboklin';
+        await loadReferenceRangesForSection(hematoSection, 'hematology', hematoSource, species);
+    }
+}
+
+async function loadReferenceRangesForSection(section, testType, source, species) {
+    const refCells = section.querySelectorAll('.reference-range-cell');
+
+    for (const cell of refCells) {
+        const parameter = cell.dataset.param;
+        const cacheKey = `${testType}-${parameter}-${species}-${source}`;
+
+        let range;
+        if (referenceRangesCache[cacheKey]) {
+            range = referenceRangesCache[cacheKey];
+        } else {
+            try {
+                const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${source}`);
+                if (response.ok) {
+                    range = await response.json();
+                    referenceRangesCache[cacheKey] = range;
+                } else {
+                    range = null;
+                }
+            } catch (error) {
+                console.error('Error fetching reference range:', error);
+                range = null;
+            }
+        }
+
+        let referenceText = '-';
+        if (range && range.min_value !== null && range.max_value !== null) {
+            referenceText = range.min_value + ' - ' + range.max_value;
+        } else if (range && range.min_value !== null) {
+            referenceText = '> ' + range.min_value;
+        } else if (range && range.max_value !== null) {
+            referenceText = '< ' + range.max_value;
+        }
+
+        cell.textContent = referenceText;
+    }
+}
 
 // Graph Modal Functions
 function openGraphModal() {

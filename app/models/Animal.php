@@ -64,13 +64,15 @@ class Animal extends Model {
     
     public function getDetail($id) {
         $sql = "
-            SELECT 
+            SELECT
                 a.*,
                 e.name as enclosure_name,
-                w.name as workplace_name
+                w.name as workplace_name,
+                ac.name as animal_category
             FROM animals a
             LEFT JOIN enclosures e ON a.current_enclosure_id = e.id
             LEFT JOIN workplaces w ON a.workplace_id = w.id
+            LEFT JOIN animal_categories ac ON a.animal_category_id = ac.id
             WHERE a.id = ?
         ";
         $result = $this->query($sql, [$id]);

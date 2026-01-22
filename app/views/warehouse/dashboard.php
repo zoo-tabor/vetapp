@@ -35,9 +35,20 @@
         </div>
 
         <div class="workplaces-grid">
-            <?php foreach ($workplaces as $workplace): ?>
+            <?php
+            // Map workplace names to emojis
+            $workplaceEmojis = [
+                'ZOO Tábor' => '🐯',
+                'Babice' => '🧑🏻‍🌾',
+                'Lipence' => '🐶',
+                'Deponace' => '➡️'
+            ];
+
+            foreach ($workplaces as $workplace):
+                $emoji = $workplaceEmojis[$workplace['name']] ?? '🏢';
+            ?>
                 <a href="/warehouse/workplace/<?= $workplace['id'] ?>" class="workplace-card">
-                    <div class="card-icon">📦</div>
+                    <div class="card-icon"><?= $emoji ?></div>
                     <h3><?= htmlspecialchars($workplace['name']) ?></h3>
                     <div class="workplace-meta">
                         <?php if ($workplace['can_edit']): ?>

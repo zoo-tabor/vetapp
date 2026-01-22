@@ -232,6 +232,15 @@ class AnimalController {
                 $notes = $_POST['notes'] ?? null;
                 $notes = ($notes === '') ? null : $notes;
 
+                $animalCategoryName = $_POST['animal_category'] ?? null;
+                $animalCategoryName = ($animalCategoryName === '') ? null : $animalCategoryName;
+
+                // Convert category name to ID
+                $animalCategoryId = null;
+                if ($animalCategoryName) {
+                    $animalCategoryId = $this->getCategoryIdByName($workplaceId, $animalCategoryName);
+                }
+
                 $data = [
                     'workplace_id' => $workplaceId,
                     'name' => $_POST['name'] ?? null,
@@ -241,6 +250,7 @@ class AnimalController {
                     'gender' => $_POST['gender'] ?? 'unknown',
                     'current_status' => 'active',
                     'current_enclosure_id' => $enclosureId,
+                    'animal_category_id' => $animalCategoryId,
                     'notes' => $notes
                 ];
 
@@ -422,6 +432,14 @@ class AnimalController {
             if (isset($input['notes'])) {
                 $updateData['notes'] = $input['notes'] ?: null;
             }
+            if (isset($input['animal_category'])) {
+                $categoryName = $input['animal_category'] ?: null;
+                if ($categoryName) {
+                    $updateData['animal_category_id'] = $this->getCategoryIdByName($animal['workplace_id'], $categoryName);
+                } else {
+                    $updateData['animal_category_id'] = null;
+                }
+            }
 
             // Validate required fields
             if (isset($updateData['species']) && empty($updateData['species'])) {
@@ -448,5 +466,35 @@ class AnimalController {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Chyba databáze: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * Get or create category ID by name
+     * @param int $workplaceId
+     * @param string $categoryName
+     * @return int Category ID
+     */
+    private function getCategoryIdByName($workplaceId, $categoryName) {
+        $db = Database::getInstance()->getConnection();
+
+        // Try to find existing category
+        $stmt = $db->prepare("
+            SELECT id FROM animal_categories
+            WHERE workplace_id = ? AND name = ?
+        ");
+        $stmt->execute([$workplaceId, $categoryName]);
+        $categoryId = $stmt->fetchColumn();
+
+        // If not found, create it
+        if (!$categoryId) {
+            $stmt = $db->prepare("
+                INSERT INTO animal_categories (workplace_id, name)
+                VALUES (?, ?)
+            ");
+            $stmt->execute([$workplaceId, $categoryName]);
+            $categoryId = $db->lastInsertId();
+        }
+
+        return $categoryId;
     }
 }

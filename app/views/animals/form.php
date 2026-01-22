@@ -67,7 +67,33 @@
                     <option value="female">Samice</option>
                 </select>
             </div>
-            
+
+            <div class="form-group">
+                <label for="animal_category">Kategorie zvířete</label>
+                <input
+                    type="text"
+                    id="animal_category"
+                    name="animal_category"
+                    class="form-control"
+                    list="category_suggestions"
+                    placeholder="např. Šelmy Kočkovité, Kopytníci, Ptáci..."
+                >
+                <datalist id="category_suggestions">
+                    <option value="Šelmy Kočkovité">
+                    <option value="Šelmy Psovité">
+                    <option value="Šelmy Medvědovití">
+                    <option value="Kopytníci Sudokopytníci">
+                    <option value="Kopytníci Lichokopytníci">
+                    <option value="Primáti">
+                    <option value="Ptáci Dravci">
+                    <option value="Ptáci Vodní">
+                    <option value="Plazi">
+                    <option value="Hlodavci">
+                    <option value="Vačnatci">
+                </datalist>
+                <small class="form-text">Kategorie pro vakcinační plány - můžete zadat vlastní hodnotu</small>
+            </div>
+
             <div class="form-group">
                 <label for="enclosure_id">Výběh</label>
                 <select id="enclosure_id" name="enclosure_id" class="form-control">
