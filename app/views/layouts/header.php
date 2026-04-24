@@ -20,9 +20,11 @@
                     <?php
                     $currentApp = $_SESSION['current_app'] ?? 'parasitology';
                     // Determine the correct home URL based on current app
-                    $homeUrl = '/';
+                    $homeUrl = '/parasitology';
                     if ($currentApp === 'animals') {
                         $homeUrl = '/animals';
+                    } elseif ($currentApp === 'parasitology') {
+                        $homeUrl = '/parasitology';
                     } elseif ($currentApp === 'biochemistry') {
                         $homeUrl = '/biochemistry';
                     } elseif ($currentApp === 'urineanalysis') {

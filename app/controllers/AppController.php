@@ -30,7 +30,7 @@ class AppController {
         } elseif ($app === 'vaccination') {
             View::redirect('/vaccination-plan');
         } else {
-            View::redirect('/');
+            View::redirect('/parasitology');
         }
     }
 }

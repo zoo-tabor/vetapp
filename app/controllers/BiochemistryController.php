@@ -363,7 +363,7 @@ class BiochemistryController {
 
         // Get all biochemistry tests ordered by date
         $stmtBiochem = $db->prepare("
-            SELECT bt.id, bt.test_date, bt.reference_source
+            SELECT bt.id, bt.test_date, bt.test_location, bt.reference_source
             FROM biochemistry_tests bt
             WHERE bt.animal_id = ?
             ORDER BY bt.test_date ASC
@@ -373,7 +373,7 @@ class BiochemistryController {
 
         // Get all hematology tests ordered by date
         $stmtHemato = $db->prepare("
-            SELECT ht.id, ht.test_date, ht.reference_source
+            SELECT ht.id, ht.test_date, ht.test_location, ht.reference_source
             FROM hematology_tests ht
             WHERE ht.animal_id = ?
             ORDER BY ht.test_date ASC
@@ -471,6 +471,183 @@ class BiochemistryController {
             'hematoTests' => $hematoTests,
             'allParameters' => $allParameters,
             'testResults' => $testResults
+        ]);
+    }
+
+    public function printPreview($animalId) {
+        Auth::requireLogin();
+
+        $animalModel = new Animal();
+        $userModel = new User();
+
+        // Get animal details
+        $animal = $animalModel->getDetail($animalId);
+        if (!$animal) {
+            View::render('error', [
+                'layout' => 'print',
+                'title' => 'Chyba',
+                'message' => 'Zvíře nenalezeno'
+            ]);
+            return;
+        }
+
+        // Check permissions
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+            View::render('error', [
+                'layout' => 'print',
+                'title' => 'Přístup odepřen',
+                'message' => 'Nemáte oprávnění k tomuto zvířeti'
+            ]);
+            return;
+        }
+
+        // Get table type from query params
+        $tableType = $_GET['table'] ?? 'both';
+        $referenceSource = $_GET['source'] ?? 'Laboklin';
+
+        $db = Database::getInstance()->getConnection();
+
+        $biochemTests = [];
+        $hematoTests = [];
+        $allParameters = [];
+        $testResults = [];
+        $referenceRanges = [];
+
+        // Get biochemistry data if needed
+        if ($tableType === 'biochemistry' || $tableType === 'both') {
+            $stmtBiochem = $db->prepare("
+                SELECT bt.id, bt.test_date, bt.test_location, bt.reference_source
+                FROM biochemistry_tests bt
+                WHERE bt.animal_id = ?
+                ORDER BY bt.test_date ASC
+            ");
+            $stmtBiochem->execute([$animalId]);
+            $biochemTests = $stmtBiochem->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get unique biochemistry parameters
+            $stmtBiochemParams = $db->prepare("
+                SELECT DISTINCT parameter_name, unit
+                FROM biochemistry_results br
+                JOIN biochemistry_tests bt ON br.test_id = bt.id
+                WHERE bt.animal_id = ?
+                ORDER BY parameter_name ASC
+            ");
+            $stmtBiochemParams->execute([$animalId]);
+            $biochemParams = $stmtBiochemParams->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($biochemParams as $param) {
+                $allParameters[$param['parameter_name']] = [
+                    'type' => 'biochemistry',
+                    'unit' => $param['unit']
+                ];
+
+                // Get reference range for this parameter
+                $stmtRef = $db->prepare("
+                    SELECT min_value, max_value
+                    FROM reference_ranges
+                    WHERE test_type = 'biochemistry' AND parameter_name = ? AND species = ? AND source = ?
+                ");
+                $stmtRef->execute([$param['parameter_name'], $animal['species'], $referenceSource]);
+                $refRange = $stmtRef->fetch(PDO::FETCH_ASSOC);
+                if ($refRange) {
+                    $referenceRanges['biochemistry'][$param['parameter_name']] = $refRange;
+                }
+            }
+
+            foreach ($biochemTests as &$test) {
+                $stmt = $db->prepare("
+                    SELECT id, parameter_name, value, unit
+                    FROM biochemistry_results
+                    WHERE test_id = ?
+                ");
+                $stmt->execute([$test['id']]);
+                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $testResults['biochem_' . $test['id']] = [];
+                foreach ($results as $result) {
+                    $testResults['biochem_' . $test['id']][$result['parameter_name']] = [
+                        'value' => $result['value'],
+                        'id' => $result['id'],
+                        'unit' => $result['unit']
+                    ];
+                }
+                $test['key'] = 'biochem_' . $test['id'];
+            }
+        }
+
+        // Get hematology data if needed
+        if ($tableType === 'hematology' || $tableType === 'both') {
+            $stmtHemato = $db->prepare("
+                SELECT ht.id, ht.test_date, ht.test_location, ht.reference_source
+                FROM hematology_tests ht
+                WHERE ht.animal_id = ?
+                ORDER BY ht.test_date ASC
+            ");
+            $stmtHemato->execute([$animalId]);
+            $hematoTests = $stmtHemato->fetchAll(PDO::FETCH_ASSOC);
+
+            // Get unique hematology parameters
+            $stmtHematoParams = $db->prepare("
+                SELECT DISTINCT parameter_name, unit
+                FROM hematology_results hr
+                JOIN hematology_tests ht ON hr.test_id = ht.id
+                WHERE ht.animal_id = ?
+                ORDER BY parameter_name ASC
+            ");
+            $stmtHematoParams->execute([$animalId]);
+            $hematoParams = $stmtHematoParams->fetchAll(PDO::FETCH_ASSOC);
+
+            foreach ($hematoParams as $param) {
+                $allParameters[$param['parameter_name']] = [
+                    'type' => 'hematology',
+                    'unit' => $param['unit']
+                ];
+
+                // Get reference range for this parameter
+                $stmtRef = $db->prepare("
+                    SELECT min_value, max_value
+                    FROM reference_ranges
+                    WHERE test_type = 'hematology' AND parameter_name = ? AND species = ? AND source = ?
+                ");
+                $stmtRef->execute([$param['parameter_name'], $animal['species'], $referenceSource]);
+                $refRange = $stmtRef->fetch(PDO::FETCH_ASSOC);
+                if ($refRange) {
+                    $referenceRanges['hematology'][$param['parameter_name']] = $refRange;
+                }
+            }
+
+            foreach ($hematoTests as &$test) {
+                $stmt = $db->prepare("
+                    SELECT id, parameter_name, value, unit
+                    FROM hematology_results
+                    WHERE test_id = ?
+                ");
+                $stmt->execute([$test['id']]);
+                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+                $testResults['hemato_' . $test['id']] = [];
+                foreach ($results as $result) {
+                    $testResults['hemato_' . $test['id']][$result['parameter_name']] = [
+                        'value' => $result['value'],
+                        'id' => $result['id'],
+                        'unit' => $result['unit']
+                    ];
+                }
+                $test['key'] = 'hemato_' . $test['id'];
+            }
+        }
+
+        View::render('biochemistry/print_preview', [
+            'layout' => 'print',
+            'title' => 'Tisk - ' . $animal['name'],
+            'animal' => $animal,
+            'biochemTests' => $biochemTests,
+            'hematoTests' => $hematoTests,
+            'allParameters' => $allParameters,
+            'testResults' => $testResults,
+            'referenceRanges' => $referenceRanges,
+            'tableType' => $tableType,
+            'referenceSource' => $referenceSource
         ]);
     }
 

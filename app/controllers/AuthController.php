@@ -7,7 +7,7 @@ class AuthController {
     public function showLogin() {
         // Pokud je již přihlášen, přesměrovat na dashboard
         if (Auth::check()) {
-            View::redirect('/');
+            View::redirect('/animals');
         }
         
         View::render('auth/login', [
@@ -25,7 +25,7 @@ class AuthController {
         $password = $_POST['password'] ?? '';
         
         if (Auth::login($username, $password)) {
-            View::redirect('/');
+            View::redirect('/animals');
         } else {
             View::render('auth/login', [
                 'layout' => false,

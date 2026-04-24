@@ -20,8 +20,11 @@
             </p>
         </div>
         <div class="header-right">
-            <a href="/biochemistry/animal/<?= $animal['id'] ?>/graph" class="btn btn-success" style="margin-right: 10px;">
+            <a href="/biochemistry/animal/<?= $animal['id'] ?>/graph" class="btn btn-success">
                 📊 Vytvořit graf
+            </a>
+            <a href="/biochemistry/animal/<?= $animal['id'] ?>/print?table=biochemistry" class="btn btn-info">
+                🖨️ Tisk
             </a>
             <a href="/biochemistry/animal/<?= $animal['id'] ?>" class="btn btn-primary">
                 ← Zpět na detail
@@ -48,11 +51,25 @@
                                 <th class="sticky-col">Referenční zdroj</th>
                                 <th class="sticky-col-2">Parametr</th>
                                 <?php foreach ($biochemTests as $test): ?>
-                                    <th colspan="2" class="date-header"><?= date('d.m.Y', strtotime($test['test_date'])) ?></th>
+                                    <th colspan="2" class="date-header">
+                                        <?= date('d.m.Y', strtotime($test['test_date'])) ?>
+                                        <?php if (!empty($test['test_location'])): ?>
+                                            <br><span class="test-location"><?= htmlspecialchars($test['test_location']) ?></span>
+                                        <?php endif; ?>
+                                    </th>
                                 <?php endforeach; ?>
                             </tr>
                             <tr>
-                                <th class="sticky-col"></th>
+                                <th class="sticky-col header-select-cell">
+                                    <select id="biochemReferenceSourceSelect" class="reference-source-select-header" onchange="switchReferenceSource('biochemistry', this.value)">
+                                        <?php
+                                        $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
+                                        foreach ($sources as $source):
+                                        ?>
+                                            <option value="<?= $source ?>" <?= $source === 'Laboklin' ? 'selected' : '' ?>><?= $source ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </th>
                                 <th class="sticky-col-2"></th>
                                 <?php foreach ($biochemTests as $test): ?>
                                     <th class="value-header">Hodnota</th>
@@ -61,24 +78,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Reference Source Selector Row -->
-                            <tr class="source-selector-row">
-                                <td class="sticky-col">
-                                    <select id="biochemReferenceSourceSelect" class="reference-source-select" onchange="switchReferenceSource('biochemistry', this.value)">
-                                        <?php
-                                        $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
-                                        foreach ($sources as $source):
-                                        ?>
-                                            <option value="<?= $source ?>" <?= $source === 'Laboklin' ? 'selected' : '' ?>><?= $source ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td class="sticky-col-2"></td>
-                                <?php foreach ($biochemTests as $test): ?>
-                                    <td colspan="2"></td>
-                                <?php endforeach; ?>
-                            </tr>
-
                             <?php
                             // Filter only biochemistry parameters
                             $biochemParams = array_filter($allParameters, function($param) {
@@ -149,11 +148,25 @@
                                 <th class="sticky-col">Referenční zdroj</th>
                                 <th class="sticky-col-2">Parametr</th>
                                 <?php foreach ($hematoTests as $test): ?>
-                                    <th colspan="2" class="date-header"><?= date('d.m.Y', strtotime($test['test_date'])) ?></th>
+                                    <th colspan="2" class="date-header">
+                                        <?= date('d.m.Y', strtotime($test['test_date'])) ?>
+                                        <?php if (!empty($test['test_location'])): ?>
+                                            <br><span class="test-location"><?= htmlspecialchars($test['test_location']) ?></span>
+                                        <?php endif; ?>
+                                    </th>
                                 <?php endforeach; ?>
                             </tr>
                             <tr>
-                                <th class="sticky-col"></th>
+                                <th class="sticky-col header-select-cell">
+                                    <select id="hematoReferenceSourceSelect" class="reference-source-select-header" onchange="switchReferenceSource('hematology', this.value)">
+                                        <?php
+                                        $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
+                                        foreach ($sources as $source):
+                                        ?>
+                                            <option value="<?= $source ?>" <?= $source === 'Laboklin' ? 'selected' : '' ?>><?= $source ?></option>
+                                        <?php endforeach; ?>
+                                    </select>
+                                </th>
                                 <th class="sticky-col-2"></th>
                                 <?php foreach ($hematoTests as $test): ?>
                                     <th class="value-header">Hodnota</th>
@@ -162,24 +175,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- Reference Source Selector Row -->
-                            <tr class="source-selector-row">
-                                <td class="sticky-col">
-                                    <select id="hematoReferenceSourceSelect" class="reference-source-select" onchange="switchReferenceSource('hematology', this.value)">
-                                        <?php
-                                        $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
-                                        foreach ($sources as $source):
-                                        ?>
-                                            <option value="<?= $source ?>" <?= $source === 'Laboklin' ? 'selected' : '' ?>><?= $source ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
-                                </td>
-                                <td class="sticky-col-2"></td>
-                                <?php foreach ($hematoTests as $test): ?>
-                                    <td colspan="2"></td>
-                                <?php endforeach; ?>
-                            </tr>
-
                             <?php
                             // Filter only hematology parameters
                             $hematoParams = array_filter($allParameters, function($param) {
@@ -348,6 +343,7 @@
     flex: 1;
     display: flex;
     justify-content: flex-end;
+    gap: 10px;
 }
 
 .breadcrumb {
@@ -467,24 +463,29 @@ th.sticky-col-2 {
     text-align: center;
 }
 
+.test-location {
+    font-size: 10px;
+    font-weight: normal;
+    color: #7f8c8d;
+    display: block;
+}
+
 .value-header,
 .eval-header {
     font-size: 13px;
 }
 
-.source-selector {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px;
+/* Header select dropdown */
+.header-select-cell {
+    padding: 6px 8px !important;
 }
 
-.reference-source-select {
+.reference-source-select-header {
     width: 100%;
-    padding: 8px 12px;
-    border: 2px solid #c0392b;
+    padding: 6px 8px;
+    border: none;
     border-radius: 4px;
-    font-size: 14px;
+    font-size: 13px;
     font-weight: 600;
     background: white;
     color: #2c3e50;
@@ -492,23 +493,18 @@ th.sticky-col-2 {
     transition: all 0.2s;
 }
 
-.reference-source-select option {
+.reference-source-select-header option {
     color: #2c3e50;
     background: white;
 }
 
-.reference-source-select:hover {
-    background: #fef5f5;
+.reference-source-select-header:hover {
+    background: #f8f8f8;
 }
 
-.reference-source-select:focus {
+.reference-source-select-header:focus {
     outline: none;
-    border-color: #a93226;
-}
-
-.source-selector-row td {
-    background-color: #fef5f5;
-    font-weight: 600;
+    background: #f8f8f8;
 }
 
 .reference-range-cell {
@@ -560,6 +556,15 @@ th.sticky-col-2 {
 
 .btn-primary:hover {
     background-color: #a93226;
+}
+
+.btn-info {
+    background: linear-gradient(135deg, #3498db 0%, #2980b9 100%);
+    color: white;
+}
+
+.btn-info:hover {
+    background: linear-gradient(135deg, #2980b9 0%, #1f6dad 100%);
 }
 
 /* Alerts */
@@ -782,6 +787,7 @@ th.sticky-col-2 {
     background: #c0392b;
     color: white;
 }
+
 </style>
 
 <script>

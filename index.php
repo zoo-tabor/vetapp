@@ -43,7 +43,7 @@ $router = new Router();
 // Auth routes
 $router->get('/login', function() {
     if (Auth::check()) {
-        header('Location: /');
+        header('Location: /animals');
         exit;
     }
     require_once APP_PATH . '/controllers/AuthController.php';
@@ -272,6 +272,21 @@ $router->get('/app/switch/:app', function($app) {
     $controller->switchApp($app);
 });
 
+// Parasitology routes
+$router->get('/parasitology', function() {
+    $_SESSION['current_app'] = 'parasitology';
+    require_once APP_PATH . '/controllers/DashboardController.php';
+    $controller = new DashboardController();
+    $controller->index();
+});
+
+$router->get('/parasitology/workplace/:id', function($id) {
+    $_SESSION['current_app'] = 'parasitology';
+    require_once APP_PATH . '/controllers/DashboardController.php';
+    $controller = new DashboardController();
+    $controller->workplace($id);
+});
+
 // Biochemistry routes
 $router->get('/biochemistry/workplace/:id', function($id) {
     require_once APP_PATH . '/controllers/BiochemistryController.php';
@@ -301,6 +316,12 @@ $router->get('/biochemistry/animal/:id/comprehensive-table', function($id) {
     require_once APP_PATH . '/controllers/BiochemistryController.php';
     $controller = new BiochemistryController();
     $controller->comprehensiveTable($id);
+});
+
+$router->get('/biochemistry/animal/:id/print', function($id) {
+    require_once APP_PATH . '/controllers/BiochemistryController.php';
+    $controller = new BiochemistryController();
+    $controller->printPreview($id);
 });
 
 $router->get('/biochemistry/animal/:id/graph', function($id) {
