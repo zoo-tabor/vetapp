@@ -628,24 +628,28 @@ $router->get('/warehouse', function() {
 
 // Animals Database routes
 $router->get('/animals', function() {
+    $_SESSION['current_app'] = 'animals';
     require_once APP_PATH . '/controllers/AnimalDatabaseController.php';
     $controller = new AnimalDatabaseController();
     $controller->index();
 });
 
 $router->get('/animals/central', function() {
+    $_SESSION['current_app'] = 'animals';
     require_once APP_PATH . '/controllers/AnimalDatabaseController.php';
     $controller = new AnimalDatabaseController();
     $controller->central();
 });
 
 $router->get('/animals/workplace/:id', function($id) {
+    $_SESSION['current_app'] = 'animals';
     require_once APP_PATH . '/controllers/AnimalDatabaseController.php';
     $controller = new AnimalDatabaseController();
     $controller->workplace($id);
 });
 
 $router->get('/animals/detail/:id', function($id) {
+    $_SESSION['current_app'] = 'animals';
     require_once APP_PATH . '/controllers/AnimalDatabaseController.php';
     $controller = new AnimalDatabaseController();
     $controller->detail($id);
