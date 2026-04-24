@@ -680,6 +680,13 @@ $router->get('/api/search/drugs', function() {
     $controller->searchDrugs();
 });
 
+// Migration runner route
+$router->get('/migrate', function() {
+    require_once APP_PATH . '/controllers/MigrateController.php';
+    $controller = new MigrateController();
+    $controller->run();
+});
+
 // ============================================
 // DISPATCH
 // ============================================
