@@ -81,6 +81,84 @@
         </div>
     </div>
 
+    <!-- Weight History Card -->
+    <?php if ($canEdit || !empty($weightHistory)): ?>
+    <div class="info-card" id="weightCard">
+        <div class="card-header-row">
+            <h2>Hmotnost</h2>
+            <?php if ($canEdit): ?>
+                <button type="button" class="btn btn-sm btn-primary" onclick="toggleWeightForm()" id="weightToggleBtn">
+                    + Přidat měření
+                </button>
+            <?php endif; ?>
+        </div>
+
+        <!-- Current weight -->
+        <div style="margin-bottom: 16px;">
+            <span style="font-size: 1.4em; font-weight: 700; color: #2c3e50;" id="currentWeightDisplay">
+                <?= $animal['weight'] !== null ? htmlspecialchars($animal['weight']) . ' kg' : '—' ?>
+            </span>
+            <?php if (!empty($weightHistory)): ?>
+                <span style="color: #888; font-size: 0.9em; margin-left: 8px;">
+                    (poslední měření: <?= date('d.m.Y', strtotime($weightHistory[0]['measured_date'])) ?>)
+                </span>
+            <?php endif; ?>
+        </div>
+
+        <!-- Add measurement form -->
+        <?php if ($canEdit): ?>
+        <div id="weightForm" style="display: none; background: #f8f9fa; border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 2fr auto; gap: 12px; align-items: end;">
+                <div>
+                    <label style="display: block; font-size: 0.85em; color: #666; margin-bottom: 4px;">Hmotnost (kg) *</label>
+                    <input type="number" id="weightInput" step="0.01" min="0.01" placeholder="0.00" class="btn" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85em; color: #666; margin-bottom: 4px;">Datum *</label>
+                    <input type="date" id="weightDate" value="<?= date('Y-m-d') ?>" class="btn" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+                <div>
+                    <label style="display: block; font-size: 0.85em; color: #666; margin-bottom: 4px;">Poznámka</label>
+                    <input type="text" id="weightNotes" placeholder="Volitelná poznámka" class="btn" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 6px;">
+                </div>
+                <div>
+                    <button type="button" class="btn btn-primary" onclick="saveWeight()" id="weightSaveBtn">
+                        Uložit
+                    </button>
+                </div>
+            </div>
+            <div id="weightError" style="color: #c0392b; font-size: 0.85em; margin-top: 8px; display: none;"></div>
+        </div>
+        <?php endif; ?>
+
+        <!-- History table -->
+        <?php if (!empty($weightHistory)): ?>
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.9em;" id="weightHistoryTable">
+            <thead>
+                <tr style="border-bottom: 2px solid #e0e0e0;">
+                    <th style="text-align: left; padding: 8px 12px; color: #666; font-weight: 600;">Datum</th>
+                    <th style="text-align: right; padding: 8px 12px; color: #666; font-weight: 600;">Hmotnost</th>
+                    <th style="text-align: left; padding: 8px 12px; color: #666; font-weight: 600;">Poznámka</th>
+                    <th style="text-align: left; padding: 8px 12px; color: #666; font-weight: 600;">Zaznamenal</th>
+                </tr>
+            </thead>
+            <tbody id="weightHistoryBody">
+                <?php foreach ($weightHistory as $i => $entry): ?>
+                <tr style="border-bottom: 1px solid #f0f0f0; <?= $i === 0 ? 'font-weight: 600;' : '' ?>">
+                    <td style="padding: 8px 12px;"><?= date('d.m.Y', strtotime($entry['measured_date'])) ?></td>
+                    <td style="padding: 8px 12px; text-align: right;"><?= htmlspecialchars($entry['weight']) ?> kg</td>
+                    <td style="padding: 8px 12px; color: #555;"><?= htmlspecialchars($entry['notes'] ?? '—') ?></td>
+                    <td style="padding: 8px 12px; color: #888;"><?= htmlspecialchars($entry['created_by_name'] ?? '—') ?></td>
+                </tr>
+                <?php endforeach; ?>
+            </tbody>
+        </table>
+        <?php else: ?>
+            <p style="color: #888; margin: 0;">Zatím žádná měření.</p>
+        <?php endif; ?>
+    </div>
+    <?php endif; ?>
+
     <!-- Quick Links to Other Sections -->
     <div class="section-links">
         <h2>Přejít na data v jiných sekcích</h2>
@@ -508,3 +586,84 @@
     }
 }
 </style>
+
+<script>
+function toggleWeightForm() {
+    const form = document.getElementById('weightForm');
+    const btn  = document.getElementById('weightToggleBtn');
+    const visible = form.style.display !== 'none';
+    form.style.display = visible ? 'none' : '';
+    btn.textContent = visible ? '+ Přidat měření' : '✕ Zrušit';
+    if (!visible) document.getElementById('weightInput').focus();
+}
+
+function saveWeight() {
+    const weight = parseFloat(document.getElementById('weightInput').value);
+    const date   = document.getElementById('weightDate').value;
+    const notes  = document.getElementById('weightNotes').value.trim();
+    const errEl  = document.getElementById('weightError');
+    const saveBtn = document.getElementById('weightSaveBtn');
+
+    errEl.style.display = 'none';
+
+    if (!weight || weight <= 0) {
+        errEl.textContent = 'Zadejte platnou hmotnost.';
+        errEl.style.display = '';
+        return;
+    }
+    if (!date) {
+        errEl.textContent = 'Zadejte datum měření.';
+        errEl.style.display = '';
+        return;
+    }
+
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Ukládám…';
+
+    fetch('/animals/<?= $animal['id'] ?>/weight', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ weight, measured_date: date, notes })
+    })
+    .then(r => r.json())
+    .then(data => {
+        if (data.success) {
+            const e = data.entry;
+            const formattedDate = new Date(e.measured_date + 'T00:00:00').toLocaleDateString('cs-CZ', {day:'2-digit',month:'2-digit',year:'numeric'});
+
+            document.getElementById('currentWeightDisplay').textContent = e.weight + ' kg';
+
+            const tbody = document.getElementById('weightHistoryBody');
+            if (tbody) {
+                const prevFirst = tbody.querySelector('tr');
+                if (prevFirst) prevFirst.style.fontWeight = '';
+                const tr = document.createElement('tr');
+                tr.style.cssText = 'border-bottom: 1px solid #f0f0f0; font-weight: 600;';
+                tr.innerHTML = `<td style="padding:8px 12px">${formattedDate}</td>
+                    <td style="padding:8px 12px;text-align:right">${e.weight} kg</td>
+                    <td style="padding:8px 12px;color:#555">${e.notes || '—'}</td>
+                    <td style="padding:8px 12px;color:#888">${e.created_by_name || '—'}</td>`;
+                tbody.insertBefore(tr, tbody.firstChild);
+            } else {
+                location.reload();
+                return;
+            }
+
+            document.getElementById('weightInput').value = '';
+            document.getElementById('weightNotes').value = '';
+            toggleWeightForm();
+        } else {
+            errEl.textContent = data.error || 'Neznámá chyba';
+            errEl.style.display = '';
+        }
+    })
+    .catch(err => {
+        errEl.textContent = 'Chyba komunikace: ' + err.message;
+        errEl.style.display = '';
+    })
+    .finally(() => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Uložit';
+    });
+}
+</script>

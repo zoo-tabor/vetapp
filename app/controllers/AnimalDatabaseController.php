@@ -266,6 +266,22 @@ class AnimalDatabaseController {
         $stmtUrine->execute([$id]);
         $urineTests = $stmtUrine->fetchAll(PDO::FETCH_ASSOC);
 
+        // Get weight history (table may not exist before migration 002)
+        $weightHistory = [];
+        try {
+            $stmtWeight = $db->prepare("
+                SELECT awh.*, u.username as created_by_name
+                FROM animal_weight_history awh
+                LEFT JOIN users u ON awh.created_by = u.id
+                WHERE awh.animal_id = ?
+                ORDER BY awh.measured_date DESC, awh.created_at DESC
+            ");
+            $stmtWeight->execute([$id]);
+            $weightHistory = $stmtWeight->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            // Table not yet created
+        }
+
         View::render('animals_database/detail', [
             'layout' => 'main',
             'title' => 'Detail zvířete - ' . ($animal['name'] ?: $animal['species']),
@@ -274,6 +290,7 @@ class AnimalDatabaseController {
             'biochemistryTests' => $biochemistryTests,
             'hematologyTests' => $hematologyTests,
             'urineTests' => $urineTests,
+            'weightHistory' => $weightHistory,
             'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')
         ]);
     }
