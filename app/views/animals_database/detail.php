@@ -36,6 +36,10 @@
                 <span class="value"><?= htmlspecialchars($animal['breed'] ?: '-') ?></span>
             </div>
             <div class="info-item">
+                <span class="label">Hmotnost:</span>
+                <span class="value"><?= $animal['weight'] !== null ? htmlspecialchars($animal['weight']) . ' kg' : '-' ?></span>
+            </div>
+            <div class="info-item">
                 <span class="label">Datum narození:</span>
                 <span class="value">
                     <?= $animal['birth_date'] ? date('d.m.Y', strtotime($animal['birth_date'])) : '-' ?>

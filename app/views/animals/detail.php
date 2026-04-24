@@ -52,6 +52,11 @@ $fromAnimals = isset($_GET['from']) && $_GET['from'] === 'animals';
                     </select>
                 </div>
                 <div class="info-item">
+                    <label>Hmotnost (kg):</label>
+                    <span class="view-mode"><?= $animal['weight'] !== null ? htmlspecialchars($animal['weight']) . ' kg' : '-' ?></span>
+                    <input type="number" name="weight" class="form-control edit-mode" value="<?= htmlspecialchars($animal['weight'] ?? '') ?>" step="0.01" min="0" placeholder="kg" style="display: none;">
+                </div>
+                <div class="info-item">
                     <label>Datum narození:</label>
                     <span class="view-mode">
                         <?= $animal['birth_date'] ? date('d.m.Y', strtotime($animal['birth_date'])) : '-' ?>

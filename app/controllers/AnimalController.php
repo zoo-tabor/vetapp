@@ -395,6 +395,9 @@ class AnimalController {
             if (isset($input['gender'])) {
                 $updateData['gender'] = $input['gender'];
             }
+            if (array_key_exists('weight', $input)) {
+                $updateData['weight'] = $input['weight'] !== '' ? (float)$input['weight'] : null;
+            }
             if (isset($input['birth_date'])) {
                 $updateData['birth_date'] = $input['birth_date'] ?: null;
             }
