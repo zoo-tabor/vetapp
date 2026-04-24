@@ -113,6 +113,12 @@ $router->post('/animals/:id/update', function($id) {
     $controller->update($id);
 });
 
+$router->post('/animals/:id/weight', function($id) {
+    require_once APP_PATH . '/controllers/AnimalController.php';
+    $controller = new AnimalController();
+    $controller->addWeight($id);
+});
+
 // Enclosure routes
 $router->post('/workplace/:workplace_id/enclosures/create', function($workplaceId) {
     require_once APP_PATH . '/controllers/EnclosureController.php';

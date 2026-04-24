@@ -195,6 +195,19 @@ class AnimalController {
             // Fetch enclosures for the current workplace
             $enclosures = $workplaceModel->getEnclosures($animal['workplace_id']);
 
+            // Fetch weight history
+            require_once __DIR__ . '/../core/Database.php';
+            $db = Database::getInstance()->getConnection();
+            $stmt = $db->prepare("
+                SELECT awh.*, u.full_name as created_by_name
+                FROM animal_weight_history awh
+                LEFT JOIN users u ON awh.created_by = u.id
+                WHERE awh.animal_id = ?
+                ORDER BY awh.measured_date DESC, awh.created_at DESC
+            ");
+            $stmt->execute([$id]);
+            $weightHistory = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
             View::render('animals/detail', [
                 'layout' => 'main',
                 'title' => $animal['name'] ?? 'Zvíře #' . $animal['identifier'],
@@ -205,7 +218,8 @@ class AnimalController {
                 'statusHistory' => $statusHistory,
                 'canEdit' => $canEdit,
                 'transferWorkplaces' => $transferWorkplaces,
-                'enclosures' => $enclosures
+                'enclosures' => $enclosures,
+                'weightHistory' => $weightHistory
             ]);
         }
     }
@@ -315,6 +329,68 @@ class AnimalController {
             $animal['current_enclosure_id'],
             Auth::userId()
         ]);
+    }
+
+    public function addWeight($animalId) {
+        Auth::requireLogin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Pouze POST metoda']);
+            return;
+        }
+
+        $animalModel = new Animal();
+        $animal = $animalModel->findById($animalId);
+        if (!$animal) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Zvíře nenalezeno']);
+            return;
+        }
+
+        $userModel = new User();
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $weight = isset($input['weight']) ? (float)$input['weight'] : null;
+        $date   = $input['measured_date'] ?? date('Y-m-d');
+        $notes  = $input['notes'] ?? null;
+
+        if (!$weight || $weight <= 0) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Zadejte platnou hmotnost']);
+            return;
+        }
+
+        require_once __DIR__ . '/../core/Database.php';
+        $db = Database::getInstance()->getConnection();
+
+        $stmt = $db->prepare("
+            INSERT INTO animal_weight_history (animal_id, weight, measured_date, notes, created_by)
+            VALUES (?, ?, ?, ?, ?)
+        ");
+        $stmt->execute([$animalId, $weight, $date, $notes ?: null, Auth::userId()]);
+        $newId = $db->lastInsertId();
+
+        // Update cached weight on animal if this is the most recent measurement
+        $animalModel->update($animalId, ['weight' => $weight]);
+
+        // Return the new entry for the UI
+        $stmt = $db->prepare("
+            SELECT awh.*, u.full_name as created_by_name
+            FROM animal_weight_history awh
+            LEFT JOIN users u ON awh.created_by = u.id
+            WHERE awh.id = ?
+        ");
+        $stmt->execute([$newId]);
+        $entry = $stmt->fetch(PDO::FETCH_ASSOC);
+
+        header('Content-Type: application/json');
+        echo json_encode(['success' => true, 'entry' => $entry]);
     }
 
     public function updateNextTest($animalId) {
