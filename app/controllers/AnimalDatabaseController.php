@@ -282,6 +282,35 @@ class AnimalDatabaseController {
             // Table not yet created
         }
 
+        // Get vaccination data for this animal
+        $vaccinationUpcoming = [];
+        $vaccinationCompleted = [];
+        try {
+            $stmtVaccUpcoming = $db->prepare("
+                SELECT vp.*, u.full_name as administered_by_name
+                FROM vaccination_plans vp
+                LEFT JOIN users u ON vp.administered_by = u.id
+                WHERE vp.animal_id = ? AND vp.status IN ('planned', 'overdue')
+                ORDER BY vp.planned_date ASC
+                LIMIT 3
+            ");
+            $stmtVaccUpcoming->execute([$id]);
+            $vaccinationUpcoming = $stmtVaccUpcoming->fetchAll(PDO::FETCH_ASSOC);
+
+            $stmtVaccCompleted = $db->prepare("
+                SELECT vp.*, u.full_name as administered_by_name
+                FROM vaccination_plans vp
+                LEFT JOIN users u ON vp.administered_by = u.id
+                WHERE vp.animal_id = ? AND vp.status = 'completed'
+                ORDER BY vp.administered_date DESC
+                LIMIT 3
+            ");
+            $stmtVaccCompleted->execute([$id]);
+            $vaccinationCompleted = $stmtVaccCompleted->fetchAll(PDO::FETCH_ASSOC);
+        } catch (Exception $e) {
+            // Table not yet created
+        }
+
         View::render('animals_database/detail', [
             'layout' => 'main',
             'title' => 'Detail zvířete - ' . ($animal['name'] ?: $animal['species']),
@@ -291,6 +320,8 @@ class AnimalDatabaseController {
             'hematologyTests' => $hematologyTests,
             'urineTests' => $urineTests,
             'weightHistory' => $weightHistory,
+            'vaccinationUpcoming' => $vaccinationUpcoming,
+            'vaccinationCompleted' => $vaccinationCompleted,
             'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')
         ]);
     }

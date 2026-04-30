@@ -178,6 +178,11 @@
                 <h3>Analýza moči</h3>
                 <p>Výsledky rozborů moči</p>
             </a>
+            <a href="/vaccination-plan/workplace/<?= $animal['workplace_id'] ?>" class="section-link vaccination">
+                <div class="link-icon">💉</div>
+                <h3>Vakcinační plán</h3>
+                <p>Plánované a provedené vakcinace</p>
+            </a>
         </div>
     </div>
 
@@ -290,6 +295,46 @@
                             <div class="preview-content">
                                 <strong><?= htmlspecialchars($test['test_location']) ?></strong>
                                 <br><small><?= $test['result_count'] ?> parametrů měřeno</small>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
+            <?php endif; ?>
+        </div>
+
+        <!-- Vaccination Plan Preview -->
+        <div class="preview-card">
+            <div class="preview-header">
+                <h3>💉 Vakcinační plán</h3>
+                <a href="/vaccination-plan/workplace/<?= $animal['workplace_id'] ?>" class="view-all">
+                    Zobrazit vše →
+                </a>
+            </div>
+            <?php if (empty($vaccinationUpcoming) && empty($vaccinationCompleted)): ?>
+                <p class="no-data">Zatím žádné vakcinace</p>
+            <?php else: ?>
+                <div class="preview-list">
+                    <?php foreach ($vaccinationUpcoming as $vacc): ?>
+                        <div class="preview-item">
+                            <div class="preview-date" style="color: <?= $vacc['status'] === 'overdue' ? '#e74c3c' : '#2c3e50' ?>;">
+                                <?= date('d.m.Y', strtotime($vacc['planned_date'])) ?>
+                            </div>
+                            <div class="preview-content">
+                                <strong><?= htmlspecialchars($vacc['vaccine_name']) ?></strong>
+                                <br><small style="color: <?= $vacc['status'] === 'overdue' ? '#e74c3c' : '#27ae60' ?>;">
+                                    <?= $vacc['status'] === 'overdue' ? '⚠️ Po termínu' : '📅 Plánováno' ?>
+                                </small>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                    <?php foreach ($vaccinationCompleted as $vacc): ?>
+                        <div class="preview-item">
+                            <div class="preview-date">
+                                <?= date('d.m.Y', strtotime($vacc['administered_date'])) ?>
+                            </div>
+                            <div class="preview-content">
+                                <strong><?= htmlspecialchars($vacc['vaccine_name']) ?></strong>
+                                <br><small style="color: #27ae60;">✅ Provedeno<?= $vacc['administered_by_name'] ? ' – ' . htmlspecialchars($vacc['administered_by_name']) : '' ?></small>
                             </div>
                         </div>
                     <?php endforeach; ?>
@@ -434,6 +479,10 @@
 
 .section-link.urine {
     border-top: 4px solid #f39c12;
+}
+
+.section-link.vaccination {
+    border-top: 4px solid #27ae60;
 }
 
 .link-icon {
