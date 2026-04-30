@@ -33,6 +33,16 @@ Auth::init();
 // Načtení pomocných funkcí
 require_once APP_PATH . '/helpers/functions.php';
 
+// Global exception handler
+set_exception_handler(function(Throwable $e) {
+    error_log("Uncaught exception: " . $e->getMessage() . "\n" . $e->getTraceAsString());
+    if (!headers_sent()) {
+        http_response_code(500);
+    }
+    require_once APP_PATH . '/views/errors/500.php';
+    exit;
+});
+
 // Vytvoření routeru
 $router = new Router();
 

@@ -41,10 +41,12 @@ RewriteRule (.*) https://%{HTTP_HOST}/$1 [R=301,L]
 # Block directory listing
 Options -Indexes
 
-# Protect app directory from direct access
+# Protect app and database directories from direct file access
+# Conditions ensure URL routes like /app/switch/* still pass through to index.php
+RewriteCond %{REQUEST_FILENAME} -f [OR]
+RewriteCond %{REQUEST_FILENAME} -d
 RewriteRule ^app/ - [F,L]
 RewriteRule ^database/ - [F,L]
-RewriteRule ^vendor/ - [F,L]
 
 # Allow access to public assets
 <FilesMatch "\.(css|js|jpg|jpeg|png|gif|ico|svg|woff|woff2|ttf|eot|webp|pdf)$">
@@ -56,14 +58,10 @@ RewriteRule ^vendor/ - [F,L]
     </IfModule>
 </FilesMatch>
 
-# Main routing - redirect all requests to public/index.php
+# Main routing - redirect all requests to index.php
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
-RewriteRule ^(.*)$ public/index.php [QSA,L]
+RewriteRule ^(.*)$ index.php [QSA,L]
 
 # NOTE: php_flag and php_value are blocked by VEDOS
 # Use php.ini or ini_set() in PHP code instead
-
-# Error documents (optional)
-# ErrorDocument 404 /public/index.php
-# ErrorDocument 500 /public/index.php

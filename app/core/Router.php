@@ -86,19 +86,9 @@ class Router {
         }
         
         // 404 Not Found
-        error_log("Router: No route matched - 404");
+        error_log("Router: No route matched - 404 for $requestMethod $requestUri");
         http_response_code(404);
-        echo "404 - Stránka nenalezena<br>";
-        echo "Hledaná URL: " . htmlspecialchars($requestUri) . "<br>";
-        echo "<br><strong>Debug info:</strong><br>";
-        echo "Request Method: " . htmlspecialchars($requestMethod) . "<br>";
-        echo "Original URI: " . htmlspecialchars($_SERVER['REQUEST_URI']) . "<br>";
-        echo "Registered routes:<br>";
-        foreach ($this->routes as $route) {
-            if ($route['method'] === $requestMethod) {
-                echo "- " . htmlspecialchars($route['method']) . " " . htmlspecialchars($route['path']) . "<br>";
-            }
-        }
+        require_once __DIR__ . '/../views/errors/404.php';
     }
     
     private function convertToRegex($path) {
