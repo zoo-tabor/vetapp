@@ -162,88 +162,127 @@
             <?php endif; ?>
         </div>
 
+        <!-- Display: color-coded table matching Excel layout -->
         <div id="protectionDisplay">
-            <div class="info-grid">
-                <div class="info-item">
-                    <span class="label">Registrační číslo:</span>
-                    <span class="value"><?= htmlspecialchars($animal['registration_number'] ?? '') ?: '—' ?></span>
-                </div>
-                <div class="info-item">
-                    <span class="label">CITES kategorie:</span>
-                    <span class="value"><?= htmlspecialchars($animal['cites_category'] ?? '') ?: '—' ?></span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Nařízení EU 338/97:</span>
-                    <span class="value"><?= htmlspecialchars($animal['eu_regulation'] ?? '') ?: '—' ?></span>
-                </div>
+            <div style="margin-bottom:14px;">
+                <span class="label">Číslo registrace:</span>
+                <span style="font-weight:600;margin-left:8px;color:#2c3e50;"><?= htmlspecialchars($animal['registration_number'] ?? '') ?: '—' ?></span>
+            </div>
+            <div style="overflow-x:auto;">
+            <table class="prot-table">
+                <thead>
+                <tr>
+                    <th class="pth-blue" rowspan="2">CITES<br><small>I, II nebo III</small></th>
+                    <th class="pth-red" rowspan="2">Nařízení Rady (ES) 338/97<br><small>A, B, C nebo D</small></th>
+                    <th class="pth-red" colspan="3">Zákon 114/1992 Sb. (vyhl. 395/1992 Sb.)</th>
+                    <th class="pth-yellow" rowspan="2">CITES Nař. Rady (ES) 338/97<br><small>udělena výjimka ze zákazu komerčních činností</small></th>
+                    <th class="pth-green" colspan="6">Registrace (zákon 100/2004 Sb.), výjimka, odchylný postup (zákon 114/1992 Sb.)</th>
+                </tr>
+                <tr>
+                    <th class="pth-red pth-sub">kriticky ohrožené druhy</th>
+                    <th class="pth-red pth-sub">silně ohrožené druhy</th>
+                    <th class="pth-red pth-sub">ohrožené druhy</th>
+                    <th class="pth-green pth-sub">podléhá registraci KÚ ŽP (§23)</th>
+                    <th class="pth-green pth-sub">proběhla registrace KÚ ŽP</th>
+                    <th class="pth-green pth-sub">výjimka nutná (§56)</th>
+                    <th class="pth-green pth-sub">výjimka udělena nebo nahrazena dokladem CITES</th>
+                    <th class="pth-green pth-sub">odchylný postup nutný (§5b)</th>
+                    <th class="pth-green pth-sub">odchylný postup stanoven</th>
+                </tr>
+                </thead>
+                <tbody>
                 <?php
-                $protBoolFields = [
-                    'law_critically_endangered' => 'Kriticky ohrožený (114/1992)',
-                    'law_strongly_endangered'   => 'Silně ohrožený',
-                    'law_endangered'            => 'Ohrožený',
-                    'commercial_exception'      => 'Výjimka z obch. zákazu',
-                    'requires_ku_registration'  => 'Evidence KÚ - nutná',
-                    'ku_registration_done'      => 'Evidence KÚ - provedena',
-                    'exception_required'        => 'Výjimka - nutná',
-                    'deviation_required'        => 'Odchylka - nutná',
-                ];
-                foreach ($protBoolFields as $field => $label): ?>
-                <div class="info-item">
-                    <span class="label"><?= $label ?>:</span>
-                    <span class="value">
-                        <?= !empty($animal[$field])
-                            ? '<span style="color:#27ae60;font-weight:600">✓ Ano</span>'
-                            : '<span style="color:#bdc3c7">✗ Ne</span>' ?>
-                    </span>
-                </div>
-                <?php endforeach; ?>
-                <div class="info-item">
-                    <span class="label">Výjimka - udělena:</span>
-                    <span class="value"><?= htmlspecialchars($animal['exception_granted'] ?? '') ?: '—' ?></span>
-                </div>
-                <div class="info-item">
-                    <span class="label">Odchylka - nastavena:</span>
-                    <span class="value"><?= htmlspecialchars($animal['deviation_set'] ?? '') ?: '—' ?></span>
-                </div>
+                $law = $animal['law_114_1992'] ?? '';
+                $dot = fn($v) => $v ? '<span class="pdot-yes">●</span>' : '<span class="pdot-no">○</span>';
+                ?>
+                <tr>
+                    <td class="ptd-blue"><?= htmlspecialchars($animal['cites_category'] ?? '') ?: '—' ?></td>
+                    <td class="ptd-red"><?= htmlspecialchars($animal['eu_regulation'] ?? '') ?: '—' ?></td>
+                    <td class="ptd-red"><?= $dot($law === 'kriticky ohrožené druhy') ?></td>
+                    <td class="ptd-red"><?= $dot($law === 'silně ohrožené druhy') ?></td>
+                    <td class="ptd-red"><?= $dot($law === 'ohrožené druhy') ?></td>
+                    <td class="ptd-yellow"><?= htmlspecialchars($animal['commercial_exception'] ?? '') ?: '—' ?></td>
+                    <td class="ptd-green"><?= $dot(!empty($animal['requires_ku_registration'])) ?></td>
+                    <td class="ptd-green"><?= $dot(!empty($animal['ku_registration_done'])) ?></td>
+                    <td class="ptd-green"><?= $dot(!empty($animal['exception_required'])) ?></td>
+                    <td class="ptd-green ptd-text"><?= htmlspecialchars($animal['exception_granted'] ?? '') ?: '—' ?></td>
+                    <td class="ptd-green"><?= $dot(!empty($animal['deviation_required'])) ?></td>
+                    <td class="ptd-green ptd-text"><?= htmlspecialchars($animal['deviation_set'] ?? '') ?: '—' ?></td>
+                </tr>
+                </tbody>
+            </table>
             </div>
         </div>
 
+        <!-- Edit form -->
         <?php if ($canEdit): ?>
         <div id="protectionForm" style="display:none;">
-            <div class="info-grid" style="margin-bottom:20px;">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:14px;margin-bottom:16px;">
                 <div class="info-item">
-                    <label class="label" for="prot_registration_number">Registrační číslo:</label>
-                    <input type="text" id="prot_registration_number" value="<?= htmlspecialchars($animal['registration_number'] ?? '') ?>" class="form-input" placeholder="Volitelné">
+                    <label class="label">Číslo registrace:</label>
+                    <input type="text" id="prot_registration_number" value="<?= htmlspecialchars($animal['registration_number'] ?? '') ?>" class="form-input">
                 </div>
                 <div class="info-item">
-                    <label class="label" for="prot_cites_category">CITES kategorie:</label>
-                    <input type="text" id="prot_cites_category" value="<?= htmlspecialchars($animal['cites_category'] ?? '') ?>" class="form-input" placeholder="Např. A, B, C">
-                </div>
-                <div class="info-item">
-                    <label class="label" for="prot_eu_regulation">Nařízení EU 338/97:</label>
-                    <input type="text" id="prot_eu_regulation" value="<?= htmlspecialchars($animal['eu_regulation'] ?? '') ?>" class="form-input" placeholder="Např. I, II, III">
-                </div>
-                <?php foreach ($protBoolFields as $field => $label): ?>
-                <div class="info-item" style="flex-direction:row;align-items:center;gap:10px;padding-top:6px;">
-                    <input type="checkbox" id="prot_<?= $field ?>" <?= !empty($animal[$field]) ? 'checked' : '' ?> style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">
-                    <label class="label" for="prot_<?= $field ?>" style="cursor:pointer;margin:0;"><?= $label ?></label>
-                </div>
-                <?php endforeach; ?>
-                <div class="info-item">
-                    <label class="label" for="prot_exception_granted">Výjimka - udělena:</label>
-                    <select id="prot_exception_granted" class="form-input">
+                    <label class="label">CITES (I, II nebo III):</label>
+                    <select id="prot_cites_category" class="form-input">
                         <option value="">—</option>
-                        <option value="UDĚLENA" <?= ($animal['exception_granted'] ?? '') === 'UDĚLENA' ? 'selected' : '' ?>>UDĚLENA</option>
-                        <option value="NAHRAZENA" <?= ($animal['exception_granted'] ?? '') === 'NAHRAZENA' ? 'selected' : '' ?>>NAHRAZENA</option>
+                        <?php foreach (['I','II','III'] as $o): ?>
+                        <option value="<?= $o ?>" <?= ($animal['cites_category'] ?? '') === $o ? 'selected' : '' ?>><?= $o ?></option>
+                        <?php endforeach; ?>
                     </select>
                 </div>
                 <div class="info-item">
-                    <label class="label" for="prot_deviation_set">Odchylka - nastavena:</label>
-                    <select id="prot_deviation_set" class="form-input">
+                    <label class="label">Nařízení Rady (ES) 338/97:</label>
+                    <select id="prot_eu_regulation" class="form-input">
                         <option value="">—</option>
-                        <option value="UDĚLENA" <?= ($animal['deviation_set'] ?? '') === 'UDĚLENA' ? 'selected' : '' ?>>UDĚLENA</option>
-                        <option value="NAHRAZENA" <?= ($animal['deviation_set'] ?? '') === 'NAHRAZENA' ? 'selected' : '' ?>>NAHRAZENA</option>
+                        <?php foreach (['A','B','C','D'] as $o): ?>
+                        <option value="<?= $o ?>" <?= ($animal['eu_regulation'] ?? '') === $o ? 'selected' : '' ?>><?= $o ?></option>
+                        <?php endforeach; ?>
                     </select>
+                </div>
+                <div class="info-item">
+                    <label class="label">Zákon 114/1992 Sb. (vyhl. 395/1992 Sb.):</label>
+                    <select id="prot_law_114_1992" class="form-input">
+                        <option value="">—</option>
+                        <?php foreach (['kriticky ohrožené druhy','silně ohrožené druhy','ohrožené druhy'] as $o): ?>
+                        <option value="<?= $o ?>" <?= ($animal['law_114_1992'] ?? '') === $o ? 'selected' : '' ?>><?= $o ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+                <div class="info-item">
+                    <label class="label">Výjimka ze zákazu komerčních činností:</label>
+                    <select id="prot_commercial_exception" class="form-input">
+                        <option value="">—</option>
+                        <?php foreach (['ANO','ANO*','NE','NE*'] as $o): ?>
+                        <option value="<?= $o ?>" <?= ($animal['commercial_exception'] ?? '') === $o ? 'selected' : '' ?>><?= $o ?></option>
+                        <?php endforeach; ?>
+                    </select>
+                </div>
+            </div>
+            <div style="background:#e8f5e8;border-radius:8px;padding:16px;margin-bottom:16px;">
+                <p style="margin:0 0 12px;font-weight:600;color:#2d5a27;font-size:0.9em;">Registrace (zákon 100/2004 Sb.), výjimka, odchylný postup (zákon 114/1992 Sb.):</p>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:12px;">
+                    <?php
+                    $protChecks = [
+                        'requires_ku_registration' => 'Podléhá registraci KÚ ŽP (§23)',
+                        'ku_registration_done'      => 'Proběhla registrace KÚ ŽP',
+                        'exception_required'        => 'Výjimka nutná (§56)',
+                        'deviation_required'        => 'Odchylný postup nutný (§5b)',
+                    ];
+                    foreach ($protChecks as $field => $label): ?>
+                    <div style="display:flex;align-items:center;gap:8px;">
+                        <input type="checkbox" id="prot_<?= $field ?>" <?= !empty($animal[$field]) ? 'checked' : '' ?> style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">
+                        <label for="prot_<?= $field ?>" style="cursor:pointer;font-size:0.9em;color:#2c3e50;"><?= $label ?></label>
+                    </div>
+                    <?php endforeach; ?>
+                    <div class="info-item">
+                        <label class="label">Výjimka udělena nebo nahrazena dokladem CITES:</label>
+                        <input type="text" id="prot_exception_granted" value="<?= htmlspecialchars($animal['exception_granted'] ?? '') ?>" class="form-input" placeholder="Volitelné">
+                    </div>
+                    <div class="info-item">
+                        <label class="label">Odchylný postup stanoven:</label>
+                        <input type="text" id="prot_deviation_set" value="<?= htmlspecialchars($animal['deviation_set'] ?? '') ?>" class="form-input" placeholder="Volitelné">
+                    </div>
                 </div>
             </div>
             <div style="display:flex;gap:10px;">
@@ -581,6 +620,33 @@
     border-top: 4px solid #16a085;
 }
 
+/* Protection color-coded table */
+.prot-table {
+    border-collapse: collapse;
+    width: 100%;
+    font-size: 0.82em;
+    min-width: 900px;
+}
+.prot-table th, .prot-table td {
+    border: 2px solid #fff;
+    padding: 8px 10px;
+    text-align: center;
+    vertical-align: middle;
+    line-height: 1.3;
+}
+.pth-blue   { background: #4472c4; color: #fff; font-weight: 700; }
+.pth-red    { background: #c00000; color: #fff; font-weight: 700; }
+.pth-yellow { background: #ffd700; color: #333; font-weight: 700; }
+.pth-green  { background: #70ad47; color: #fff; font-weight: 700; }
+.pth-sub    { font-size: 0.88em; font-weight: 600; }
+.ptd-blue   { background: #dce6f1; font-weight: 700; font-size: 1.15em; }
+.ptd-red    { background: #fce4d6; font-size: 1.3em; }
+.ptd-yellow { background: #fffde7; font-weight: 700; }
+.ptd-green  { background: #e2efda; font-size: 1.2em; }
+.ptd-text   { font-size: 0.9em !important; }
+.pdot-yes   { color: #c00000; font-size: 1.3em; }
+.pdot-no    { color: #ccc; font-size: 1.1em; }
+
 #notesCard {
     border-top: 4px solid #f39c12;
 }
@@ -802,19 +868,17 @@ function saveProtection() {
     saveBtn.textContent = 'Ukládám…';
 
     const data = {
-        registration_number:       document.getElementById('prot_registration_number').value.trim(),
-        cites_category:            document.getElementById('prot_cites_category').value.trim(),
-        eu_regulation:             document.getElementById('prot_eu_regulation').value.trim(),
-        law_critically_endangered: document.getElementById('prot_law_critically_endangered').checked,
-        law_strongly_endangered:   document.getElementById('prot_law_strongly_endangered').checked,
-        law_endangered:            document.getElementById('prot_law_endangered').checked,
-        commercial_exception:      document.getElementById('prot_commercial_exception').checked,
-        requires_ku_registration:  document.getElementById('prot_requires_ku_registration').checked,
-        ku_registration_done:      document.getElementById('prot_ku_registration_done').checked,
-        exception_required:        document.getElementById('prot_exception_required').checked,
-        exception_granted:         document.getElementById('prot_exception_granted').value,
-        deviation_required:        document.getElementById('prot_deviation_required').checked,
-        deviation_set:             document.getElementById('prot_deviation_set').value,
+        registration_number:      document.getElementById('prot_registration_number').value.trim(),
+        cites_category:           document.getElementById('prot_cites_category').value,
+        eu_regulation:            document.getElementById('prot_eu_regulation').value,
+        law_114_1992:             document.getElementById('prot_law_114_1992').value,
+        commercial_exception:     document.getElementById('prot_commercial_exception').value,
+        requires_ku_registration: document.getElementById('prot_requires_ku_registration').checked,
+        ku_registration_done:     document.getElementById('prot_ku_registration_done').checked,
+        exception_required:       document.getElementById('prot_exception_required').checked,
+        exception_granted:        document.getElementById('prot_exception_granted').value.trim(),
+        deviation_required:       document.getElementById('prot_deviation_required').checked,
+        deviation_set:            document.getElementById('prot_deviation_set').value.trim(),
     };
 
     fetch('/animals/<?= $animal['id'] ?>/protection', {

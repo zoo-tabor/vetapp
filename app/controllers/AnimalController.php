@@ -578,21 +578,20 @@ class AnimalController {
 
         $input = json_decode(file_get_contents('php://input'), true);
 
-        $allowedEnums = ['UDĚLENA', 'NAHRAZENA'];
+        $allowedLaw = ['kriticky ohrožené druhy', 'silně ohrožené druhy', 'ohrožené druhy'];
+        $allowedCommercial = ['ANO', 'ANO*', 'NE', 'NE*'];
         $updateData = [
-            'registration_number'       => ($input['registration_number'] ?? '') ?: null,
-            'cites_category'            => ($input['cites_category'] ?? '') ?: null,
-            'eu_regulation'             => ($input['eu_regulation'] ?? '') ?: null,
-            'law_critically_endangered' => !empty($input['law_critically_endangered']) ? 1 : 0,
-            'law_strongly_endangered'   => !empty($input['law_strongly_endangered']) ? 1 : 0,
-            'law_endangered'            => !empty($input['law_endangered']) ? 1 : 0,
-            'commercial_exception'      => !empty($input['commercial_exception']) ? 1 : 0,
-            'requires_ku_registration'  => !empty($input['requires_ku_registration']) ? 1 : 0,
-            'ku_registration_done'      => !empty($input['ku_registration_done']) ? 1 : 0,
-            'exception_required'        => !empty($input['exception_required']) ? 1 : 0,
-            'exception_granted'         => in_array($input['exception_granted'] ?? '', $allowedEnums) ? $input['exception_granted'] : null,
-            'deviation_required'        => !empty($input['deviation_required']) ? 1 : 0,
-            'deviation_set'             => in_array($input['deviation_set'] ?? '', $allowedEnums) ? $input['deviation_set'] : null,
+            'registration_number'      => ($input['registration_number'] ?? '') ?: null,
+            'cites_category'           => ($input['cites_category'] ?? '') ?: null,
+            'eu_regulation'            => ($input['eu_regulation'] ?? '') ?: null,
+            'law_114_1992'             => in_array($input['law_114_1992'] ?? '', $allowedLaw) ? $input['law_114_1992'] : null,
+            'commercial_exception'     => in_array($input['commercial_exception'] ?? '', $allowedCommercial) ? $input['commercial_exception'] : null,
+            'requires_ku_registration' => !empty($input['requires_ku_registration']) ? 1 : 0,
+            'ku_registration_done'     => !empty($input['ku_registration_done']) ? 1 : 0,
+            'exception_required'       => !empty($input['exception_required']) ? 1 : 0,
+            'exception_granted'        => ($input['exception_granted'] ?? '') ?: null,
+            'deviation_required'       => !empty($input['deviation_required']) ? 1 : 0,
+            'deviation_set'            => ($input['deviation_set'] ?? '') ?: null,
         ];
 
         try {
