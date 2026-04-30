@@ -194,6 +194,9 @@
                 <?php
                 $law = $animal['law_114_1992'] ?? '';
                 $dot = fn($v) => $v ? '<span class="pdot-yes">●</span>' : '<span class="pdot-no">○</span>';
+                // Strip any legacy boolean string ('0','1') left from pre-migration TINYINT
+                $commEx = $animal['commercial_exception'] ?? '';
+                if (in_array($commEx, ['0', '1'], true)) $commEx = '';
                 ?>
                 <tr>
                     <td class="ptd-blue"><?= htmlspecialchars($animal['cites_category'] ?? '') ?: '—' ?></td>
@@ -201,7 +204,7 @@
                     <td class="ptd-red"><?= $dot($law === 'kriticky ohrožené druhy') ?></td>
                     <td class="ptd-red"><?= $dot($law === 'silně ohrožené druhy') ?></td>
                     <td class="ptd-red"><?= $dot($law === 'ohrožené druhy') ?></td>
-                    <td class="ptd-yellow"><?= htmlspecialchars($animal['commercial_exception'] ?? '') ?: '—' ?></td>
+                    <td class="ptd-yellow"><?= htmlspecialchars($commEx) ?: '—' ?></td>
                     <td class="ptd-green"><?= $dot(!empty($animal['requires_ku_registration'])) ?></td>
                     <td class="ptd-green"><?= $dot(!empty($animal['ku_registration_done'])) ?></td>
                     <td class="ptd-green"><?= $dot(!empty($animal['exception_required'])) ?></td>
