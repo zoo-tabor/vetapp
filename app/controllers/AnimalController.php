@@ -552,6 +552,98 @@ class AnimalController {
         }
     }
 
+    public function updateProtection($animalId) {
+        Auth::requireLogin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Pouze POST metoda']);
+            return;
+        }
+
+        $animalModel = new Animal();
+        $animal = $animalModel->findById($animalId);
+        if (!$animal) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Zvíře nenalezeno']);
+            return;
+        }
+
+        $userModel = new User();
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $allowedEnums = ['UDĚLENA', 'NAHRAZENA'];
+        $updateData = [
+            'registration_number'       => ($input['registration_number'] ?? '') ?: null,
+            'cites_category'            => ($input['cites_category'] ?? '') ?: null,
+            'eu_regulation'             => ($input['eu_regulation'] ?? '') ?: null,
+            'law_critically_endangered' => !empty($input['law_critically_endangered']) ? 1 : 0,
+            'law_strongly_endangered'   => !empty($input['law_strongly_endangered']) ? 1 : 0,
+            'law_endangered'            => !empty($input['law_endangered']) ? 1 : 0,
+            'commercial_exception'      => !empty($input['commercial_exception']) ? 1 : 0,
+            'requires_ku_registration'  => !empty($input['requires_ku_registration']) ? 1 : 0,
+            'ku_registration_done'      => !empty($input['ku_registration_done']) ? 1 : 0,
+            'exception_required'        => !empty($input['exception_required']) ? 1 : 0,
+            'exception_granted'         => in_array($input['exception_granted'] ?? '', $allowedEnums) ? $input['exception_granted'] : null,
+            'deviation_required'        => !empty($input['deviation_required']) ? 1 : 0,
+            'deviation_set'             => in_array($input['deviation_set'] ?? '', $allowedEnums) ? $input['deviation_set'] : null,
+        ];
+
+        try {
+            $animalModel->update($animalId, $updateData);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            error_log("AnimalController::updateProtection error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Chyba databáze: ' . $e->getMessage()]);
+        }
+    }
+
+    public function updateNotes($animalId) {
+        Auth::requireLogin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Pouze POST metoda']);
+            return;
+        }
+
+        $animalModel = new Animal();
+        $animal = $animalModel->findById($animalId);
+        if (!$animal) {
+            http_response_code(404);
+            echo json_encode(['success' => false, 'error' => 'Zvíře nenalezeno']);
+            return;
+        }
+
+        $userModel = new User();
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $notes = ($input['notes'] ?? '') ?: null;
+
+        try {
+            $animalModel->update($animalId, ['notes' => $notes]);
+            header('Content-Type: application/json');
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            error_log("AnimalController::updateNotes error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Chyba databáze: ' . $e->getMessage()]);
+        }
+    }
+
     /**
      * Get or create category ID by name
      * @param int $workplaceId

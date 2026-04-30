@@ -129,6 +129,18 @@ $router->post('/animals/:id/weight', function($id) {
     $controller->addWeight($id);
 });
 
+$router->post('/animals/:id/protection', function($id) {
+    require_once APP_PATH . '/controllers/AnimalController.php';
+    $controller = new AnimalController();
+    $controller->updateProtection($id);
+});
+
+$router->post('/animals/:id/notes', function($id) {
+    require_once APP_PATH . '/controllers/AnimalController.php';
+    $controller = new AnimalController();
+    $controller->updateNotes($id);
+});
+
 // Enclosure routes
 $router->post('/workplace/:workplace_id/enclosures/create', function($workplaceId) {
     require_once APP_PATH . '/controllers/EnclosureController.php';

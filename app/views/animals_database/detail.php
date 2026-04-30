@@ -72,12 +72,6 @@
                     ?>
                 </span>
             </div>
-            <?php if ($animal['notes']): ?>
-                <div class="info-item full-width">
-                    <span class="label">Poznámky:</span>
-                    <span class="value"><?= nl2br(htmlspecialchars($animal['notes'])) ?></span>
-                </div>
-            <?php endif; ?>
         </div>
     </div>
 
@@ -158,6 +152,135 @@
         <?php endif; ?>
     </div>
     <?php endif; ?>
+
+    <!-- Protection Card -->
+    <div class="info-card" id="protectionCard">
+        <div class="card-header-row">
+            <h2>Ochrana</h2>
+            <?php if ($canEdit): ?>
+                <button type="button" class="btn btn-sm btn-primary" onclick="toggleProtectionEdit()" id="protectionEditBtn">Upravit</button>
+            <?php endif; ?>
+        </div>
+
+        <div id="protectionDisplay">
+            <div class="info-grid">
+                <div class="info-item">
+                    <span class="label">Registrační číslo:</span>
+                    <span class="value"><?= htmlspecialchars($animal['registration_number'] ?? '') ?: '—' ?></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">CITES kategorie:</span>
+                    <span class="value"><?= htmlspecialchars($animal['cites_category'] ?? '') ?: '—' ?></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Nařízení EU 338/97:</span>
+                    <span class="value"><?= htmlspecialchars($animal['eu_regulation'] ?? '') ?: '—' ?></span>
+                </div>
+                <?php
+                $protBoolFields = [
+                    'law_critically_endangered' => 'Kriticky ohrožený (114/1992)',
+                    'law_strongly_endangered'   => 'Silně ohrožený',
+                    'law_endangered'            => 'Ohrožený',
+                    'commercial_exception'      => 'Výjimka z obch. zákazu',
+                    'requires_ku_registration'  => 'Evidence KÚ - nutná',
+                    'ku_registration_done'      => 'Evidence KÚ - provedena',
+                    'exception_required'        => 'Výjimka - nutná',
+                    'deviation_required'        => 'Odchylka - nutná',
+                ];
+                foreach ($protBoolFields as $field => $label): ?>
+                <div class="info-item">
+                    <span class="label"><?= $label ?>:</span>
+                    <span class="value">
+                        <?= !empty($animal[$field])
+                            ? '<span style="color:#27ae60;font-weight:600">✓ Ano</span>'
+                            : '<span style="color:#bdc3c7">✗ Ne</span>' ?>
+                    </span>
+                </div>
+                <?php endforeach; ?>
+                <div class="info-item">
+                    <span class="label">Výjimka - udělena:</span>
+                    <span class="value"><?= htmlspecialchars($animal['exception_granted'] ?? '') ?: '—' ?></span>
+                </div>
+                <div class="info-item">
+                    <span class="label">Odchylka - nastavena:</span>
+                    <span class="value"><?= htmlspecialchars($animal['deviation_set'] ?? '') ?: '—' ?></span>
+                </div>
+            </div>
+        </div>
+
+        <?php if ($canEdit): ?>
+        <div id="protectionForm" style="display:none;">
+            <div class="info-grid" style="margin-bottom:20px;">
+                <div class="info-item">
+                    <label class="label" for="prot_registration_number">Registrační číslo:</label>
+                    <input type="text" id="prot_registration_number" value="<?= htmlspecialchars($animal['registration_number'] ?? '') ?>" class="form-input" placeholder="Volitelné">
+                </div>
+                <div class="info-item">
+                    <label class="label" for="prot_cites_category">CITES kategorie:</label>
+                    <input type="text" id="prot_cites_category" value="<?= htmlspecialchars($animal['cites_category'] ?? '') ?>" class="form-input" placeholder="Např. A, B, C">
+                </div>
+                <div class="info-item">
+                    <label class="label" for="prot_eu_regulation">Nařízení EU 338/97:</label>
+                    <input type="text" id="prot_eu_regulation" value="<?= htmlspecialchars($animal['eu_regulation'] ?? '') ?>" class="form-input" placeholder="Např. I, II, III">
+                </div>
+                <?php foreach ($protBoolFields as $field => $label): ?>
+                <div class="info-item" style="flex-direction:row;align-items:center;gap:10px;padding-top:6px;">
+                    <input type="checkbox" id="prot_<?= $field ?>" <?= !empty($animal[$field]) ? 'checked' : '' ?> style="width:18px;height:18px;cursor:pointer;flex-shrink:0;">
+                    <label class="label" for="prot_<?= $field ?>" style="cursor:pointer;margin:0;"><?= $label ?></label>
+                </div>
+                <?php endforeach; ?>
+                <div class="info-item">
+                    <label class="label" for="prot_exception_granted">Výjimka - udělena:</label>
+                    <select id="prot_exception_granted" class="form-input">
+                        <option value="">—</option>
+                        <option value="UDĚLENA" <?= ($animal['exception_granted'] ?? '') === 'UDĚLENA' ? 'selected' : '' ?>>UDĚLENA</option>
+                        <option value="NAHRAZENA" <?= ($animal['exception_granted'] ?? '') === 'NAHRAZENA' ? 'selected' : '' ?>>NAHRAZENA</option>
+                    </select>
+                </div>
+                <div class="info-item">
+                    <label class="label" for="prot_deviation_set">Odchylka - nastavena:</label>
+                    <select id="prot_deviation_set" class="form-input">
+                        <option value="">—</option>
+                        <option value="UDĚLENA" <?= ($animal['deviation_set'] ?? '') === 'UDĚLENA' ? 'selected' : '' ?>>UDĚLENA</option>
+                        <option value="NAHRAZENA" <?= ($animal['deviation_set'] ?? '') === 'NAHRAZENA' ? 'selected' : '' ?>>NAHRAZENA</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;">
+                <button type="button" class="btn btn-primary" onclick="saveProtection()" id="protectionSaveBtn">Uložit</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleProtectionEdit()">Zrušit</button>
+            </div>
+            <div id="protectionError" style="color:#c0392b;font-size:0.85em;margin-top:8px;display:none;"></div>
+        </div>
+        <?php endif; ?>
+    </div>
+
+    <!-- Notes Card -->
+    <div class="info-card" id="notesCard">
+        <div class="card-header-row">
+            <h2>Poznámky</h2>
+            <?php if ($canEdit): ?>
+                <button type="button" class="btn btn-sm btn-primary" onclick="toggleNotesEdit()" id="notesEditBtn">Upravit</button>
+            <?php endif; ?>
+        </div>
+        <div id="notesDisplay">
+            <?php if ($animal['notes']): ?>
+                <p id="notesText" style="white-space:pre-wrap;color:#2c3e50;line-height:1.6;margin:0;"><?= htmlspecialchars($animal['notes']) ?></p>
+            <?php else: ?>
+                <p id="notesText" style="color:#95a5a6;font-style:italic;margin:0;">Žádné poznámky</p>
+            <?php endif; ?>
+        </div>
+        <?php if ($canEdit): ?>
+        <div id="notesForm" style="display:none;">
+            <textarea id="notesInput" rows="5" class="form-input" style="width:100%;resize:vertical;" placeholder="Poznámky k zvířeti..."><?= htmlspecialchars($animal['notes'] ?? '') ?></textarea>
+            <div style="display:flex;gap:10px;margin-top:10px;">
+                <button type="button" class="btn btn-primary" onclick="saveNotes()" id="notesSaveBtn">Uložit</button>
+                <button type="button" class="btn btn-secondary" onclick="toggleNotesEdit()">Zrušit</button>
+            </div>
+            <div id="notesError" style="color:#c0392b;font-size:0.85em;margin-top:8px;display:none;"></div>
+        </div>
+        <?php endif; ?>
+    </div>
 
     <!-- Quick Links to Other Sections -->
     <div class="section-links">
@@ -438,6 +561,30 @@
     font-size: 16px;
 }
 
+.form-input {
+    padding: 8px 10px;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 14px;
+    width: 100%;
+    box-sizing: border-box;
+    background: #fff;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: #8e44ad;
+    box-shadow: 0 0 0 2px rgba(142, 68, 173, 0.15);
+}
+
+#protectionCard {
+    border-top: 4px solid #16a085;
+}
+
+#notesCard {
+    border-top: 4px solid #f39c12;
+}
+
 .section-links {
     margin-bottom: 40px;
 }
@@ -637,6 +784,117 @@
 </style>
 
 <script>
+function toggleProtectionEdit() {
+    const display = document.getElementById('protectionDisplay');
+    const form    = document.getElementById('protectionForm');
+    const btn     = document.getElementById('protectionEditBtn');
+    const editing = form.style.display !== 'none';
+    display.style.display = editing ? '' : 'none';
+    form.style.display    = editing ? 'none' : '';
+    btn.textContent = editing ? 'Upravit' : '✕ Zrušit';
+}
+
+function saveProtection() {
+    const errEl   = document.getElementById('protectionError');
+    const saveBtn = document.getElementById('protectionSaveBtn');
+    errEl.style.display = 'none';
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Ukládám…';
+
+    const data = {
+        registration_number:       document.getElementById('prot_registration_number').value.trim(),
+        cites_category:            document.getElementById('prot_cites_category').value.trim(),
+        eu_regulation:             document.getElementById('prot_eu_regulation').value.trim(),
+        law_critically_endangered: document.getElementById('prot_law_critically_endangered').checked,
+        law_strongly_endangered:   document.getElementById('prot_law_strongly_endangered').checked,
+        law_endangered:            document.getElementById('prot_law_endangered').checked,
+        commercial_exception:      document.getElementById('prot_commercial_exception').checked,
+        requires_ku_registration:  document.getElementById('prot_requires_ku_registration').checked,
+        ku_registration_done:      document.getElementById('prot_ku_registration_done').checked,
+        exception_required:        document.getElementById('prot_exception_required').checked,
+        exception_granted:         document.getElementById('prot_exception_granted').value,
+        deviation_required:        document.getElementById('prot_deviation_required').checked,
+        deviation_set:             document.getElementById('prot_deviation_set').value,
+    };
+
+    fetch('/animals/<?= $animal['id'] ?>/protection', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            location.reload();
+        } else {
+            errEl.textContent = result.error || 'Neznámá chyba';
+            errEl.style.display = '';
+        }
+    })
+    .catch(err => {
+        errEl.textContent = 'Chyba komunikace: ' + err.message;
+        errEl.style.display = '';
+    })
+    .finally(() => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Uložit';
+    });
+}
+
+function toggleNotesEdit() {
+    const display = document.getElementById('notesDisplay');
+    const form    = document.getElementById('notesForm');
+    const btn     = document.getElementById('notesEditBtn');
+    const editing = form.style.display !== 'none';
+    display.style.display = editing ? '' : 'none';
+    form.style.display    = editing ? 'none' : '';
+    btn.textContent = editing ? 'Upravit' : '✕ Zrušit';
+    if (!editing) document.getElementById('notesInput').focus();
+}
+
+function saveNotes() {
+    const errEl   = document.getElementById('notesError');
+    const saveBtn = document.getElementById('notesSaveBtn');
+    errEl.style.display = 'none';
+    saveBtn.disabled = true;
+    saveBtn.textContent = 'Ukládám…';
+
+    const notes = document.getElementById('notesInput').value.trim();
+
+    fetch('/animals/<?= $animal['id'] ?>/notes', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ notes })
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            const el = document.getElementById('notesText');
+            if (notes) {
+                el.textContent  = notes;
+                el.style.color  = '#2c3e50';
+                el.style.fontStyle = '';
+            } else {
+                el.textContent  = 'Žádné poznámky';
+                el.style.color  = '#95a5a6';
+                el.style.fontStyle = 'italic';
+            }
+            toggleNotesEdit();
+        } else {
+            errEl.textContent = result.error || 'Neznámá chyba';
+            errEl.style.display = '';
+        }
+    })
+    .catch(err => {
+        errEl.textContent = 'Chyba komunikace: ' + err.message;
+        errEl.style.display = '';
+    })
+    .finally(() => {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Uložit';
+    });
+}
+
 function toggleWeightForm() {
     const form = document.getElementById('weightForm');
     const btn  = document.getElementById('weightToggleBtn');
