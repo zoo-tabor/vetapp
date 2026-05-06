@@ -10,11 +10,11 @@ class BiochemistryImportController {
 
     public function index() {
         Auth::requireLogin();
-        Auth::requireAdmin(); // Only admins can import data
+        Auth::requireAdmin();
 
         View::render('biochemistry/import', [
             'layout' => 'main',
-            'title' => 'Import biochemie a hematologie'
+            'title' => 'Import LDT vysledku'
         ]);
     }
 
@@ -27,9 +27,8 @@ class BiochemistryImportController {
             exit;
         }
 
-        // Check if file was uploaded
         if (!isset($_FILES['import_file']) || $_FILES['import_file']['error'] !== UPLOAD_ERR_OK) {
-            $_SESSION['error'] = 'Chyba při nahrávání souboru';
+            $_SESSION['error'] = 'Chyba pri nahravani souboru.';
             header('Location: /biochemistry/import');
             exit;
         }
@@ -37,27 +36,23 @@ class BiochemistryImportController {
         $file = $_FILES['import_file'];
         $fileExtension = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
 
-        // Validate file type
-        if (!in_array($fileExtension, ['xlsx', 'xls', 'csv'])) {
-            $_SESSION['error'] = 'Nepodporovaný formát souboru. Podporovány jsou pouze .xlsx, .xls a .csv';
+        if ($fileExtension !== 'ldt') {
+            $_SESSION['error'] = 'Nepodporovany format souboru. Importovat lze pouze .ldt soubory.';
             header('Location: /biochemistry/import');
             exit;
         }
 
         try {
-            // Parse the file
             $data = $this->parseFile($file['tmp_name'], $fileExtension);
 
-            // Store data in session for preview
             $_SESSION['import_preview'] = $data;
             $_SESSION['import_filename'] = $file['name'];
 
             header('Location: /biochemistry/import/preview');
             exit;
-
         } catch (Exception $e) {
-            error_log("Import error: " . $e->getMessage());
-            $_SESSION['error'] = 'Chyba při zpracování souboru: ' . $e->getMessage();
+            error_log("LDT import error: " . $e->getMessage());
+            $_SESSION['error'] = 'Chyba pri zpracovani LDT souboru: ' . $e->getMessage();
             header('Location: /biochemistry/import');
             exit;
         }
@@ -68,20 +63,18 @@ class BiochemistryImportController {
         Auth::requireAdmin();
 
         if (!isset($_SESSION['import_preview'])) {
-            $_SESSION['error'] = 'Žádná data k náhledu';
+            $_SESSION['error'] = 'Zadna data k nahledu.';
             header('Location: /biochemistry/import');
             exit;
         }
 
         $data = $_SESSION['import_preview'];
-        $filename = $_SESSION['import_filename'] ?? 'unknown';
-
-        // Validate and enrich data
+        $filename = $_SESSION['import_filename'] ?? 'unknown.ldt';
         $validatedData = $this->validateData($data);
 
         View::render('biochemistry/import_preview', [
             'layout' => 'main',
-            'title' => 'Náhled importu - ' . $filename,
+            'title' => 'Nahled importu - ' . $filename,
             'data' => $validatedData,
             'filename' => $filename
         ]);
@@ -97,7 +90,7 @@ class BiochemistryImportController {
         }
 
         if (!isset($_SESSION['import_preview'])) {
-            $_SESSION['error'] = 'Žádná data k importu';
+            $_SESSION['error'] = 'Zadna data k importu.';
             header('Location: /biochemistry/import');
             exit;
         }
@@ -106,222 +99,328 @@ class BiochemistryImportController {
             $data = $_SESSION['import_preview'];
             $validatedData = $this->validateData($data);
 
-            // Check for errors
             $errors = array_filter($validatedData, function($row) {
                 return !empty($row['errors']);
             });
 
             if (!empty($errors)) {
-                $_SESSION['error'] = 'Data obsahují chyby. Opravte je prosím před importem.';
+                $_SESSION['error'] = 'Data obsahuji chyby. Opravte je prosim pred importem.';
                 header('Location: /biochemistry/import/preview');
                 exit;
             }
 
-            // Execute import
             $result = $this->importData($validatedData);
 
-            // Clear session data
-            unset($_SESSION['import_preview']);
-            unset($_SESSION['import_filename']);
+            unset($_SESSION['import_preview'], $_SESSION['import_filename']);
 
             $_SESSION['success'] = sprintf(
-                'Import dokončen: %d záznamů úspěšně importováno, %d chyb',
+                'Import dokoncen: %d testu uspesne importovano, %d chyb.',
                 $result['success'],
                 $result['errors']
             );
 
             header('Location: /biochemistry/import');
             exit;
-
         } catch (Exception $e) {
-            error_log("Import execution error: " . $e->getMessage());
-            $_SESSION['error'] = 'Chyba při importu dat: ' . $e->getMessage();
+            error_log("LDT import execution error: " . $e->getMessage());
+            $_SESSION['error'] = 'Chyba pri importu dat: ' . $e->getMessage();
             header('Location: /biochemistry/import/preview');
             exit;
         }
     }
 
     private function parseFile($filePath, $extension) {
-        if ($extension === 'csv') {
-            return $this->parseCSV($filePath);
-        } else {
-            return $this->parseExcel($filePath);
+        if ($extension !== 'ldt') {
+            throw new Exception('Import podporuje pouze .ldt soubory.');
         }
+
+        return $this->parseLdt($filePath);
     }
 
-    private function parseCSV($filePath) {
-        $data = [];
+    private function parseLdt($filePath) {
         $content = file_get_contents($filePath);
 
-        if ($content === false) {
-            throw new Exception('Nelze otevřít CSV soubor');
+        if ($content === false || $content === '') {
+            throw new Exception('Nelze otevrit LDT soubor nebo je soubor prazdny.');
         }
 
-        // Remove UTF-8 BOM if present
-        $bom = pack('H*','EFBBBF');
-        $content = preg_replace("/^$bom/", '', $content);
+        $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+        $fields = $this->parseLdtFields($content);
 
-        // Split into lines
-        $lines = preg_split('/\r\n|\r|\n/', $content);
-
-        if (empty($lines)) {
-            throw new Exception('CSV soubor je prázdný');
+        if (empty($fields)) {
+            throw new Exception('LDT soubor neobsahuje zadne citelne zaznamy.');
         }
 
-        // Read header
-        $header = str_getcsv($lines[0], ';');
-        if (empty($header)) {
-            throw new Exception('CSV soubor má špatný formát hlavičky');
-        }
-
-        // Clean header from any remaining BOM or whitespace
-        $header = array_map('trim', $header);
-
-        // Read data rows
-        for ($i = 1; $i < count($lines); $i++) {
-            $line = trim($lines[$i]);
-            if (empty($line)) {
-                continue; // Skip empty lines
-            }
-
-            $row = str_getcsv($line, ';');
-            if (count($row) === count($header)) {
-                // Trim all values to remove whitespace
-                $row = array_map('trim', $row);
-                $data[] = array_combine($header, $row);
-            }
-        }
-
-        return $data;
+        return $this->mapLdtFieldsToImportRows($fields);
     }
 
-    private function parseExcel($filePath) {
-        // Check if PhpSpreadsheet is available
-        if (!class_exists('PhpOffice\PhpSpreadsheet\IOFactory')) {
-            // Try to use simple XLSX parser
-            return $this->parseExcelSimple($filePath);
+    private function parseLdtFields($content) {
+        $parts = preg_split('/(\r\n|\r|\n)/', $content, -1, PREG_SPLIT_DELIM_CAPTURE);
+        $fields = [];
+        $lineNumber = 0;
+
+        for ($i = 0; $i < count($parts); $i += 2) {
+            $line = $parts[$i];
+            $lineEnding = $parts[$i + 1] ?? '';
+
+            if ($line === '') {
+                continue;
+            }
+
+            $lineNumber++;
+
+            if (strlen($line) < 7 || !ctype_digit(substr($line, 0, 3)) || !ctype_digit(substr($line, 3, 4))) {
+                continue;
+            }
+
+            $fields[] = [
+                'line_number' => $lineNumber,
+                'declared_length' => (int)substr($line, 0, 3),
+                'actual_length' => strlen($line) + strlen($lineEnding),
+                'field_id' => substr($line, 3, 4),
+                'value' => trim(substr($line, 7)),
+            ];
         }
 
-        $reader = \PhpOffice\PhpSpreadsheet\IOFactory::createReaderForFile($filePath);
-        $spreadsheet = $reader->load($filePath);
-        $worksheet = $spreadsheet->getActiveSheet();
-        $rows = $worksheet->toArray();
+        return $fields;
+    }
+
+    private function mapLdtFieldsToImportRows($fields) {
+        $first = function($fieldId) use ($fields) {
+            foreach ($fields as $field) {
+                if ($field['field_id'] === $fieldId && $field['value'] !== '') {
+                    return $field['value'];
+                }
+            }
+
+            return null;
+        };
+
+        $protocol = $this->normalizeLdtProtocol($first('8310') ?? $first('8311'));
+        $animalName = $first('3204');
+        $speciesOrBreed = $first('3102') ?? $first('3202');
+        $reportDate = $this->parseLdtDate($first('8301') ?? $first('8302'));
+        $sender = $first('0203') ?? $first('8300') ?? 'LDT';
+        $labPatientId = $first('3101');
+        $currentSectionType = null;
+        $current = null;
+        $chipNumber = null;
+        $rows = [];
+
+        $flush = function() use (&$current, &$rows, &$chipNumber, $protocol, $animalName, $speciesOrBreed, $reportDate, $sender, $labPatientId) {
+            if (!$current) {
+                return;
+            }
+
+            $parameterName = trim($current['parameter_name'] ?? '');
+            $value = trim($current['value'] ?? '');
+
+            if (empty($current['test_type'])) {
+                if ($this->isChipNumberResult($parameterName) && $value !== '') {
+                    $chipNumber = $value;
+                }
+
+                $current = null;
+                return;
+            }
+
+            if ($parameterName !== '' || $value !== '') {
+                $testDate = $this->parseLdtDate($current['date_raw'] ?? null) ?? $reportDate;
+                $rows[] = [
+                    'animal_code' => $labPatientId ?? $chipNumber ?? $animalName ?? '',
+                    'animal_name_ldt' => $animalName ?? '',
+                    'animal_identifier_ldt' => $labPatientId ?? '',
+                    'animal_chip' => $chipNumber ?? '',
+                    'species_or_breed' => $speciesOrBreed ?? '',
+                    'test_type' => $current['test_type'],
+                    'test_date' => $testDate ?? '',
+                    'parameter_name' => $parameterName,
+                    'value' => $value,
+                    'unit' => trim($current['unit'] ?? ''),
+                    'reference_range' => trim($current['reference_range'] ?? ''),
+                    'test_location' => 'Laboklin',
+                    'reference_source' => 'Laboklin',
+                    'notes' => trim('LDT protokol: ' . ($protocol ?? '') . '; Zdroj: ' . $sender),
+                    'ldt_protocol' => $protocol ?? '',
+                    'ldt_result_index' => $current['index'] ?? '',
+                    'ldt_date_raw' => $current['date_raw'] ?? '',
+                ];
+            }
+
+            $current = null;
+        };
+
+        foreach ($fields as $field) {
+            $fieldId = $field['field_id'];
+            $value = $field['value'];
+
+            if ($fieldId === '8470') {
+                $detectedSectionType = $this->detectLdtSectionType($value);
+                if ($detectedSectionType && $current && empty($current['test_type'])) {
+                    $flush();
+                    $currentSectionType = $detectedSectionType;
+                    continue;
+                }
+
+                if ($detectedSectionType && (!$current || (empty($current['parameter_name']) && empty($current['value'])))) {
+                    $currentSectionType = $detectedSectionType;
+                    $current = null;
+                    continue;
+                }
+            }
+
+            if ($fieldId === '8470' && !$current) {
+                continue;
+            }
+
+            if ($fieldId === '8410') {
+                $flush();
+                $current = [
+                    'index' => $value,
+                    'test_type' => $currentSectionType,
+                ];
+                continue;
+            }
+
+            if (!$current) {
+                continue;
+            }
+
+            switch ($fieldId) {
+                case '8411':
+                    $current['parameter_name'] = $value;
+                    break;
+                case '8420':
+                    $current['value'] = $value;
+                    break;
+                case '8421':
+                    $current['unit'] = $value;
+                    break;
+                case '8432':
+                    $current['date_raw'] = $value;
+                    break;
+                case '8460':
+                    $current['reference_range'] = $value;
+                    break;
+            }
+        }
+
+        $flush();
 
         if (empty($rows)) {
-            throw new Exception('Excel soubor je prázdný');
+            throw new Exception('V LDT souboru nebyly nalezeny importovatelne biochemicke nebo hematologicke vysledky.');
         }
 
-        $header = array_shift($rows);
-        $data = [];
-
-        foreach ($rows as $row) {
-            if (count($row) === count($header)) {
-                $data[] = array_combine($header, $row);
-            }
-        }
-
-        return $data;
+        return $rows;
     }
 
-    private function parseExcelSimple($filePath) {
-        // Simple XML-based XLSX parser for when PhpSpreadsheet is not available
-        $zip = new ZipArchive;
-
-        if ($zip->open($filePath) !== true) {
-            throw new Exception('Nelze otevřít Excel soubor. Použijte prosím CSV formát.');
+    private function normalizeLdtProtocol($value) {
+        if ($value === null) {
+            return null;
         }
 
-        $sheetData = $zip->getFromName('xl/worksheets/sheet1.xml');
-        $zip->close();
+        return preg_replace('/[^A-Za-z0-9_-]/', '', trim($value));
+    }
 
-        if ($sheetData === false) {
-            throw new Exception('Nelze načíst data z Excel souboru');
+    private function detectLdtSectionType($value) {
+        $normalized = $this->normalizeSearchText($value);
+
+        if (strpos($normalized, 'hemat') !== false || strpos($normalized, 'krev') !== false || strpos($normalized, 'blood') !== false) {
+            return 'hematology';
         }
 
-        // This is a simplified parser - you may want to use PhpSpreadsheet library instead
-        $xml = simplexml_load_string($sheetData);
+        if (strpos($normalized, 'biochem') !== false || strpos($normalized, 'klinische chemie') !== false) {
+            return 'biochemistry';
+        }
 
-        // For now, suggest using CSV
-        throw new Exception('Pro import Excel souborů je nutné nainstalovat PhpSpreadsheet knihovnu. Použijte prosím CSV formát nebo kontaktujte administrátora.');
+        return null;
+    }
+
+    private function isChipNumberResult($parameterName) {
+        $normalized = $this->normalizeSearchText($parameterName);
+        return strpos($normalized, 'cislo cipu') !== false || strpos($normalized, 'chip') !== false;
+    }
+
+    private function normalizeSearchText($value) {
+        $value = strtolower(trim((string)$value));
+
+        return strtr($value, [
+            'á' => 'a', 'č' => 'c', 'ď' => 'd', 'é' => 'e', 'ě' => 'e',
+            'í' => 'i', 'ň' => 'n', 'ó' => 'o', 'ř' => 'r', 'š' => 's',
+            'ť' => 't', 'ú' => 'u', 'ů' => 'u', 'ý' => 'y', 'ž' => 'z',
+            'ä' => 'a', 'ö' => 'o', 'ü' => 'u', 'ß' => 'ss',
+        ]);
+    }
+
+    private function parseLdtDate($value) {
+        $value = trim((string)$value);
+
+        if ($value === '') {
+            return null;
+        }
+
+        if (preg_match('/^(\d{2})(\d{2})(\d{4})$/', $value, $matches)) {
+            return $matches[3] . '-' . $matches[2] . '-' . $matches[1];
+        }
+
+        if (preg_match('/^(\d{4})(\d{2})(\d{2})$/', $value, $matches)) {
+            return $matches[1] . '-' . $matches[2] . '-' . $matches[3];
+        }
+
+        return null;
     }
 
     private function validateData($data) {
-        $animalModel = new Animal();
         $validated = [];
 
         foreach ($data as $index => $row) {
             $errors = [];
             $warnings = [];
+            $animal = $this->findAnimalForLdt($row);
 
-            // Expected columns: animal_code, test_type, test_date, parameter_name, value, unit
-
-            // Validate animal code
-            if (empty($row['animal_code'])) {
-                $errors[] = 'Chybí kód zvířete';
+            if (!$animal) {
+                $label = $row['animal_name_ldt'] ?: ($row['animal_code'] ?? '');
+                $errors[] = 'Zvire z LDT nebylo nalezeno v databazi: ' . $label;
+            } elseif (isset($animal['ambiguous'])) {
+                $errors[] = 'Podle jmena "' . ($row['animal_name_ldt'] ?? '') . '" bylo nalezeno vice zvirat. Doplnte jednoznacny identifikator.';
             } else {
-                $animal = $animalModel->findByCode($row['animal_code']);
-                if (!$animal) {
-                    $errors[] = 'Zvíře s kódem "' . $row['animal_code'] . '" nebylo nalezeno';
-                } else {
-                    $row['animal_id'] = $animal['id'];
-                    $row['animal_name'] = $animal['name'];
-                }
+                $row['animal_id'] = $animal['id'];
+                $row['animal_name'] = $animal['name'];
+                $row['animal_identifier'] = $animal['identifier'] ?? '';
             }
 
-            // Validate test type
-            if (empty($row['test_type'])) {
-                $errors[] = 'Chybí typ testu';
-            } elseif (!in_array(strtolower($row['test_type']), ['biochemistry', 'hematology', 'biochemie', 'hematologie'])) {
-                $errors[] = 'Neplatný typ testu (povolené: biochemistry, hematology)';
-            } else {
-                // Normalize test type
-                $testType = strtolower($row['test_type']);
-                if ($testType === 'biochemie') $testType = 'biochemistry';
-                if ($testType === 'hematologie') $testType = 'hematology';
-                $row['test_type'] = $testType;
+            if (empty($row['test_type']) || !in_array($row['test_type'], ['biochemistry', 'hematology'], true)) {
+                $errors[] = 'Neplatny typ testu v LDT.';
             }
 
-            // Validate test date
             if (empty($row['test_date'])) {
-                $errors[] = 'Chybí datum testu';
+                $errors[] = 'Chybi datum testu.';
             } else {
-                // Try parsing DD.MM.YYYY format first (Czech format)
-                if (preg_match('/^(\d{2})\.(\d{2})\.(\d{4})$/', $row['test_date'], $matches)) {
-                    $row['test_date'] = $matches[3] . '-' . $matches[2] . '-' . $matches[1];
-                }
                 $date = date_create($row['test_date']);
                 if (!$date) {
-                    $errors[] = 'Neplatný formát data';
+                    $errors[] = 'Neplatny format data.';
                 } else {
                     $row['test_date'] = $date->format('Y-m-d');
                 }
             }
 
-            // Validate parameter name
             if (empty($row['parameter_name'])) {
-                $errors[] = 'Chybí název parametru';
+                $errors[] = 'Chybi nazev parametru.';
             }
 
-            // Validate value - allow both numeric and text values (e.g., "neg.", "negativní")
             if (!isset($row['value']) || $row['value'] === '') {
-                $warnings[] = 'Prázdná hodnota parametru';
+                $warnings[] = 'Prazdna hodnota parametru.';
+            } else {
+                $row['value'] = $this->normalizeResultValue($row['value']);
             }
-            // Normalize common text values
-            if (isset($row['value'])) {
-                $value = trim($row['value']);
-                // Normalize negative values
-                if (in_array(strtolower($value), ['neg', 'neg.', 'negativní', 'negative'])) {
-                    $row['value'] = 'neg.';
-                }
-                // Normalize positive values
-                if (in_array(strtolower($value), ['poz', 'poz.', 'pozitivní', 'positive'])) {
-                    $row['value'] = 'poz.';
-                }
+
+            if (empty($row['unit'])) {
+                $warnings[] = 'Chybi jednotka parametru.';
             }
 
             $row['errors'] = $errors;
             $row['warnings'] = $warnings;
-            $row['row_number'] = $index + 2; // +2 because of header and 0-index
+            $row['row_number'] = $index + 1;
 
             $validated[] = $row;
         }
@@ -329,27 +428,81 @@ class BiochemistryImportController {
         return $validated;
     }
 
+    private function findAnimalForLdt($row) {
+        $animalModel = new Animal();
+        $identifiers = array_filter(array_unique([
+            trim($row['animal_identifier_ldt'] ?? ''),
+            trim($row['animal_chip'] ?? ''),
+            trim($row['animal_code'] ?? ''),
+        ]));
+
+        foreach ($identifiers as $identifier) {
+            $animal = $animalModel->findByCode($identifier);
+            if ($animal) {
+                return $animal;
+            }
+        }
+
+        $animalName = trim($row['animal_name_ldt'] ?? '');
+        if ($animalName === '') {
+            return null;
+        }
+
+        $matches = $animalModel->query(
+            "SELECT * FROM animals WHERE name = ? OR identifier = ? ORDER BY id ASC",
+            [$animalName, $animalName]
+        );
+
+        if (count($matches) === 1) {
+            return $matches[0];
+        }
+
+        if (count($matches) > 1) {
+            return ['ambiguous' => true];
+        }
+
+        return null;
+    }
+
+    private function normalizeResultValue($value) {
+        $value = trim((string)$value);
+        $lower = strtolower($value);
+
+        if (in_array($lower, ['neg', 'neg.', 'negative', 'negativni'], true)) {
+            return 'neg.';
+        }
+
+        if (in_array($lower, ['poz', 'poz.', 'positive', 'pozitivni'], true)) {
+            return 'poz.';
+        }
+
+        if (preg_match('/^[<>]?\s*-?\d+(,\d+)?$/', $value)) {
+            return str_replace(',', '.', $value);
+        }
+
+        return $value;
+    }
+
     private function importData($data) {
         $db = Database::getInstance()->getConnection();
         $successCount = 0;
         $errorCount = 0;
-
-        // Group data by animal and test
         $groupedData = [];
+
         foreach ($data as $row) {
             if (!empty($row['errors'])) {
                 $errorCount++;
                 continue;
             }
 
-            $key = $row['animal_id'] . '_' . $row['test_type'] . '_' . $row['test_date'];
+            $key = $row['animal_id'] . '_' . $row['test_type'] . '_' . $row['test_date'] . '_' . ($row['ldt_protocol'] ?? '');
             if (!isset($groupedData[$key])) {
                 $groupedData[$key] = [
                     'animal_id' => $row['animal_id'],
                     'test_type' => $row['test_type'],
                     'test_date' => $row['test_date'],
-                    'test_location' => $row['test_location'] ?? '',
-                    'reference_source' => $row['reference_source'] ?? 'Import',
+                    'test_location' => $row['test_location'] ?? 'Laboklin',
+                    'reference_source' => $row['reference_source'] ?? 'Laboklin',
                     'notes' => $row['notes'] ?? '',
                     'parameters' => []
                 ];
@@ -362,14 +515,11 @@ class BiochemistryImportController {
             ];
         }
 
-        // Import each test
         foreach ($groupedData as $testData) {
             try {
                 $db->beginTransaction();
 
                 $tableName = $testData['test_type'] === 'biochemistry' ? 'biochemistry_tests' : 'hematology_tests';
-
-                // Check if test already exists
                 $stmt = $db->prepare("
                     SELECT id FROM {$tableName}
                     WHERE animal_id = ? AND test_date = ?
@@ -378,10 +528,19 @@ class BiochemistryImportController {
                 $existingTest = $stmt->fetch(PDO::FETCH_ASSOC);
 
                 if ($existingTest) {
-                    // Update existing test
                     $testId = $existingTest['id'];
+                    $stmt = $db->prepare("
+                        UPDATE {$tableName}
+                        SET test_location = ?, reference_source = ?, notes = ?
+                        WHERE id = ?
+                    ");
+                    $stmt->execute([
+                        $testData['test_location'],
+                        $testData['reference_source'],
+                        $testData['notes'],
+                        $testId
+                    ]);
                 } else {
-                    // Insert new test
                     $stmt = $db->prepare("
                         INSERT INTO {$tableName}
                         (animal_id, test_date, test_location, reference_source, notes, created_by)
@@ -398,11 +557,8 @@ class BiochemistryImportController {
                     $testId = $db->lastInsertId();
                 }
 
-                // Insert parameters
                 $resultsTableName = $testData['test_type'] === 'biochemistry' ? 'biochemistry_results' : 'hematology_results';
-
                 foreach ($testData['parameters'] as $param) {
-                    // Check if parameter exists
                     $stmt = $db->prepare("
                         SELECT id FROM {$resultsTableName}
                         WHERE test_id = ? AND parameter_name = ?
@@ -411,39 +567,27 @@ class BiochemistryImportController {
                     $existingParam = $stmt->fetch(PDO::FETCH_ASSOC);
 
                     if ($existingParam) {
-                        // Update existing parameter
                         $stmt = $db->prepare("
                             UPDATE {$resultsTableName}
                             SET value = ?, unit = ?
                             WHERE id = ?
                         ");
-                        $stmt->execute([
-                            $param['value'],
-                            $param['unit'],
-                            $existingParam['id']
-                        ]);
+                        $stmt->execute([$param['value'], $param['unit'], $existingParam['id']]);
                     } else {
-                        // Insert new parameter
                         $stmt = $db->prepare("
                             INSERT INTO {$resultsTableName}
                             (test_id, parameter_name, value, unit)
                             VALUES (?, ?, ?, ?)
                         ");
-                        $stmt->execute([
-                            $testId,
-                            $param['parameter_name'],
-                            $param['value'],
-                            $param['unit']
-                        ]);
+                        $stmt->execute([$testId, $param['parameter_name'], $param['value'], $param['unit']]);
                     }
                 }
 
                 $db->commit();
                 $successCount++;
-
             } catch (Exception $e) {
                 $db->rollBack();
-                error_log("Import error for test: " . $e->getMessage());
+                error_log("LDT import error for test: " . $e->getMessage());
                 $errorCount++;
             }
         }
