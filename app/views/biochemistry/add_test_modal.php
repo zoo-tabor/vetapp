@@ -79,6 +79,28 @@
                             ['name' => 'TSH', 'unit' => 'ng/mL'],
                         ];
 
+                        $biochemParamMap = [];
+                        foreach (array_merge($biochemParams, $storedBiochemParams ?? []) as $param) {
+                            $name = trim($param['name'] ?? '');
+                            if ($name === '') {
+                                continue;
+                            }
+
+                            $key = strtolower($name);
+                            if (!isset($biochemParamMap[$key])) {
+                                $biochemParamMap[$key] = [
+                                    'name' => $name,
+                                    'unit' => trim($param['unit'] ?? ''),
+                                ];
+                                continue;
+                            }
+
+                            if ($biochemParamMap[$key]['unit'] === '' && !empty($param['unit'])) {
+                                $biochemParamMap[$key]['unit'] = trim($param['unit']);
+                            }
+                        }
+                        $biochemParams = array_values($biochemParamMap);
+
                         foreach ($biochemParams as $param):
                         ?>
                             <div class="parameter-input">
@@ -137,6 +159,28 @@
                             ['name' => 'Tyčky - absolutní', 'unit' => '10^9/L'],
                             ['name' => 'Trombocyty', 'unit' => '10^9/L'],
                         ];
+
+                        $hematoParamMap = [];
+                        foreach (array_merge($hematoParams, $storedHematoParams ?? []) as $param) {
+                            $name = trim($param['name'] ?? '');
+                            if ($name === '') {
+                                continue;
+                            }
+
+                            $key = strtolower($name);
+                            if (!isset($hematoParamMap[$key])) {
+                                $hematoParamMap[$key] = [
+                                    'name' => $name,
+                                    'unit' => trim($param['unit'] ?? ''),
+                                ];
+                                continue;
+                            }
+
+                            if ($hematoParamMap[$key]['unit'] === '' && !empty($param['unit'])) {
+                                $hematoParamMap[$key]['unit'] = trim($param['unit']);
+                            }
+                        }
+                        $hematoParams = array_values($hematoParamMap);
 
                         foreach ($hematoParams as $param):
                         ?>

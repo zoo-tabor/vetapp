@@ -216,6 +216,7 @@ class BiochemistryController {
 
         // Get available reference sources
         $referenceSources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
+        $manualParams = $this->getManualParameterDefinitions($animal['id']);
 
         View::render('biochemistry/animal', [
             'layout' => 'main',
@@ -224,6 +225,8 @@ class BiochemistryController {
             'biochemTests' => $biochemTests,
             'hematoTests' => $hematoTests,
             'referenceSources' => $referenceSources,
+            'storedBiochemParams' => $manualParams['biochemistry'],
+            'storedHematoParams' => $manualParams['hematology'],
             'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')
         ]);
     }
@@ -283,9 +286,9 @@ class BiochemistryController {
 
             $testId = $db->lastInsertId();
 
-            // Insert test results (standard parameters)
+            // Insert test results
             $resultsTableName = $testType === 'biochemistry' ? 'biochemistry_results' : 'hematology_results';
-            $params = $_POST['params'] ?? [];
+            $results = $this->collectPostedResults($_POST['params'] ?? [], $_POST['custom_params'] ?? []);
 
             $stmt = $db->prepare("
                 INSERT INTO {$resultsTableName}
@@ -293,28 +296,13 @@ class BiochemistryController {
                 VALUES (?, ?, ?, ?)
             ");
 
-            foreach ($params as $paramName => $paramData) {
-                if (!empty($paramData['value'])) {
-                    $stmt->execute([
-                        $testId,
-                        $paramName,
-                        $paramData['value'],
-                        $paramData['unit']
-                    ]);
-                }
-            }
-
-            // Insert custom parameters
-            $customParams = $_POST['custom_params'] ?? [];
-            foreach ($customParams as $customParam) {
-                if (!empty($customParam['name']) && !empty($customParam['value'])) {
-                    $stmt->execute([
-                        $testId,
-                        $customParam['name'],
-                        $customParam['value'],
-                        $customParam['unit'] ?? ''
-                    ]);
-                }
+            foreach ($results as $result) {
+                $stmt->execute([
+                    $testId,
+                    $result['name'],
+                    $result['value'],
+                    $result['unit']
+                ]);
             }
 
             $db->commit();
@@ -1462,5 +1450,115 @@ class BiochemistryController {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Chyba databáze: ' . $e->getMessage()]);
         }
+    }
+
+    private function getManualParameterDefinitions($animalId) {
+        return [
+            'biochemistry' => $this->getStoredParameterDefinitions('biochemistry', $animalId),
+            'hematology' => $this->getStoredParameterDefinitions('hematology', $animalId),
+        ];
+    }
+
+    private function getStoredParameterDefinitions($testType, $animalId) {
+        $tables = [
+            'biochemistry' => ['results' => 'biochemistry_results', 'tests' => 'biochemistry_tests'],
+            'hematology' => ['results' => 'hematology_results', 'tests' => 'hematology_tests'],
+        ];
+
+        if (!isset($tables[$testType])) {
+            return [];
+        }
+
+        $db = Database::getInstance()->getConnection();
+        $resultsTable = $tables[$testType]['results'];
+        $testsTable = $tables[$testType]['tests'];
+
+        $stmt = $db->prepare("
+            SELECT r.parameter_name, r.unit, t.test_date
+            FROM {$resultsTable} r
+            JOIN {$testsTable} t ON r.test_id = t.id
+            WHERE t.animal_id = ?
+              AND r.parameter_name IS NOT NULL
+              AND r.parameter_name != ''
+            ORDER BY r.parameter_name ASC, t.test_date DESC, r.id DESC
+        ");
+        $stmt->execute([$animalId]);
+        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        $params = [];
+        foreach ($rows as $row) {
+            $name = trim($row['parameter_name'] ?? '');
+            if ($name === '') {
+                continue;
+            }
+
+            $key = strtolower($name);
+            $unit = trim($row['unit'] ?? '');
+
+            if (!isset($params[$key])) {
+                $params[$key] = [
+                    'name' => $name,
+                    'unit' => $unit,
+                ];
+                continue;
+            }
+
+            if ($params[$key]['unit'] === '' && $unit !== '') {
+                $params[$key]['unit'] = $unit;
+            }
+        }
+
+        return array_values($params);
+    }
+
+    private function collectPostedResults($params, $customParams) {
+        $results = [];
+
+        foreach ($params as $paramName => $paramData) {
+            $this->addPostedResult($results, $paramName, $paramData['value'] ?? '', $paramData['unit'] ?? '');
+        }
+
+        foreach ($customParams as $customParam) {
+            $this->addPostedResult(
+                $results,
+                $customParam['name'] ?? '',
+                $customParam['value'] ?? '',
+                $customParam['unit'] ?? ''
+            );
+        }
+
+        return array_values($results);
+    }
+
+    private function addPostedResult(&$results, $name, $value, $unit) {
+        $name = trim((string)$name);
+        $value = trim((string)$value);
+        $unit = trim((string)$unit);
+
+        if ($name === '' || $value === '') {
+            return;
+        }
+
+        $key = strtolower($name);
+        $results[$key] = [
+            'name' => $name,
+            'value' => $this->normalizeResultValue($value),
+            'unit' => $unit,
+        ];
+    }
+
+    private function normalizeResultValue($value) {
+        $value = trim((string)$value);
+        $lower = strtolower($value);
+
+        if (strpos($lower, 'neg') !== false || strpos($lower, 'poz') !== false) {
+            return $value;
+        }
+
+        if (preg_match('/^-?\d+(,\d+)?$/', $value)) {
+            return str_replace(',', '.', $value);
+        }
+
+        return $value;
     }
 }
