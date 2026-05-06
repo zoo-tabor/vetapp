@@ -39,9 +39,13 @@ temp/
 # public/uploads/
 
 # Database backups
+database/*.sql
 *.sql.gz
 *.sql.zip
 database/backups/
+
+# Local lab import samples
+LDT/
 
 # Node modules (if you use npm)
 node_modules/

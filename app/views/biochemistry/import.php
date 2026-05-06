@@ -1,6 +1,6 @@
 <div class="container">
     <div class="page-header">
-        <h1>Import LDT vysledku</h1>
+        <h1>Import LDT výsledků</h1>
         <p class="breadcrumb">
             <a href="/biochemistry">Biochemie a hematologie</a> / Import LDT
         </p>
@@ -22,23 +22,23 @@
 
     <div class="card">
         <div class="card-header">
-            <h2>Nahrat LDT soubor</h2>
+            <h2>Nahrát LDT soubor</h2>
         </div>
         <div class="card-body">
             <form action="/biochemistry/import/upload" method="POST" enctype="multipart/form-data">
                 <div class="form-group">
-                    <label for="import_file">Vyberte laboratorni soubor (.ldt)</label>
+                    <label for="import_file">Vyberte laboratorní soubor (.ldt)</label>
                     <input type="file"
                            id="import_file"
                            name="import_file"
                            accept=".ldt"
                            required
                            class="form-control">
-                    <small class="form-text">Import prijima pouze soubory s priponou .ldt.</small>
+                    <small class="form-text">Import přijímá pouze soubory s příponou .ldt.</small>
                 </div>
 
                 <button type="submit" class="btn btn-primary">
-                    Nahrat a zobrazit nahled
+                    Nahrát a zobrazit náhled
                 </button>
             </form>
         </div>
@@ -49,64 +49,64 @@
             <h2>Jak se LDT zpracuje</h2>
         </div>
         <div class="card-body">
-            <p>Importer cte strukturovane LDT radky a pouziva overene field ID ze vzorovych souboru LABOKLIN:</p>
+            <p>Importer čte strukturované LDT řádky a používá ověřené field ID ze vzorových souborů z LABOKLINu:</p>
 
             <table class="table">
                 <thead>
                     <tr>
                         <th>Field ID</th>
-                        <th>Vyuziti v importu</th>
+                        <th>Využití v Importu</th>
                     </tr>
                 </thead>
                 <tbody>
                     <tr>
                         <td><code>8310</code>, <code>8311</code></td>
-                        <td>Cislo protokolu</td>
+                        <td>Číslo protokolu</td>
                     </tr>
                     <tr>
                         <td><code>3101</code>, <code>3204</code></td>
-                        <td>Identifikator a jmeno zvirete pro sparovani s databazi</td>
+                        <td>Identifikátor a jméno zvířete pro spárování s databází</td>
                     </tr>
                     <tr>
                         <td><code>8470</code></td>
-                        <td>Sekce vysledku, napriklad biochemie nebo hematologie</td>
+                        <td>Sekce výsledků, například biochemie nebo hematologie</td>
                     </tr>
                     <tr>
                         <td><code>8410</code></td>
-                        <td>Zacatek jednoho vysledkoveho bloku</td>
+                        <td>Začátek jednoho výsledkového bloku</td>
                     </tr>
                     <tr>
                         <td><code>8411</code>, <code>8420</code>, <code>8421</code></td>
-                        <td>Nazev parametru, hodnota a jednotka</td>
+                        <td>Název parametru, hodnota a jednotka</td>
                     </tr>
                     <tr>
                         <td><code>8432</code>, <code>8460</code></td>
-                        <td>Datum vysledku a referencni rozmezi pro nahled</td>
+                        <td>Datum výsledků a referenční rozmezí pro náhled</td>
                     </tr>
                 </tbody>
             </table>
 
-            <h3 style="margin-top: 2rem;">Dulezite poznamky</h3>
+            <h3 style="margin-top: 2rem;">Důležité poznámky</h3>
             <ul>
-                <li>CSV a Excel import je na teto strance vypnuty; server prijme jen <code>.ldt</code>.</li>
-                <li>Zvire se hleda podle LDT identifikatoru, cisla cipu nebo presneho jmena.</li>
-                <li>Pred ulozenim se zobrazi nahled a radky s chybami import nepusti.</li>
-                <li>Existujici test stejneho zvirete a data se aktualizuje, novy test se vytvori.</li>
-                <li>Referencni rozmezi z LDT se ukazuje v nahledu, ale aktualni databazova tabulka vysledku ho samostatne neuklada.</li>
+               <!-- <li>CSV a Excel import je na teto strance vypnuty; server prijme jen <code>.ldt</code>.</li> -->
+                <li>Zvíře se hledá podle LDT indetifikátoru, čísla čipu, nebo přesného jména.</li>
+                <li>Před uložením se zobrazí náhled a řádky s chybami import nepustí.</li>
+                <li>Již existující test stejného zvířete a data se aktualizuje, nový test se vytvoří.</li>
+                <li>Referenční rozmezí z LDT se ukazuje v náhledu, ale aktuální databázová tabulka výsledků ho samotné neukládá.</li>
             </ul>
         </div>
     </div>
 
     <div class="card">
         <div class="card-header">
-            <h2>Bezpecnost</h2>
+            <h2>Bezpečnost</h2>
         </div>
         <div class="card-body">
             <ul>
-                <li>Importovat mohou pouze administratori.</li>
-                <li>Soubor se nejdriv parsuje do nahledu v session.</li>
-                <li>Ukladani probiha v databazovych transakcich po jednotlivych testech.</li>
-                <li>Nezname LDT radky se ignoruji, aby import nespadl na nepodstatnych polich.</li>
+                <li>Importovat mohou pouze administrátoři.</li>
+                <li>Soubor se nejprve parsuje do náhledu v session.</li>
+                <li>Ukládání probíhá v databázových transakcích po jednotlivých testech.</li>
+                <li>Neznámé LDT řádky se ignorují, aby import nespadl na nepodstatných polích.</li>
             </ul>
         </div>
     </div>
