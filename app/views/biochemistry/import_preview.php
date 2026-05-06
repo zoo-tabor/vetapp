@@ -15,6 +15,13 @@
         </div>
     <?php endif; ?>
 
+    <?php if (isset($_SESSION['success'])): ?>
+        <div class="alert alert-success">
+            <?= htmlspecialchars($_SESSION['success']) ?>
+            <?php unset($_SESSION['success']); ?>
+        </div>
+    <?php endif; ?>
+
     <?php
     $totalRows = count($data);
     $validRows = count(array_filter($data, fn($row) => empty($row['errors'])));
@@ -81,6 +88,56 @@
             <?php endif; ?>
         </div>
     </div>
+
+    <?php if (!empty($animalAssignmentGroups)): ?>
+        <div class="card">
+            <div class="card-header">
+                <h2>Rucni sparovani zvirete</h2>
+            </div>
+            <div class="card-body">
+                <p>LDT zvire se nepodarilo automaticky najit. Vyberte spravne zvire z databaze a nahled se prepocita.</p>
+
+                <?php foreach ($animalAssignmentGroups as $group): ?>
+                    <form action="/biochemistry/import/assign-animal" method="POST" class="animal-assignment-form">
+                        <input type="hidden" name="assignment_key" value="<?= htmlspecialchars($group['key']) ?>">
+
+                        <div class="assignment-summary">
+                            <strong><?= htmlspecialchars($group['animal_name_ldt'] ?: 'Bez jmena v LDT') ?></strong>
+                            <?php if (!empty($group['animal_identifier_ldt'])): ?>
+                                <span>ID: <?= htmlspecialchars($group['animal_identifier_ldt']) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($group['animal_chip'])): ?>
+                                <span>Cip: <?= htmlspecialchars($group['animal_chip']) ?></span>
+                            <?php endif; ?>
+                            <?php if (!empty($group['ldt_protocol'])): ?>
+                                <span>Protokol: <?= htmlspecialchars($group['ldt_protocol']) ?></span>
+                            <?php endif; ?>
+                            <span><?= (int)$group['row_count'] ?> radku</span>
+                        </div>
+
+                        <div class="assignment-controls">
+                            <select name="animal_id" class="form-control" required>
+                                <option value="">-- Vyberte zvire z databaze --</option>
+                                <?php foreach ($animals as $animal): ?>
+                                    <option value="<?= (int)$animal['id'] ?>">
+                                        <?= htmlspecialchars($animal['name']) ?>
+                                        <?php if (!empty($animal['identifier'])): ?>
+                                            (<?= htmlspecialchars($animal['identifier']) ?>)
+                                        <?php endif; ?>
+                                        - <?= htmlspecialchars($animal['species'] ?? '') ?>
+                                        <?php if (!empty($animal['workplace_name'])): ?>
+                                            / <?= htmlspecialchars($animal['workplace_name']) ?>
+                                        <?php endif; ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Priradit zvire</button>
+                        </div>
+                    </form>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; ?>
 
     <div class="card">
         <div class="card-header">
@@ -178,6 +235,33 @@
         .row-warning:hover,
         .row-success:hover {
             filter: brightness(0.95);
+        }
+        .animal-assignment-form {
+            border: 1px solid #e0e6ed;
+            border-radius: 6px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+        .assignment-summary {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.75rem;
+            margin-bottom: 0.75rem;
+            color: #2c3e50;
+        }
+        .assignment-summary span {
+            color: #6c757d;
+        }
+        .assignment-controls {
+            display: grid;
+            grid-template-columns: minmax(260px, 1fr) auto;
+            gap: 0.75rem;
+            align-items: center;
+        }
+        @media (max-width: 700px) {
+            .assignment-controls {
+                grid-template-columns: 1fr;
+            }
         }
     </style>
 </div>

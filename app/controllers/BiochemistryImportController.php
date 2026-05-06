@@ -71,13 +71,71 @@ class BiochemistryImportController {
         $data = $_SESSION['import_preview'];
         $filename = $_SESSION['import_filename'] ?? 'unknown.ldt';
         $validatedData = $this->validateData($data);
+        $animalAssignmentGroups = $this->getAnimalAssignmentGroups($validatedData);
 
         View::render('biochemistry/import_preview', [
             'layout' => 'main',
             'title' => 'Nahled importu - ' . $filename,
             'data' => $validatedData,
-            'filename' => $filename
+            'filename' => $filename,
+            'animalAssignmentGroups' => $animalAssignmentGroups,
+            'animals' => empty($animalAssignmentGroups) ? [] : $this->getAnimalsForManualAssignment()
         ]);
+    }
+
+    public function assignAnimal() {
+        Auth::requireLogin();
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /biochemistry/import');
+            exit;
+        }
+
+        if (!isset($_SESSION['import_preview'])) {
+            $_SESSION['error'] = 'Zadna data k importu.';
+            header('Location: /biochemistry/import');
+            exit;
+        }
+
+        $assignmentKey = $_POST['assignment_key'] ?? '';
+        $animalId = (int)($_POST['animal_id'] ?? 0);
+
+        if ($assignmentKey === '' || $animalId <= 0) {
+            $_SESSION['error'] = 'Vyberte prosim zvire pro rucni sparovani.';
+            header('Location: /biochemistry/import/preview');
+            exit;
+        }
+
+        $animalModel = new Animal();
+        $animal = $animalModel->findById($animalId);
+        if (!$animal) {
+            $_SESSION['error'] = 'Vybrane zvire nebylo nalezeno.';
+            header('Location: /biochemistry/import/preview');
+            exit;
+        }
+
+        $updatedRows = 0;
+        foreach ($_SESSION['import_preview'] as &$row) {
+            if ($this->getAnimalAssignmentKey($row) === $assignmentKey) {
+                $row['manual_animal_id'] = $animalId;
+                $updatedRows++;
+            }
+        }
+        unset($row);
+
+        if ($updatedRows === 0) {
+            $_SESSION['error'] = 'Nepodarilo se najit radky pro rucni sparovani.';
+        } else {
+            $_SESSION['success'] = sprintf(
+                'Zvire "%s" bylo prirazeno k %d radkum importu.',
+                $animal['name'],
+                $updatedRows
+            );
+        }
+
+        header('Location: /biochemistry/import/preview');
+        exit;
     }
 
     public function execute() {
@@ -376,6 +434,7 @@ class BiochemistryImportController {
         foreach ($data as $index => $row) {
             $errors = [];
             $warnings = [];
+            $row['animal_assignment_key'] = $this->getAnimalAssignmentKey($row);
             $animal = $this->findAnimalForLdt($row);
 
             if (!$animal) {
@@ -430,6 +489,14 @@ class BiochemistryImportController {
 
     private function findAnimalForLdt($row) {
         $animalModel = new Animal();
+
+        if (!empty($row['manual_animal_id'])) {
+            $animal = $animalModel->findById((int)$row['manual_animal_id']);
+            if ($animal) {
+                return $animal;
+            }
+        }
+
         $identifiers = array_filter(array_unique([
             trim($row['animal_identifier_ldt'] ?? ''),
             trim($row['animal_chip'] ?? ''),
@@ -462,6 +529,64 @@ class BiochemistryImportController {
         }
 
         return null;
+    }
+
+    private function getAnimalAssignmentKey($row) {
+        $parts = [
+            trim($row['ldt_protocol'] ?? ''),
+            trim($row['animal_identifier_ldt'] ?? ''),
+            trim($row['animal_chip'] ?? ''),
+            trim($row['animal_name_ldt'] ?? ''),
+        ];
+
+        return sha1(implode('|', $parts));
+    }
+
+    private function getAnimalAssignmentGroups($validatedData) {
+        $groups = [];
+
+        foreach ($validatedData as $row) {
+            $hasAnimalError = false;
+            foreach ($row['errors'] ?? [] as $error) {
+                if (strpos($error, 'Zvire z LDT') !== false || strpos($error, 'vice zvirat') !== false) {
+                    $hasAnimalError = true;
+                    break;
+                }
+            }
+
+            if (!$hasAnimalError) {
+                continue;
+            }
+
+            $key = $row['animal_assignment_key'] ?? $this->getAnimalAssignmentKey($row);
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'key' => $key,
+                    'ldt_protocol' => $row['ldt_protocol'] ?? '',
+                    'animal_name_ldt' => $row['animal_name_ldt'] ?? '',
+                    'animal_identifier_ldt' => $row['animal_identifier_ldt'] ?? '',
+                    'animal_chip' => $row['animal_chip'] ?? '',
+                    'species_or_breed' => $row['species_or_breed'] ?? '',
+                    'row_count' => 0,
+                ];
+            }
+
+            $groups[$key]['row_count']++;
+        }
+
+        return array_values($groups);
+    }
+
+    private function getAnimalsForManualAssignment() {
+        $db = Database::getInstance()->getConnection();
+        $stmt = $db->query("
+            SELECT a.id, a.name, a.identifier, a.species, w.name AS workplace_name
+            FROM animals a
+            LEFT JOIN workplaces w ON a.workplace_id = w.id
+            ORDER BY a.name ASC, a.identifier ASC
+        ");
+
+        return $stmt->fetchAll(PDO::FETCH_ASSOC);
     }
 
     private function normalizeResultValue($value) {
