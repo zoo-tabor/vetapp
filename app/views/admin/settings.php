@@ -1,4 +1,16 @@
-<?php $layout = 'main'; ?>
+<?php
+$layout = 'main';
+$__appColors = [
+    'animals'       => ['#8e44ad', '#7d3c98'],
+    'parasitology'  => ['#2c3e50', '#1a252f'],
+    'biochemistry'  => ['#c0392b', '#a93226'],
+    'urineanalysis' => ['#e67e22', '#d35400'],
+    'vaccination'   => ['#3498db', '#2980b9'],
+    'warehouse'     => ['#27ae60', '#229954'],
+];
+$__currentApp = $_SESSION['current_app'] ?? 'parasitology';
+[$__color, $__colorDark] = $__appColors[$__currentApp] ?? $__appColors['parasitology'];
+?>
 
 <div class="page-header">
     <div class="breadcrumb">
@@ -451,6 +463,20 @@
     display: flex;
     gap: 10px;
     justify-content: flex-end;
+}
+</style>
+
+<style>
+.card .table thead th,
+.permissions-grid thead th,
+.modal-header {
+    background-color: <?= $__color ?> !important;
+}
+.btn-admin-primary {
+    background-color: <?= $__color ?>;
+}
+.btn-admin-primary:hover {
+    background-color: <?= $__colorDark ?>;
 }
 </style>
 
