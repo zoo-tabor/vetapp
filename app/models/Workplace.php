@@ -22,6 +22,9 @@ class Workplace extends Model {
 
     // Check if user has view access to a specific section in a workplace
     public function hasAccess($userId, $workplaceId, $section = null) {
+        require_once __DIR__ . '/../core/Auth.php';
+        if (Auth::isAdmin()) return true;
+
         if ($section) {
             $sql = "
                 SELECT can_view FROM user_permissions
@@ -41,6 +44,11 @@ class Workplace extends Model {
 
     // Workplaces where user has view access (any section, or specific section)
     public function getUserWorkplaces($userId, $section = null) {
+        require_once __DIR__ . '/../core/Auth.php';
+        if (Auth::isAdmin()) {
+            return $this->query("SELECT *, 1 as can_view, 1 as can_edit FROM workplaces WHERE is_active = 1 ORDER BY name ASC");
+        }
+
         if ($section) {
             $sql = "
                 SELECT w.*, up.can_view, up.can_edit

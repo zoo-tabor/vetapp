@@ -25,8 +25,38 @@ class User extends Model {
         return $this->findAll(['is_active' => 1], 'full_name ASC');
     }
 
-    // Returns workplaces where user has view access for the given section (or any section if null)
+    // Check view or edit permission for a specific section+workplace
+    public function hasPermission($userId, $workplaceId, $section, $permission = 'view') {
+        require_once __DIR__ . '/../core/Auth.php';
+        if (Auth::isAdmin()) return true;
+
+        $column = $permission === 'edit' ? 'can_edit' : 'can_view';
+        $sql = "
+            SELECT $column FROM user_permissions
+            WHERE user_id = ? AND workplace_id = ? AND section = ?
+        ";
+        $result = $this->query($sql, [$userId, $workplaceId, $section]);
+        return !empty($result) && $result[0][$column] == 1;
+    }
+
+    // Returns array of section keys the user can view in at least one workplace
+    public function getAccessibleSections($userId) {
+        require_once __DIR__ . '/../core/Auth.php';
+        if (Auth::isAdmin()) return array_keys(self::SECTIONS);
+
+        $sql = "SELECT DISTINCT section FROM user_permissions WHERE user_id = ? AND can_view = 1";
+        $rows = $this->query($sql, [$userId]);
+        return array_column($rows, 'section');
+    }
+
+    // Returns workplaces for the user — admin gets all
     public function getWorkplacePermissions($userId, $section = null) {
+        require_once __DIR__ . '/../core/Auth.php';
+        if (Auth::isAdmin()) {
+            $sql = "SELECT *, 1 as can_view, 1 as can_edit FROM workplaces WHERE is_active = 1 ORDER BY name ASC";
+            return $this->query($sql);
+        }
+
         if ($section) {
             $sql = "
                 SELECT w.*, up.can_view, up.can_edit
@@ -46,24 +76,6 @@ class User extends Model {
             ORDER BY w.name ASC
         ";
         return $this->query($sql, [$userId]);
-    }
-
-    // Check view or edit permission for a specific section+workplace
-    public function hasPermission($userId, $workplaceId, $section, $permission = 'view') {
-        $column = $permission === 'edit' ? 'can_edit' : 'can_view';
-        $sql = "
-            SELECT $column FROM user_permissions
-            WHERE user_id = ? AND workplace_id = ? AND section = ?
-        ";
-        $result = $this->query($sql, [$userId, $workplaceId, $section]);
-        return !empty($result) && $result[0][$column] == 1;
-    }
-
-    // Returns array of section keys the user can view in at least one workplace
-    public function getAccessibleSections($userId) {
-        $sql = "SELECT DISTINCT section FROM user_permissions WHERE user_id = ? AND can_view = 1";
-        $rows = $this->query($sql, [$userId]);
-        return array_column($rows, 'section');
     }
 
     public function getAllUsers() {
