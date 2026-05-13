@@ -61,7 +61,7 @@ class WarehouseController {
             LEFT JOIN warehouse_consumption wc ON wi.id = wc.item_id
             LEFT JOIN users u ON wi.created_by = u.id
             WHERE wi.workplace_id = ?
-            ORDER BY wi.category, wi.name
+            ORDER BY wi.category, CAST(wi.item_code AS UNSIGNED), wi.item_code, wi.name
         ");
         $stmt->execute([$workplaceId]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -443,7 +443,7 @@ class WarehouseController {
                 wi.*
             FROM warehouse_items wi
             WHERE wi.workplace_id = ?
-            ORDER BY wi.category, wi.name
+            ORDER BY wi.category, CAST(wi.item_code AS UNSIGNED), wi.item_code, wi.name
         ");
         $stmt->execute([$workplaceId]);
         $items = $stmt->fetchAll(PDO::FETCH_ASSOC);
