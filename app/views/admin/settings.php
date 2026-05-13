@@ -18,7 +18,7 @@
     <div class="card">
     <div class="card-header">
         <h2>Správa uživatelů</h2>
-        <button type="button" class="btn btn-sm btn-primary" onclick="openUserModal()">
+        <button type="button" class="btn btn-sm btn-admin-primary" onclick="openUserModal()">
             ➕ Přidat uživatele
         </button>
     </div>
@@ -201,7 +201,7 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Uložit</button>
+                <button type="submit" class="btn btn-admin-primary">Uložit</button>
                 <button type="button" class="btn btn-outline" onclick="closeUserModal()">Zrušit</button>
             </div>
         </form>
@@ -256,7 +256,7 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Uložit</button>
+                <button type="submit" class="btn btn-admin-primary">Uložit</button>
                 <button type="button" class="btn btn-outline" onclick="closeKeeperModal()">Zrušit</button>
             </div>
         </form>
@@ -332,6 +332,12 @@
 }
 
 <style>
+/* Admin page: all table headers and primary buttons = #3498db */
+.card .table thead th {
+    background-color: #3498db;
+    color: white;
+}
+
 /* Permissions grid */
 .permissions-modal-content {
     max-width: min(95vw, 1100px);
