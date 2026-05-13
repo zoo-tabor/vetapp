@@ -350,6 +350,14 @@
                     <textarea id="edit_notes" name="notes" class="form-control" rows="3"><?= htmlspecialchars($item['notes'] ?? '') ?></textarea>
                 </div>
 
+                <div class="form-group">
+                    <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                        <input type="checkbox" name="is_active" value="1" <?= ($item['is_active'] ?? 1) ? 'checked' : '' ?>>
+                        <span>Aktivní položka</span>
+                    </label>
+                    <small class="form-help">Neaktivní položky se přesunou do záložky „Neaktivní" a nebudou v hlavním seznamu</small>
+                </div>
+
                 <div class="modal-footer">
                     <button type="button" class="btn btn-outline" onclick="closeEditItemModal()">Zrušit</button>
                     <button type="submit" class="btn btn-primary">Uložit změny</button>

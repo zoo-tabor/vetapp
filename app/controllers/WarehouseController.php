@@ -245,6 +245,7 @@ class WarehouseController {
         $supplier = trim($_POST['supplier'] ?? '');
         $storageLocation = trim($_POST['storage_location'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
+        $isActive = isset($_POST['is_active']) ? 1 : 0;
 
         $db = Database::getInstance()->getConnection();
 
@@ -260,7 +261,8 @@ class WarehouseController {
                     max_stock_level = ?,
                     supplier = ?,
                     storage_location = ?,
-                    notes = ?
+                    notes = ?,
+                    is_active = ?
                 WHERE id = ?
             ");
 
@@ -275,6 +277,7 @@ class WarehouseController {
                 $supplier ?: null,
                 $storageLocation ?: null,
                 $notes ?: null,
+                $isActive,
                 $itemId
             ]);
 

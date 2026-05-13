@@ -88,17 +88,24 @@ require_once __DIR__ . '/../../core/Database.php';
         </div>
     <?php endif; ?>
 
-    <!-- Tabs for Food and Medicaments -->
+    <!-- Tabs for Food, Medicaments, and Inactive -->
+    <?php
+    $activeItems   = array_filter($items, fn($i) => ($i['is_active'] ?? 1) == 1);
+    $inactiveItems = array_filter($items, fn($i) => ($i['is_active'] ?? 1) == 0);
+    ?>
     <div class="tabs">
         <button class="tab active" onclick="switchTab('food')">🌾 Krmiva</button>
         <button class="tab" onclick="switchTab('medicament')">💊 Léčiva</button>
+        <?php if (!empty($inactiveItems)): ?>
+        <button class="tab" onclick="switchTab('inactive')">📦 Neaktivní (<?= count($inactiveItems) ?>)</button>
+        <?php endif; ?>
     </div>
 
     <!-- Food Items -->
     <div id="food-content" class="tab-content active">
         <h2>Krmiva</h2>
         <?php
-        $foodItems = array_filter($items, function($item) { return $item['category'] === 'food'; });
+        $foodItems = array_filter($activeItems, function($item) { return $item['category'] === 'food'; });
         if (empty($foodItems)):
         ?>
             <div class="alert alert-info">Žádná krmiva v zásobách.</div>
@@ -195,7 +202,7 @@ require_once __DIR__ . '/../../core/Database.php';
     <div id="medicament-content" class="tab-content">
         <h2>Léčiva</h2>
         <?php
-        $medicamentItems = array_filter($items, function($item) { return $item['category'] === 'medicament'; });
+        $medicamentItems = array_filter($activeItems, function($item) { return $item['category'] === 'medicament'; });
         if (empty($medicamentItems)):
         ?>
             <div class="alert alert-info">Žádná léčiva v zásobách.</div>
@@ -287,6 +294,43 @@ require_once __DIR__ . '/../../core/Database.php';
             </div>
         <?php endif; ?>
     </div>
+
+    <!-- Inactive Items Tab -->
+    <?php if (!empty($inactiveItems)): ?>
+    <div id="inactive-content" class="tab-content">
+        <h2>Neaktivní položky</h2>
+        <div class="items-table-wrapper">
+            <table class="items-table" id="inactive-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Název</th>
+                        <th>Kategorie</th>
+                        <th>Sklad</th>
+                        <th>Jednotka</th>
+                        <th>Akce</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <?php foreach ($inactiveItems as $item): ?>
+                        <tr style="opacity: 0.65;">
+                            <td><?= htmlspecialchars($item['item_code'] ?? $item['id']) ?></td>
+                            <td>
+                                <strong><a href="/warehouse/item/<?= $item['id'] ?>"><?= htmlspecialchars($item['name']) ?></a></strong>
+                            </td>
+                            <td><?= $item['category'] === 'food' ? '🌾 Krmivo' : '💊 Léčivo' ?></td>
+                            <td><?= number_format($item['current_stock'], 2, ',', ' ') ?></td>
+                            <td><?= htmlspecialchars($item['unit']) ?></td>
+                            <td class="actions-cell">
+                                <a href="/warehouse/item/<?= $item['id'] ?>" class="btn btn-sm btn-outline">📊 Detail</a>
+                            </td>
+                        </tr>
+                    <?php endforeach; ?>
+                </tbody>
+            </table>
+        </div>
+    </div>
+    <?php endif; ?>
 </div>
 
 <?php require __DIR__ . '/_modals.php'; ?>
