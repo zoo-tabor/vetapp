@@ -44,7 +44,7 @@ class WarehouseController {
         $workplaceModel = new Workplace();
         $workplace = $workplaceModel->getById($workplaceId);
 
-        if (!$workplace || !$workplaceModel->hasAccess(Auth::userId(), $workplaceId)) {
+        if (!$workplace || !$workplaceModel->hasAccess(Auth::userId(), $workplaceId, 'warehouse')) {
             $_SESSION['error'] = 'Nemáte přístup k tomuto pracovišti';
             header('Location: /warehouse');
             exit;
@@ -90,13 +90,18 @@ class WarehouseController {
                    $item['current_stock'] <= $item['min_stock_level'];
         });
 
+        $userModel = new User();
+        $hasEditPermission = Auth::isAdmin()
+            || $userModel->hasPermission(Auth::userId(), $workplaceId, 'warehouse', 'edit');
+
         View::render('warehouse/workplace', [
             'layout' => 'main',
             'title' => 'Sklad - ' . $workplace['name'],
             'workplace' => $workplace,
             'items' => $items,
             'expiringItems' => $expiringItems,
-            'lowStockItems' => $lowStockItems
+            'lowStockItems' => $lowStockItems,
+            'hasEditPermission' => $hasEditPermission,
         ]);
     }
 
@@ -415,26 +420,18 @@ class WarehouseController {
         // Get workplace and verify access
         $workplace = $workplaceModel->getById($workplaceId);
 
-        if (!$workplace || !$workplaceModel->hasAccess(Auth::userId(), $workplaceId)) {
+        if (!$workplace || !$workplaceModel->hasAccess(Auth::userId(), $workplaceId, 'warehouse')) {
             $_SESSION['error'] = 'Nemáte přístup k tomuto pracovišti';
             header('Location: /warehouse');
             exit;
         }
 
         // Check if user has edit permission or is admin
-        if (!Auth::isAdmin()) {
-            $stmt = $db->prepare("
-                SELECT can_edit FROM user_workplace_permissions
-                WHERE user_id = ? AND workplace_id = ?
-            ");
-            $stmt->execute([Auth::userId(), $workplaceId]);
-            $permission = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$permission || !$permission['can_edit']) {
-                $_SESSION['error'] = 'Nemáte oprávnění k inventuře tohoto pracoviště';
-                header('Location: /warehouse/workplace/' . $workplaceId);
-                exit;
-            }
+        $userModel = new User();
+        if (!Auth::isAdmin() && !$userModel->hasPermission(Auth::userId(), $workplaceId, 'warehouse', 'edit')) {
+            $_SESSION['error'] = 'Nemáte oprávnění k inventuře tohoto pracoviště';
+            header('Location: /warehouse/workplace/' . $workplaceId);
+            exit;
         }
 
         // Get all items for this workplace
@@ -474,26 +471,18 @@ class WarehouseController {
         // Verify access and permissions
         $workplace = $workplaceModel->getById($workplaceId);
 
-        if (!$workplace || !$workplaceModel->hasAccess(Auth::userId(), $workplaceId)) {
+        if (!$workplace || !$workplaceModel->hasAccess(Auth::userId(), $workplaceId, 'warehouse')) {
             $_SESSION['error'] = 'Nemáte přístup k tomuto pracovišti';
             header('Location: /warehouse');
             exit;
         }
 
         // Check edit permission
-        if (!Auth::isAdmin()) {
-            $stmt = $db->prepare("
-                SELECT can_edit FROM user_workplace_permissions
-                WHERE user_id = ? AND workplace_id = ?
-            ");
-            $stmt->execute([Auth::userId(), $workplaceId]);
-            $permission = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$permission || !$permission['can_edit']) {
-                $_SESSION['error'] = 'Nemáte oprávnění k inventuře tohoto pracoviště';
-                header('Location: /warehouse/workplace/' . $workplaceId);
-                exit;
-            }
+        $userModel = new User();
+        if (!Auth::isAdmin() && !$userModel->hasPermission(Auth::userId(), $workplaceId, 'warehouse', 'edit')) {
+            $_SESSION['error'] = 'Nemáte oprávnění k inventuře tohoto pracoviště';
+            header('Location: /warehouse/workplace/' . $workplaceId);
+            exit;
         }
 
         try {

@@ -11,7 +11,7 @@ class AnimalController {
         Auth::requireLogin();
 
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'view')) {
+        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'animals', 'view')) {
             die('Nemáte oprávnění k tomuto pracovišti');
         }
 
@@ -30,7 +30,7 @@ class AnimalController {
         $animalModel = new Animal();
         $animals = $animalModel->getExaminationHistory($workplaceId, $filters);
 
-        $canEdit = $userModel->hasPermission(Auth::userId(), $workplaceId, 'edit');
+        $canEdit = $userModel->hasPermission(Auth::userId(), $workplaceId, 'animals', 'edit');
 
         View::render('animals/list', [
             'layout' => 'main',
@@ -57,11 +57,11 @@ class AnimalController {
         }
 
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'view')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals', 'view')) {
             die('Nemáte oprávnění k tomuto pracovišti');
         }
 
-        $canEdit = $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit');
+        $canEdit = $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals', 'edit');
 
         // Check if viewing from biochemistry or urine analysis section
         $fromBiochemistry = ($_GET['from'] ?? '') === 'biochemistry';
@@ -233,7 +233,7 @@ class AnimalController {
         Auth::requireLogin();
         
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'animals', 'edit')) {
             die('Nemáte oprávnění editovat toto pracoviště');
         }
         
@@ -354,7 +354,7 @@ class AnimalController {
         }
 
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals', 'edit')) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění']);
             return;
@@ -418,7 +418,7 @@ class AnimalController {
 
         // Check if user has permission to edit this workplace
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals', 'edit')) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění editovat toto zvíře']);
             return;
@@ -458,7 +458,7 @@ class AnimalController {
 
         // Check if user has permission to edit this workplace
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals', 'edit')) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění editovat toto zvíře']);
             return;
@@ -570,7 +570,7 @@ class AnimalController {
         }
 
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals', 'edit')) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění']);
             return;
@@ -623,7 +623,7 @@ class AnimalController {
         }
 
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals', 'edit')) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění']);
             return;

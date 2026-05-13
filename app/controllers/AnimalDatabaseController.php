@@ -16,7 +16,7 @@ class AnimalDatabaseController {
         $userModel = new User();
         $workplaceModel = new Workplace();
 
-        $workplaces = $userModel->getWorkplacePermissions(Auth::userId());
+        $workplaces = $userModel->getWorkplacePermissions(Auth::userId(), 'animals');
 
         View::render('animals_database/dashboard', [
             'layout' => 'main',
@@ -32,7 +32,7 @@ class AnimalDatabaseController {
         $userModel = new User();
 
         // Get all animals from all workplaces the user has access to
-        $userWorkplaces = $userModel->getWorkplacePermissions(Auth::userId());
+        $userWorkplaces = $userModel->getWorkplacePermissions(Auth::userId(), 'animals');
         $workplaceIds = array_column($userWorkplaces, 'id');
 
         if (empty($workplaceIds)) {
@@ -80,7 +80,7 @@ class AnimalDatabaseController {
             'animals' => $animals,
             'deceasedAnimals' => $deceasedAnimals,
             'workplaces' => $workplaces,
-            'canEdit' => Auth::isAdmin() || Auth::role() === 'user_edit'
+            'canEdit' => Auth::isAdmin()
         ]);
     }
 
@@ -92,7 +92,7 @@ class AnimalDatabaseController {
         $animalModel = new Animal();
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $id)) {
+        if (!$userModel->hasPermission(Auth::userId(), $id, 'animals')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -170,7 +170,7 @@ class AnimalDatabaseController {
             'deceasedAnimalsBySpecies' => $deceasedAnimalsBySpecies,
             'myAnimalsBySpecies' => $myAnimalsBySpecies,
             'enclosures' => $enclosures,
-            'canEdit' => $userModel->hasPermission(Auth::userId(), $id, 'edit')
+            'canEdit' => $userModel->hasPermission(Auth::userId(), $id, 'animals', 'edit')
         ]);
     }
 
@@ -198,7 +198,7 @@ class AnimalDatabaseController {
         $animal['workplace_name'] = $workplace['name'] ?? 'Neznámé pracoviště';
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',

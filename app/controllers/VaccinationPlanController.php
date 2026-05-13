@@ -15,7 +15,7 @@ class VaccinationPlanController {
 
         // Get user's workplaces
         $userModel = new User();
-        $workplaces = $userModel->getWorkplacePermissions(Auth::userId());
+        $workplaces = $userModel->getWorkplacePermissions(Auth::userId(), 'vaccination');
 
         View::render('vaccination_plan/dashboard', [
             'layout' => 'main',
@@ -32,7 +32,7 @@ class VaccinationPlanController {
         $vaccinationModel = new VaccinationPlan();
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $id)) {
+        if (!$userModel->hasPermission(Auth::userId(), $id, 'vaccination')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -62,7 +62,7 @@ class VaccinationPlanController {
         // Get statistics
         $stats = $vaccinationModel->getStats($id);
 
-        $canEdit = $userModel->hasPermission(Auth::userId(), $id, 'edit');
+        $canEdit = $userModel->hasPermission(Auth::userId(), $id, 'vaccination', 'edit');
 
         View::render('vaccination_plan/workplace', [
             'layout' => 'main',
@@ -87,7 +87,7 @@ class VaccinationPlanController {
         $vaccinationModel = new VaccinationPlan();
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $id)) {
+        if (!$userModel->hasPermission(Auth::userId(), $id, 'vaccination')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -127,7 +127,7 @@ class VaccinationPlanController {
         $stmt->execute();
         $vaccineColors = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        $canEdit = $userModel->hasPermission(Auth::userId(), $id, 'edit');
+        $canEdit = $userModel->hasPermission(Auth::userId(), $id, 'vaccination', 'edit');
 
         View::render('vaccination_plan/planning_grid', [
             'layout' => 'main',
@@ -164,7 +164,7 @@ class VaccinationPlanController {
         }
 
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'vaccination', 'edit')) {
             $_SESSION['error'] = 'Nemáte oprávnění upravovat vakcinační plány';
             header('Location: /vaccination-plan/workplace/' . $animal['workplace_id']);
             exit;
@@ -221,7 +221,7 @@ class VaccinationPlanController {
         $animalModel = new Animal();
         $animal = $animalModel->findById($plan['animal_id']);
 
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'vaccination', 'edit')) {
             $_SESSION['error'] = 'Nemáte oprávnění dokončit vakcinaci';
             header('Location: /vaccination-plan');
             exit;
@@ -278,7 +278,7 @@ class VaccinationPlanController {
             $animalModel = new Animal();
             $animal = $animalModel->findById($plan['animal_id']);
 
-            if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+            if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'vaccination', 'edit')) {
                 $_SESSION['error'] = 'Nemáte oprávnění dokončit některé vakcinace';
                 header('Location: ' . ($_SERVER['HTTP_REFERER'] ?? '/vaccination-plan'));
                 exit;
@@ -328,7 +328,7 @@ class VaccinationPlanController {
         $animalModel = new Animal();
         $animal = $animalModel->findById($plan['animal_id']);
 
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'vaccination', 'edit')) {
             $_SESSION['error'] = 'Nemáte oprávnění smazat vakcinační plán';
             header('Location: /vaccination-plan');
             exit;
@@ -391,7 +391,7 @@ class VaccinationPlanController {
 
         try {
             $userModel = new User();
-            if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'edit')) {
+            if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'vaccination', 'edit')) {
                 http_response_code(403);
                 echo json_encode([
                     'success' => false,
@@ -443,7 +443,7 @@ class VaccinationPlanController {
 
         try {
             $userModel = new User();
-            if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'edit')) {
+            if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'vaccination', 'edit')) {
                 http_response_code(403);
                 echo json_encode([
                     'success' => false,
@@ -623,7 +623,7 @@ class VaccinationPlanController {
             }
 
             $userModel = new User();
-            if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'edit')) {
+            if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'vaccination', 'edit')) {
                 http_response_code(403);
                 echo json_encode([
                     'success' => false,

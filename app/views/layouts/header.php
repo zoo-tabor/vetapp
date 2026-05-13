@@ -55,24 +55,46 @@
                     <div class="app-dropdown">
                         <button class="app-dropdown-toggle" onclick="toggleAppDropdown()">▼</button>
                         <div class="app-dropdown-menu" id="appDropdownMenu">
+                            <?php
+                            if (!Auth::isAdmin()) {
+                                require_once __DIR__ . '/../../models/User.php';
+                                $__userModel = new User();
+                                $__accessible = array_flip($__userModel->getAccessibleSections(Auth::userId()));
+                            }
+                            $__all = function($section) use (&$__accessible) {
+                                return Auth::isAdmin() || isset($__accessible[$section]);
+                            };
+                            ?>
+                            <?php if ($__all('animals')): ?>
                             <a href="/app/switch/animals" class="app-dropdown-item animals <?= $currentApp === 'animals' ? 'active' : '' ?>">
                                 Seznam zvířat
                             </a>
+                            <?php endif; ?>
+                            <?php if ($__all('parasitology')): ?>
                             <a href="/app/switch/parasitology" class="app-dropdown-item <?= $currentApp === 'parasitology' ? 'active' : '' ?>">
                                 Parazitologie
                             </a>
+                            <?php endif; ?>
+                            <?php if ($__all('biochemistry')): ?>
                             <a href="/app/switch/biochemistry" class="app-dropdown-item biochem <?= $currentApp === 'biochemistry' ? 'active' : '' ?>">
                                 Biochemie a hematologie
                             </a>
+                            <?php endif; ?>
+                            <?php if ($__all('urine')): ?>
                             <a href="/app/switch/urineanalysis" class="app-dropdown-item urine <?= $currentApp === 'urineanalysis' ? 'active' : '' ?>">
                                 Analýza moči
                             </a>
+                            <?php endif; ?>
+                            <?php if ($__all('vaccination')): ?>
                             <a href="/app/switch/vaccination" class="app-dropdown-item vaccination <?= $currentApp === 'vaccination' ? 'active' : '' ?>">
                                 Vakcinační plán
                             </a>
+                            <?php endif; ?>
+                            <?php if ($__all('warehouse')): ?>
                             <a href="/app/switch/warehouse" class="app-dropdown-item warehouse <?= $currentApp === 'warehouse' ? 'active' : '' ?>">
                                 Sklad
                             </a>
+                            <?php endif; ?>
                         </div>
                     </div>
                 </div>

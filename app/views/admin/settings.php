@@ -46,8 +46,7 @@
                             <?php
                             $roles = [
                                 'admin' => ['Admin', 'admin'],
-                                'user_edit' => ['Editace', 'warning'],
-                                'user_read' => ['Čtení', 'info']
+                                'user'  => ['Uživatel', 'info'],
                             ];
                             $role = $roles[$user['role']] ?? ['Neznámá', 'secondary'];
                             ?>
@@ -183,8 +182,7 @@
             <div class="form-group">
                 <label for="role">Role: *</label>
                 <select id="role" name="role" class="form-control" required>
-                    <option value="user_read">Čtení (pouze prohlížení)</option>
-                    <option value="user_edit">Editace (prohlížení a úpravy)</option>
+                    <option value="user">Uživatel</option>
                     <option value="admin">Admin (plná správa)</option>
                 </select>
             </div>
@@ -212,31 +210,20 @@
 
 <!-- Permissions Modal -->
 <div id="permissionsModal" class="modal" style="display: none;">
-    <div class="modal-content" style="max-width: 800px;">
+    <div class="modal-content permissions-modal-content">
         <div class="modal-header">
             <h2>Oprávnění uživatele: <span id="permissionsUserName"></span></h2>
             <span class="modal-close" onclick="closePermissionsModal()">&times;</span>
         </div>
         <div style="padding: 20px;">
-            <p style="margin-bottom: 20px;">Nastavte přístupová práva k jednotlivým pracovištím:</p>
-
             <div class="table-responsive">
-                <table class="table">
-                    <thead>
-                        <tr>
-                            <th>Pracoviště</th>
-                            <th style="text-align: center;">Čtení</th>
-                            <th style="text-align: center;">Editace</th>
-                        </tr>
-                    </thead>
-                    <tbody id="permissionsTableBody">
-                        <!-- Will be populated by JavaScript -->
-                    </tbody>
+                <table class="table permissions-grid" id="permissionsTable">
+                    <thead></thead>
+                    <tbody id="permissionsTableBody"></tbody>
                 </table>
             </div>
-
             <div class="form-actions">
-                <button type="button" class="btn btn-primary" onclick="savePermissions()">Uložit oprávnění</button>
+                <button type="button" class="btn btn-admin-primary" onclick="savePermissions()">Uložit oprávnění</button>
                 <button type="button" class="btn btn-outline" onclick="closePermissionsModal()">Zrušit</button>
             </div>
         </div>
@@ -345,6 +332,43 @@
 }
 
 <style>
+/* Permissions grid */
+.permissions-modal-content {
+    max-width: min(95vw, 1100px);
+}
+
+.permissions-grid thead th {
+    background-color: #3498db;
+    color: white;
+}
+
+.permissions-grid tbody td:first-child {
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.permissions-grid input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+}
+
+.btn-admin-primary {
+    background-color: #3498db;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    transition: background-color 0.2s;
+}
+
+.btn-admin-primary:hover {
+    background-color: #2980b9;
+}
+
 .modal {
     position: fixed;
     z-index: 1000;
@@ -506,45 +530,113 @@ document.getElementById('userForm').addEventListener('submit', function(e) {
 });
 
 // Permissions Modal Functions
+const SECTIONS = [
+    { key: 'animals',      label: 'Seznam zvířat' },
+    { key: 'parasitology', label: 'Parazitologie' },
+    { key: 'biochemistry', label: 'Biochemie a hematologie' },
+    { key: 'urine',        label: 'Analýza moči' },
+    { key: 'vaccination',  label: 'Vakcinační plán' },
+    { key: 'warehouse',    label: 'Sklad' },
+    { key: 'lexikon',      label: 'Lexikon' },
+];
+
 function managePermissions(userId) {
     currentPermissionsUserId = userId;
 
-    // Fetch user and permissions data
     fetch(`/admin/users/${userId}/permissions`)
         .then(response => response.json())
         .then(data => {
-            if (data.success) {
-                document.getElementById('permissionsUserName').textContent = data.user.full_name || data.user.username;
+            if (!data.success) {
+                alert('Chyba při načítání oprávnění: ' + (data.error || 'Neznámá chyba'));
+                return;
+            }
 
-                const tbody = document.getElementById('permissionsTableBody');
-                tbody.innerHTML = '';
+            document.getElementById('permissionsUserName').textContent = data.user.full_name || data.user.username;
 
-                data.workplaces.forEach(workplace => {
-                    const perm = data.permissions.find(p => p.workplace_id == workplace.id) || {};
+            const workplaces = data.workplaces;
 
-                    const row = document.createElement('tr');
-                    row.innerHTML = `
-                        <td>${htmlEscape(workplace.name)}</td>
-                        <td style="text-align: center;">
-                            <input type="checkbox"
-                                   data-workplace-id="${workplace.id}"
-                                   data-permission="view"
-                                   ${perm.can_view ? 'checked' : ''}>
-                        </td>
-                        <td style="text-align: center;">
-                            <input type="checkbox"
-                                   data-workplace-id="${workplace.id}"
-                                   data-permission="edit"
-                                   ${perm.can_edit ? 'checked' : ''}>
-                        </td>
-                    `;
-                    tbody.appendChild(row);
+            // Build lookup: { workplace_id: { section: { can_view, can_edit } } }
+            const permLookup = {};
+            data.permissions.forEach(p => {
+                if (!permLookup[p.workplace_id]) permLookup[p.workplace_id] = {};
+                permLookup[p.workplace_id][p.section] = p;
+            });
+
+            // Build thead: row1 = section col + workplace names (colspan 2), row2 = Zobrazit/Editovat per workplace
+            const thead = document.querySelector('#permissionsTable thead');
+            thead.innerHTML = '';
+
+            const row1 = document.createElement('tr');
+            const thSection = document.createElement('th');
+            thSection.rowSpan = 2;
+            thSection.style.verticalAlign = 'middle';
+            thSection.textContent = 'Sekce';
+            row1.appendChild(thSection);
+            workplaces.forEach(wp => {
+                const th = document.createElement('th');
+                th.colSpan = 2;
+                th.style.textAlign = 'center';
+                th.textContent = wp.name;
+                row1.appendChild(th);
+            });
+            thead.appendChild(row1);
+
+            const row2 = document.createElement('tr');
+            workplaces.forEach(() => {
+                ['Zobrazit', 'Editovat'].forEach(label => {
+                    const th = document.createElement('th');
+                    th.style.textAlign = 'center';
+                    th.style.fontWeight = 'normal';
+                    th.style.fontSize = '0.78rem';
+                    th.textContent = label;
+                    row2.appendChild(th);
+                });
+            });
+            thead.appendChild(row2);
+
+            // Build tbody: one row per section
+            const tbody = document.getElementById('permissionsTableBody');
+            tbody.innerHTML = '';
+
+            SECTIONS.forEach(section => {
+                const row = document.createElement('tr');
+                const td = document.createElement('td');
+                td.textContent = section.label;
+                row.appendChild(td);
+
+                workplaces.forEach(wp => {
+                    const perm = (permLookup[wp.id] || {})[section.key] || {};
+                    ['view', 'edit'].forEach(type => {
+                        const cell = document.createElement('td');
+                        cell.style.textAlign = 'center';
+                        const cb = document.createElement('input');
+                        cb.type = 'checkbox';
+                        cb.setAttribute('data-workplace-id', wp.id);
+                        cb.setAttribute('data-section', section.key);
+                        cb.setAttribute('data-permission', type);
+                        cb.checked = type === 'view' ? !!parseInt(perm.can_view) : !!parseInt(perm.can_edit);
+                        cb.addEventListener('change', function () {
+                            const wid = this.getAttribute('data-workplace-id');
+                            const sec = this.getAttribute('data-section');
+                            const ptype = this.getAttribute('data-permission');
+                            if (ptype === 'edit' && this.checked) {
+                                const v = document.querySelector(`input[data-workplace-id="${wid}"][data-section="${sec}"][data-permission="view"]`);
+                                if (v) v.checked = true;
+                            }
+                            if (ptype === 'view' && !this.checked) {
+                                const e = document.querySelector(`input[data-workplace-id="${wid}"][data-section="${sec}"][data-permission="edit"]`);
+                                if (e) e.checked = false;
+                            }
+                        });
+                        cell.appendChild(cb);
+                        row.appendChild(cell);
+                    });
                 });
 
-                document.getElementById('permissionsModal').style.display = 'block';
-            } else {
-                alert('Chyba při načítání oprávnění: ' + (data.error || 'Neznámá chyba'));
-            }
+                tbody.appendChild(row);
+            });
+
+            document.getElementById('permissionsModal').style.display = 'block';
         })
         .catch(error => {
             alert('Chyba při komunikaci se serverem: ' + error.message);
@@ -557,34 +649,22 @@ function closePermissionsModal() {
 }
 
 function savePermissions() {
-    const permissions = [];
-    const checkboxes = document.querySelectorAll('#permissionsTableBody input[type="checkbox"]');
-
-    const workplacePermissions = {};
-    checkboxes.forEach(checkbox => {
-        const workplaceId = checkbox.getAttribute('data-workplace-id');
-        const permission = checkbox.getAttribute('data-permission');
-
-        if (!workplacePermissions[workplaceId]) {
-            workplacePermissions[workplaceId] = { workplace_id: workplaceId, can_view: false, can_edit: false };
-        }
-
-        if (permission === 'view') {
-            workplacePermissions[workplaceId].can_view = checkbox.checked;
-        } else if (permission === 'edit') {
-            workplacePermissions[workplaceId].can_edit = checkbox.checked;
-        }
+    const grid = {};
+    document.querySelectorAll('#permissionsTableBody input[type="checkbox"]').forEach(cb => {
+        const wid  = cb.getAttribute('data-workplace-id');
+        const sec  = cb.getAttribute('data-section');
+        const type = cb.getAttribute('data-permission');
+        const key  = `${wid}__${sec}`;
+        if (!grid[key]) grid[key] = { workplace_id: wid, section: sec, can_view: false, can_edit: false };
+        if (type === 'view') grid[key].can_view = cb.checked;
+        if (type === 'edit') grid[key].can_edit = cb.checked;
     });
 
-    Object.values(workplacePermissions).forEach(perm => {
-        permissions.push(perm);
-    });
+    const permissions = Object.values(grid);
 
     fetch(`/admin/users/${currentPermissionsUserId}/permissions`, {
         method: 'POST',
-        headers: {
-            'Content-Type': 'application/json'
-        },
+        headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ permissions })
     })
     .then(response => response.json())

@@ -52,7 +52,7 @@ class DewormingController {
                     }
 
                     // Check edit permissions
-                    if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+                    if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'parasitology', 'edit')) {
                         $errors[] = "Nemáte oprávnění editovat zvíře ID $animalId";
                         continue;
                     }

@@ -85,7 +85,7 @@ class AdminController {
         $username = trim($_POST['username'] ?? '');
         $fullName = trim($_POST['full_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
-        $role = $_POST['role'] ?? 'user_read';
+        $role = $_POST['role'] ?? 'user';
         $isActive = isset($_POST['is_active']) ? 1 : 0;
 
         // Validate required fields
@@ -176,7 +176,7 @@ class AdminController {
         $username = trim($_POST['username'] ?? '');
         $fullName = trim($_POST['full_name'] ?? '');
         $email = trim($_POST['email'] ?? '');
-        $role = $_POST['role'] ?? 'user_read';
+        $role = $_POST['role'] ?? 'user';
         $password = $_POST['password'] ?? '';
         $isActive = isset($_POST['is_active']) ? 1 : 0;
 

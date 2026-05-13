@@ -30,7 +30,7 @@ class DashboardController {
 
             // Default to parasitology
             $userModel = new User();
-            $workplaces = $userModel->getWorkplacePermissions(Auth::userId());
+            $workplaces = $userModel->getWorkplacePermissions(Auth::userId(), 'parasitology');
 
             View::render('dashboard/main', [
                 'layout' => 'main',
@@ -55,29 +55,22 @@ class DashboardController {
             $userModel = new User();
             
             // Kontrola oprávnění - Admin má přístup všude
-            if (Auth::role() !== 'admin') {
-                if (!$userModel->hasPermission(Auth::userId(), $id, 'view')) {
-                    die('Nemáte oprávnění k tomuto pracovišti');
-                }
+            if (!Auth::isAdmin() && !$userModel->hasPermission(Auth::userId(), $id, 'parasitology', 'view')) {
+                die('Nemáte oprávnění k tomuto pracovišti');
             }
-            
+
             $workplaceModel = new Workplace();
             $workplace = $workplaceModel->findById($id);
-            
+
             if (!$workplace) {
                 die('Pracoviště nenalezeno');
             }
-            
+
             // Načíst data
             $stats = $workplaceModel->getStats($id);
             $enclosures = $workplaceModel->getEnclosures($id);
-            
-            // Kontrola editačních práv - Admin má vždy právo editovat
-            if (Auth::role() === 'admin') {
-                $canEdit = true;
-            } else {
-                $canEdit = $userModel->hasPermission(Auth::userId(), $id, 'edit');
-            }
+
+            $canEdit = Auth::isAdmin() || $userModel->hasPermission(Auth::userId(), $id, 'parasitology', 'edit');
             
             // Renderovat view
             View::render('dashboard/workplace', [
@@ -115,7 +108,7 @@ class DashboardController {
             $workplaceModel = new Workplace();
 
             // Check permissions
-            if (!$userModel->hasPermission(Auth::userId(), $workplaceId)) {
+            if (!Auth::isAdmin() && !$userModel->hasPermission(Auth::userId(), $workplaceId, 'parasitology')) {
                 die('Nemáte oprávnění k tomuto pracovišti');
             }
 

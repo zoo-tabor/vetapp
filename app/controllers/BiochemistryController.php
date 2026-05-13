@@ -16,7 +16,7 @@ class BiochemistryController {
         $userModel = new User();
         $workplaceModel = new Workplace();
 
-        $workplaces = $userModel->getWorkplacePermissions(Auth::userId());
+        $workplaces = $userModel->getWorkplacePermissions(Auth::userId(), 'biochemistry');
 
         View::render('biochemistry/dashboard', [
             'layout' => 'main',
@@ -33,7 +33,7 @@ class BiochemistryController {
         $animalModel = new Animal();
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $id)) {
+        if (!$userModel->hasPermission(Auth::userId(), $id, 'biochemistry')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -106,7 +106,7 @@ class BiochemistryController {
             'title' => 'Biochemie a hematologie - ' . $workplace['name'],
             'workplace' => $workplace,
             'animals' => $animals,
-            'canEdit' => $userModel->hasPermission(Auth::userId(), $id, 'edit')
+            'canEdit' => $userModel->hasPermission(Auth::userId(), $id, 'biochemistry', 'edit')
         ]);
     }
 
@@ -128,7 +128,7 @@ class BiochemistryController {
         }
 
         // Check permissions (must have access to the animal's workplace)
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -227,7 +227,7 @@ class BiochemistryController {
             'referenceSources' => $referenceSources,
             'storedBiochemParams' => $manualParams['biochemistry'],
             'storedHematoParams' => $manualParams['hematology'],
-            'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')
+            'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry', 'edit')
         ]);
     }
 
@@ -257,7 +257,7 @@ class BiochemistryController {
         $userModel = new User();
         $animal = $animalModel->findById($animalId);
 
-        if (!$animal || !$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+        if (!$animal || !$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry', 'edit')) {
             $_SESSION['error'] = 'Nemáte oprávnění k této akci';
             header('Location: /biochemistry/animal/' . $animalId);
             exit;
@@ -338,7 +338,7 @@ class BiochemistryController {
         }
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -480,7 +480,7 @@ class BiochemistryController {
         }
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry')) {
             View::render('error', [
                 'layout' => 'print',
                 'title' => 'Přístup odepřen',
@@ -833,7 +833,7 @@ class BiochemistryController {
         $animalModel = new Animal();
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $workplaceId)) {
+        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'biochemistry')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -909,7 +909,7 @@ class BiochemistryController {
         }
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -969,7 +969,7 @@ class BiochemistryController {
         }
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -1136,7 +1136,7 @@ class BiochemistryController {
 
             // Check permissions
             $userModel = new User();
-            if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')) {
+            if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry', 'edit')) {
                 http_response_code(403);
                 echo json_encode(['error' => 'Nemáte oprávnění editovat tento výsledek']);
                 return;
@@ -1167,7 +1167,7 @@ class BiochemistryController {
         $workplaceModel = new Workplace();
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $workplaceId)) {
+        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'biochemistry')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',

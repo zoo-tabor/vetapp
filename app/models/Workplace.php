@@ -20,21 +20,43 @@ class Workplace extends Model {
         return $result[0] ?? null;
     }
 
-    public function hasAccess($userId, $workplaceId) {
-        $sql = "
-            SELECT can_view FROM user_workplace_permissions
-            WHERE user_id = ? AND workplace_id = ? AND can_view = 1
-        ";
-        $result = $this->query($sql, [$userId, $workplaceId]);
+    // Check if user has view access to a specific section in a workplace
+    public function hasAccess($userId, $workplaceId, $section = null) {
+        if ($section) {
+            $sql = "
+                SELECT can_view FROM user_permissions
+                WHERE user_id = ? AND workplace_id = ? AND section = ? AND can_view = 1
+            ";
+            $result = $this->query($sql, [$userId, $workplaceId, $section]);
+        } else {
+            $sql = "
+                SELECT can_view FROM user_permissions
+                WHERE user_id = ? AND workplace_id = ? AND can_view = 1
+                LIMIT 1
+            ";
+            $result = $this->query($sql, [$userId, $workplaceId]);
+        }
         return !empty($result);
     }
 
-    public function getUserWorkplaces($userId) {
+    // Workplaces where user has view access (any section, or specific section)
+    public function getUserWorkplaces($userId, $section = null) {
+        if ($section) {
+            $sql = "
+                SELECT w.*, up.can_view, up.can_edit
+                FROM workplaces w
+                INNER JOIN user_permissions up ON w.id = up.workplace_id
+                WHERE up.user_id = ? AND up.section = ? AND up.can_view = 1 AND w.is_active = 1
+                ORDER BY w.name ASC
+            ";
+            return $this->query($sql, [$userId, $section]);
+        }
         $sql = "
-            SELECT w.*, uwp.can_view, uwp.can_edit
+            SELECT DISTINCT w.*, MAX(up.can_view) as can_view, MAX(up.can_edit) as can_edit
             FROM workplaces w
-            INNER JOIN user_workplace_permissions uwp ON w.id = uwp.workplace_id
-            WHERE uwp.user_id = ? AND uwp.can_view = 1 AND w.is_active = 1
+            INNER JOIN user_permissions up ON w.id = up.workplace_id
+            WHERE up.user_id = ? AND up.can_view = 1 AND w.is_active = 1
+            GROUP BY w.id
             ORDER BY w.name ASC
         ";
         return $this->query($sql, [$userId]);

@@ -16,7 +16,7 @@ class UrineAnalysisController {
         $userModel = new User();
         $workplaceModel = new Workplace();
 
-        $workplaces = $userModel->getWorkplacePermissions(Auth::userId());
+        $workplaces = $userModel->getWorkplacePermissions(Auth::userId(), 'urine');
 
         View::render('urineanalysis/dashboard', [
             'layout' => 'main',
@@ -32,7 +32,7 @@ class UrineAnalysisController {
         $workplaceModel = new Workplace();
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $id)) {
+        if (!$userModel->hasPermission(Auth::userId(), $id, 'urine')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -52,7 +52,7 @@ class UrineAnalysisController {
         }
 
         // Check if user can edit
-        $canEdit = Auth::role() === 'admin' || $userModel->hasPermission(Auth::userId(), $id, 'edit');
+        $canEdit = Auth::isAdmin() || $userModel->hasPermission(Auth::userId(), $id, 'urine', 'edit');
 
         // Get animals for this workplace
         $db = Database::getInstance()->getConnection();
@@ -103,7 +103,7 @@ class UrineAnalysisController {
         }
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'urine')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -113,7 +113,7 @@ class UrineAnalysisController {
         }
 
         // Check if user can edit
-        $canEdit = Auth::role() === 'admin' || $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit');
+        $canEdit = Auth::isAdmin() || $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'urine', 'edit');
 
         // Get urine tests for this animal
         $db = Database::getInstance()->getConnection();
@@ -290,7 +290,7 @@ class UrineAnalysisController {
         }
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'urine')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -627,7 +627,7 @@ class UrineAnalysisController {
         $animalModel = new Animal();
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $workplaceId)) {
+        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'urine')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -690,7 +690,7 @@ class UrineAnalysisController {
         }
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'urine')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',
@@ -738,7 +738,7 @@ class UrineAnalysisController {
         }
 
         // Check permissions
-        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'])) {
+        if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'urine')) {
             View::render('error', [
                 'layout' => 'main',
                 'title' => 'Přístup odepřen',

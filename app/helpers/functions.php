@@ -122,8 +122,7 @@ function getFindingStatusBadge($status) {
 function getRoleLabel($role) {
     $labels = [
         'admin' => 'Administrátor',
-        'user_edit' => 'Uživatel - editace',
-        'user_read' => 'Uživatel - čtení'
+        'user'  => 'Uživatel',
     ];
     
     return $labels[$role] ?? 'Neznámá role';

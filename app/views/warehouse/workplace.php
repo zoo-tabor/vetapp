@@ -28,21 +28,7 @@ require_once __DIR__ . '/../../core/Database.php';
         </div>
         <div style="display: flex; gap: 10px;">
             <?php if (!isset($isCentral) || !$isCentral): ?>
-                <?php
-                // Check if user has edit permission or is admin
-                $hasEditPermission = Auth::isAdmin();
-                if (!$hasEditPermission) {
-                    $db = Database::getInstance()->getConnection();
-                    $stmt = $db->prepare("
-                        SELECT can_edit FROM user_workplace_permissions
-                        WHERE user_id = ? AND workplace_id = ?
-                    ");
-                    $stmt->execute([Auth::userId(), $workplace['id']]);
-                    $permission = $stmt->fetch(PDO::FETCH_ASSOC);
-                    $hasEditPermission = $permission && $permission['can_edit'];
-                }
-                ?>
-                <?php if ($hasEditPermission): ?>
+                <?php if ($hasEditPermission ?? false): ?>
                     <a href="/warehouse/inventory/<?= $workplace['id'] ?>" class="btn btn-outline">📋 Inventura</a>
                 <?php endif; ?>
             <?php endif; ?>

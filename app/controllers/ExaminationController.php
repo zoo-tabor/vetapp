@@ -11,7 +11,7 @@ class ExaminationController {
 
         // Check edit permissions
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'animals', 'edit')) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění editovat toto pracoviště']);
             return;
@@ -208,7 +208,7 @@ class ExaminationController {
                 }
 
                 // Check permissions
-                if (!$userModel->hasPermission(Auth::userId(), $exam['workplace_id'], 'edit')) {
+                if (!$userModel->hasPermission(Auth::userId(), $exam['workplace_id'], 'animals', 'edit')) {
                     http_response_code(403);
                     echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění upravit toto vyšetření']);
                     return;
@@ -273,7 +273,7 @@ class ExaminationController {
 
                 // Check if user has permission to edit this workplace
                 $userModel = new User();
-                if (!$userModel->hasPermission(Auth::userId(), $exam['workplace_id'], 'edit')) {
+                if (!$userModel->hasPermission(Auth::userId(), $exam['workplace_id'], 'animals', 'edit')) {
                     http_response_code(403);
                     echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění smazat toto vyšetření']);
                     return;

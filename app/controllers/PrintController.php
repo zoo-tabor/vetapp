@@ -27,7 +27,7 @@ class PrintController {
 
         // Check view permissions
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'view')) {
+        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'animals', 'view')) {
             die('Nemáte oprávnění k tomuto pracovišti');
         }
 

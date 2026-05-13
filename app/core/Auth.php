@@ -61,10 +61,6 @@ class Auth {
         return self::role() === 'admin';
     }
     
-    public static function canEdit() {
-        return in_array(self::role(), ['admin', 'user_edit']);
-    }
-    
     public static function requireLogin() {
         if (!self::check()) {
             header('Location: /login');

@@ -10,7 +10,7 @@ class EnclosureController {
 
         // Check edit permissions
         $userModel = new User();
-        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'edit')) {
+        if (!$userModel->hasPermission(Auth::userId(), $workplaceId, 'animals', 'edit')) {
             http_response_code(403);
             echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění editovat toto pracoviště']);
             return;
