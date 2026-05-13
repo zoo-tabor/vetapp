@@ -110,6 +110,20 @@
                     <input type="text" id="reference_document" name="reference_document" class="form-control" placeholder="Číslo faktury, dodacího listu...">
                 </div>
 
+                <!-- Batch fields — visible only for 'in' movements -->
+                <div id="batchFields" style="display:none;">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="batch_number">Číslo šarže / LOT</label>
+                            <input type="text" id="batch_number" name="batch_number" class="form-control" placeholder="Č. šarže...">
+                        </div>
+                        <div class="form-group">
+                            <label for="expiration_date">Datum expirace</label>
+                            <input type="date" id="expiration_date" name="expiration_date" class="form-control">
+                        </div>
+                    </div>
+                </div>
+
                 <div class="form-group">
                     <label for="movement_notes">Poznámka</label>
                     <textarea id="movement_notes" name="notes" class="form-control" rows="3" placeholder="Důvod pohybu (např. Týdenní krmení, Dodávka od dodavatele XY...)"></textarea>
@@ -291,6 +305,15 @@ function showMovementModal(itemId, itemName, type) {
 
     const title = type === 'in' ? 'Příjem zásob - ' + itemName : 'Výdej zásob - ' + itemName;
     document.getElementById('movementModalTitle').textContent = title;
+
+    const batchFields = document.getElementById('batchFields');
+    if (type === 'in') {
+        batchFields.style.display = 'block';
+    } else {
+        batchFields.style.display = 'none';
+        document.getElementById('batch_number').value = '';
+        document.getElementById('expiration_date').value = '';
+    }
 
     document.getElementById('movementModal').style.display = 'block';
 }

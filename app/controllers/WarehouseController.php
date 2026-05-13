@@ -303,6 +303,8 @@ class WarehouseController {
         $movementDate = $_POST['movement_date'];
         $referenceDocument = trim($_POST['reference_document'] ?? '');
         $notes = trim($_POST['notes'] ?? '');
+        $batchNumber = trim($_POST['batch_number'] ?? '');
+        $expirationDate = trim($_POST['expiration_date'] ?? '');
 
         $db = Database::getInstance()->getConnection();
 
@@ -329,11 +331,30 @@ class WarehouseController {
                 $quantityChange = $quantity - $item['current_stock'];
             }
 
+            // If receiving stock with an expiration date, create a batch record
+            $batchId = null;
+            if ($movementType === 'in' && $expirationDate !== '') {
+                $stmt = $db->prepare("
+                    INSERT INTO warehouse_batches
+                    (item_id, batch_number, quantity, expiration_date, received_date, created_by)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ");
+                $stmt->execute([
+                    $itemId,
+                    $batchNumber ?: null,
+                    $quantity,
+                    $expirationDate,
+                    $movementDate,
+                    Auth::userId()
+                ]);
+                $batchId = $db->lastInsertId();
+            }
+
             // Insert movement record
             $stmt = $db->prepare("
                 INSERT INTO warehouse_movements
-                (item_id, movement_type, quantity, movement_date, reference_document, notes, created_by)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (item_id, movement_type, quantity, movement_date, reference_document, notes, batch_id, created_by)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ");
             $stmt->execute([
                 $itemId,
@@ -342,6 +363,7 @@ class WarehouseController {
                 $movementDate,
                 $referenceDocument ?: null,
                 $notes ?: null,
+                $batchId,
                 Auth::userId()
             ]);
 
