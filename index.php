@@ -33,6 +33,25 @@ Auth::init();
 // Načtení pomocných funkcí
 require_once APP_PATH . '/helpers/functions.php';
 
+// Derive current_app from URL so the navbar always reflects the active section.
+// This runs on every request so navigating directly to any section URL is enough.
+$_uri = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+if (strpos($_uri, '/biochemistry') === 0) {
+    $_SESSION['current_app'] = 'biochemistry';
+} elseif (strpos($_uri, '/urineanalysis') === 0) {
+    $_SESSION['current_app'] = 'urineanalysis';
+} elseif (strpos($_uri, '/vaccination-plan') === 0) {
+    $_SESSION['current_app'] = 'vaccination';
+} elseif (strpos($_uri, '/warehouse') === 0) {
+    $_SESSION['current_app'] = 'warehouse';
+} elseif (strpos($_uri, '/animals') === 0) {
+    $_SESSION['current_app'] = 'animals';
+} elseif (strpos($_uri, '/parasitology') === 0) {
+    $_SESSION['current_app'] = 'parasitology';
+}
+// Admin / user / login / etc. leave the session unchanged so the last section stays highlighted.
+unset($_uri);
+
 // Global exception handler
 set_exception_handler(function(Throwable $e) {
     error_log("Uncaught exception: " . $e->getMessage() . "\n" . $e->getTraceAsString());
