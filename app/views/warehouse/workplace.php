@@ -92,6 +92,13 @@ require_once __DIR__ . '/../../core/Database.php';
     <?php
     $activeItems   = array_filter($items, fn($i) => ($i['is_active'] ?? 1) == 1);
     $inactiveItems = array_filter($items, fn($i) => ($i['is_active'] ?? 1) == 0);
+
+    $weeksLabel = function($weeks) {
+        $w = (int) round($weeks);
+        if ($w === 1) return '1 týden';
+        if ($w >= 2 && $w <= 4) return "$w týdny";
+        return "$w týdnů";
+    };
     ?>
     <div class="tabs">
         <button class="tab active" onclick="switchTab('food')">🌾 Krmiva</button>
@@ -140,6 +147,7 @@ require_once __DIR__ . '/../../core/Database.php';
                             <th onclick="sortTable('food-table', <?= isset($isCentral) && $isCentral ? '7' : '6' ?>)" class="sortable">
                                 Dodavatel <span class="sort-arrow">⇅</span>
                             </th>
+                            <th>Aktuální zásoba</th>
                             <th>Akce</th>
                         </tr>
                     </thead>
@@ -185,6 +193,18 @@ require_once __DIR__ . '/../../core/Database.php';
                                     <?php endif; ?>
                                 </td>
                                 <td><?= htmlspecialchars($item['supplier'] ?? '-') ?></td>
+                                <td>
+                                    <?php if (!empty($item['weekly_consumption']) && $item['weekly_consumption'] > 0): ?>
+                                        <?php
+                                        $weeks = $item['current_stock'] / $item['weekly_consumption'];
+                                        $desired = $item['desired_weeks_stock'] ?? 4;
+                                        $wColor = $weeks >= $desired ? '#27ae60' : ($weeks >= 2 ? '#e67e22' : '#e74c3c');
+                                        ?>
+                                        <span style="color:<?= $wColor ?>; font-weight:600;"><?= $weeksLabel($weeks) ?></span>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
                                 <td class="actions-cell">
                                     <button class="btn btn-sm btn-success" onclick="showMovementModal(<?= $item['id'] ?>, '<?= htmlspecialchars($item['name']) ?>', 'in')">➕</button>
                                     <button class="btn btn-sm btn-warning" onclick="showMovementModal(<?= $item['id'] ?>, '<?= htmlspecialchars($item['name']) ?>', 'out')">➖</button>
@@ -237,6 +257,7 @@ require_once __DIR__ . '/../../core/Database.php';
                             <th onclick="sortTable('medicament-table', <?= isset($isCentral) && $isCentral ? '7' : '6' ?>)" class="sortable">
                                 Dodavatel <span class="sort-arrow">⇅</span>
                             </th>
+                            <th>Aktuální zásoba</th>
                             <th>Akce</th>
                         </tr>
                     </thead>
@@ -282,6 +303,18 @@ require_once __DIR__ . '/../../core/Database.php';
                                     <?php endif; ?>
                                 </td>
                                 <td><?= htmlspecialchars($item['supplier'] ?? '-') ?></td>
+                                <td>
+                                    <?php if (!empty($item['weekly_consumption']) && $item['weekly_consumption'] > 0): ?>
+                                        <?php
+                                        $weeks = $item['current_stock'] / $item['weekly_consumption'];
+                                        $desired = $item['desired_weeks_stock'] ?? 4;
+                                        $wColor = $weeks >= $desired ? '#27ae60' : ($weeks >= 2 ? '#e67e22' : '#e74c3c');
+                                        ?>
+                                        <span style="color:<?= $wColor ?>; font-weight:600;"><?= $weeksLabel($weeks) ?></span>
+                                    <?php else: ?>
+                                        —
+                                    <?php endif; ?>
+                                </td>
                                 <td class="actions-cell">
                                     <button class="btn btn-sm btn-success" onclick="showMovementModal(<?= $item['id'] ?>, '<?= htmlspecialchars($item['name']) ?>', 'in')">➕</button>
                                     <button class="btn btn-sm btn-warning" onclick="showMovementModal(<?= $item['id'] ?>, '<?= htmlspecialchars($item['name']) ?>', 'out')">➖</button>
