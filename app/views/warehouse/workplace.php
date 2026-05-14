@@ -40,10 +40,13 @@ require_once __DIR__ . '/../../core/Database.php';
     <?php if (!empty($lowStockItems) || !empty($expiringItems)): ?>
         <div class="alerts-section">
             <?php if (!empty($lowStockItems)): ?>
-                <div class="alert alert-warning">
-                    <strong>⚠️ Nízké stavy zásob (<?= count($lowStockItems) ?>)</strong>
-                    <ul>
-                        <?php foreach (array_slice($lowStockItems, 0, 5) as $item): ?>
+                <div class="alert alert-warning alert-collapsible">
+                    <button class="alert-toggle" onclick="toggleAlert('lowstock')" type="button">
+                        <strong>⚠️ Nízké stavy zásob (<?= count($lowStockItems) ?>)</strong>
+                        <span class="alert-toggle-icon" id="lowstock-icon">▼</span>
+                    </button>
+                    <ul id="lowstock-list" style="display:none; margin-top:10px;">
+                        <?php foreach ($lowStockItems as $item): ?>
                             <li>
                                 <a href="/warehouse/item/<?= $item['id'] ?>">
                                     <?= htmlspecialchars($item['name']) ?>
@@ -55,18 +58,18 @@ require_once __DIR__ . '/../../core/Database.php';
                                 (minimum: <?= number_format($item['min_stock_level'], 2, ',', ' ') ?> <?= htmlspecialchars($item['unit']) ?>)
                             </li>
                         <?php endforeach; ?>
-                        <?php if (count($lowStockItems) > 5): ?>
-                            <li><em>... a dalších <?= count($lowStockItems) - 5 ?> položek</em></li>
-                        <?php endif; ?>
                     </ul>
                 </div>
             <?php endif; ?>
 
             <?php if (!empty($expiringItems)): ?>
-                <div class="alert alert-danger">
-                    <strong>🔔 Blížící se expirace (<?= count($expiringItems) ?> šarží)</strong>
-                    <ul>
-                        <?php foreach (array_slice($expiringItems, 0, 5) as $batch): ?>
+                <div class="alert alert-danger alert-collapsible">
+                    <button class="alert-toggle" onclick="toggleAlert('expiring')" type="button">
+                        <strong>🔔 Blížící se expirace (<?= count($expiringItems) ?> šarží)</strong>
+                        <span class="alert-toggle-icon" id="expiring-icon">▼</span>
+                    </button>
+                    <ul id="expiring-list" style="display:none; margin-top:10px;">
+                        <?php foreach ($expiringItems as $batch): ?>
                             <li>
                                 <?= htmlspecialchars($batch['name']) ?>
                                 <?php if (isset($isCentral) && $isCentral && !empty($batch['workplace_name'])): ?>
@@ -79,9 +82,6 @@ require_once __DIR__ . '/../../core/Database.php';
                                 - množství: <?= number_format($batch['quantity'], 2, ',', ' ') ?>
                             </li>
                         <?php endforeach; ?>
-                        <?php if (count($expiringItems) > 5): ?>
-                            <li><em>... a dalších <?= count($expiringItems) - 5 ?> šarží</em></li>
-                        <?php endif; ?>
                     </ul>
                 </div>
             <?php endif; ?>
@@ -346,6 +346,42 @@ require_once __DIR__ . '/../../core/Database.php';
     margin-bottom: 15px;
     color: #7f8c8d;
     font-size: 14px;
+}
+
+.alert-collapsible {
+    padding: 0;
+}
+
+.alert-toggle {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 12px 16px;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: inherit;
+    color: inherit;
+}
+
+.alert-toggle:hover {
+    opacity: 0.85;
+}
+
+.alert-toggle-icon {
+    font-size: 12px;
+    transition: transform 0.2s;
+}
+
+.alert-toggle-icon.open {
+    transform: rotate(180deg);
+}
+
+.alert-collapsible ul {
+    padding: 0 16px 12px 32px;
+    margin: 0;
 }
 
 .breadcrumb a {
@@ -636,6 +672,14 @@ require_once __DIR__ . '/../../core/Database.php';
 </style>
 
 <script>
+function toggleAlert(key) {
+    const list = document.getElementById(key + '-list');
+    const icon = document.getElementById(key + '-icon');
+    const isOpen = list.style.display !== 'none';
+    list.style.display = isOpen ? 'none' : 'block';
+    icon.classList.toggle('open', !isOpen);
+}
+
 function switchTab(category) {
     // Update tab buttons
     document.querySelectorAll('.tab').forEach(tab => {
