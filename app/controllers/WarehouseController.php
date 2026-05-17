@@ -460,12 +460,16 @@ class WarehouseController {
             exit;
         }
 
-        // Get all items for this workplace
+        // Get active items for this workplace, including weekly consumption
         $stmt = $db->prepare("
             SELECT
-                wi.*
+                wi.*,
+                wc.weekly_consumption,
+                wc.desired_weeks_stock
             FROM warehouse_items wi
+            LEFT JOIN warehouse_consumption wc ON wc.item_id = wi.id
             WHERE wi.workplace_id = ?
+              AND wi.is_active = 1
             ORDER BY wi.category, CAST(wi.item_code AS UNSIGNED), wi.item_code, wi.name
         ");
         $stmt->execute([$workplaceId]);

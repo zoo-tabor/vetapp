@@ -82,7 +82,10 @@
                                 <th onclick="sortInventoryTable('food-inventory-table', 4)" class="sortable" style="width: 150px;">
                                     Jednotka <span class="sort-arrow">⇅</span>
                                 </th>
-                                <th onclick="sortInventoryTable('food-inventory-table', 5)" class="sortable" style="width: 120px;">
+                                <th onclick="sortInventoryTable('food-inventory-table', 5)" class="sortable" style="width: 160px;">
+                                    Týdenní spotřeba <span class="sort-arrow">⇅</span>
+                                </th>
+                                <th onclick="sortInventoryTable('food-inventory-table', 6)" class="sortable" style="width: 120px;">
                                     Změna <span class="sort-arrow">⇅</span>
                                 </th>
                             </tr>
@@ -110,6 +113,13 @@
                                     </td>
                                     <td class="current-stock"><?= number_format($item['current_stock'], 2, ',', ' ') ?></td>
                                     <td><?= htmlspecialchars($item['unit']) ?></td>
+                                    <td class="consumption-cell">
+                                        <?php if (!empty($item['weekly_consumption'])): ?>
+                                            <?= number_format($item['weekly_consumption'], 2, ',', ' ') ?> <?= htmlspecialchars($item['unit']) ?>/týden
+                                        <?php else: ?>
+                                            <span style="color:#bdc3c7;">—</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="difference-cell" data-item-id="<?= $item['id'] ?>">-</td>
                                 </tr>
                             <?php endforeach; ?>
@@ -145,7 +155,10 @@
                                 <th onclick="sortInventoryTable('medicament-inventory-table', 4)" class="sortable" style="width: 150px;">
                                     Jednotka <span class="sort-arrow">⇅</span>
                                 </th>
-                                <th onclick="sortInventoryTable('medicament-inventory-table', 5)" class="sortable" style="width: 120px;">
+                                <th onclick="sortInventoryTable('medicament-inventory-table', 5)" class="sortable" style="width: 160px;">
+                                    Týdenní spotřeba <span class="sort-arrow">⇅</span>
+                                </th>
+                                <th onclick="sortInventoryTable('medicament-inventory-table', 6)" class="sortable" style="width: 120px;">
                                     Změna <span class="sort-arrow">⇅</span>
                                 </th>
                             </tr>
@@ -173,6 +186,13 @@
                                     </td>
                                     <td class="current-stock"><?= number_format($item['current_stock'], 2, ',', ' ') ?></td>
                                     <td><?= htmlspecialchars($item['unit']) ?></td>
+                                    <td class="consumption-cell">
+                                        <?php if (!empty($item['weekly_consumption'])): ?>
+                                            <?= number_format($item['weekly_consumption'], 2, ',', ' ') ?> <?= htmlspecialchars($item['unit']) ?>/týden
+                                        <?php else: ?>
+                                            <span style="color:#bdc3c7;">—</span>
+                                        <?php endif; ?>
+                                    </td>
                                     <td class="difference-cell" data-item-id="<?= $item['id'] ?>">-</td>
                                 </tr>
                             <?php endforeach; ?>
@@ -401,6 +421,12 @@
     background-color: #fff8e1;
 }
 
+.consumption-cell {
+    color: #7f8c8d;
+    font-size: 13px;
+    white-space: nowrap;
+}
+
 .difference-cell {
     font-weight: 600;
     font-size: 15px;
@@ -586,7 +612,7 @@
 
     .inventory-table {
         font-size: 13px;
-        min-width: 600px;
+        min-width: 760px;
     }
 
     .inventory-table th,
