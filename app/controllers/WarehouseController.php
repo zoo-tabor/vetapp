@@ -537,18 +537,21 @@ class WarehouseController {
 
                 // Only update if there's a change
                 if (abs($newStock - $currentStock) > 0.001) {
-                    // Update stock
-                    $stmt = $db->prepare("UPDATE warehouse_items SET current_stock = ? WHERE id = ?");
-                    $stmt->execute([$newStock, $itemId]);
-
-                    // Record movement with inventory date
                     $difference = $newStock - $currentStock;
+                    $movementType = $difference < 0 ? 'out' : 'in';
+                    $quantity = abs($difference);
+
+                    // Record as real movement so consumption is tracked
                     $stmt = $db->prepare("
                         INSERT INTO warehouse_movements
                         (item_id, movement_type, quantity, movement_date, notes, created_by)
-                        VALUES (?, 'adjustment', ?, ?, 'Inventura', ?)
+                        VALUES (?, ?, ?, ?, 'Inventura', ?)
                     ");
-                    $stmt->execute([$itemId, $difference, $inventoryDate, Auth::userId()]);
+                    $stmt->execute([$itemId, $movementType, $quantity, $inventoryDate, Auth::userId()]);
+
+                    // Update current stock
+                    $stmt = $db->prepare("UPDATE warehouse_items SET current_stock = ? WHERE id = ?");
+                    $stmt->execute([$newStock, $itemId]);
 
                     $updatedCount++;
                 }
