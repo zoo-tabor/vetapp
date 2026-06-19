@@ -95,6 +95,9 @@
                                 Sklad
                             </a>
                             <?php endif; ?>
+                            <a href="https://vetapp.zootabor.eu/ZooTrack" target="_blank" class="app-dropdown-item zootrack">
+                                ZooTrack
+                            </a>
                         </div>
                     </div>
                 </div>
@@ -280,6 +283,15 @@
     .app-dropdown-item.vaccination.active:hover {
         background: #2980b9 !important;
         color: white !important;
+    }
+
+    .app-dropdown-item.zootrack {
+        color: #1a7abf !important;
+        font-style: italic;
+    }
+
+    .app-dropdown-item.zootrack:hover {
+        color: #145f96 !important;
     }
 
     /* Mobile optimization for app dropdown */
