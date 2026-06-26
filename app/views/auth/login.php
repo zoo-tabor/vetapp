@@ -103,7 +103,7 @@
             </form>
 
             <?php if (isset($error)): ?>
-                <p style="text-align:center;margin-top:18px">
+                <p class="login-link">
                     <a href="/forgot-password">Zapomněli jste heslo?</a>
                 </p>
             <?php endif; ?>

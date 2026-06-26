@@ -25,7 +25,7 @@
                 <div class="alert alert-success">
                     <?= htmlspecialchars($success) ?>
                 </div>
-                <p style="text-align:center;margin-top:18px">
+                <p class="login-link">
                     <a href="/login">← Zpět na přihlášení</a>
                 </p>
             <?php else: ?>
@@ -44,7 +44,7 @@
                     </button>
                 </form>
 
-                <p style="text-align:center;margin-top:18px">
+                <p class="login-link">
                     <a href="/login">← Zpět na přihlášení</a>
                 </p>
             <?php endif; ?>
