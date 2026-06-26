@@ -288,3 +288,40 @@ function currentUrl() {
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
     return $protocol . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
 }
+
+/**
+ * Get (or lazily create) the per-session CSRF token.
+ */
+function csrf_token() {
+    if (empty($_SESSION['csrf_token'])) {
+        $_SESSION['csrf_token'] = bin2hex(random_bytes(32));
+    }
+    return $_SESSION['csrf_token'];
+}
+
+/**
+ * Validate the CSRF token sent with a state-changing request.
+ * Accepts the token from the _csrf POST field or the X-CSRF-Token header.
+ */
+function csrf_validate() {
+    $session = $_SESSION['csrf_token'] ?? '';
+    if ($session === '') {
+        return false;
+    }
+    $sent = $_POST['_csrf'] ?? ($_SERVER['HTTP_X_CSRF_TOKEN'] ?? '');
+    return is_string($sent) && $sent !== '' && hash_equals($session, $sent);
+}
+
+/**
+ * Single permission gate helper (admin bypass + per-workplace section check).
+ * Returns bool; controllers decide how to respond (HTML vs JSON).
+ */
+function userCan($workplaceId, $section, $perm = 'view') {
+    require_once __DIR__ . '/../core/Auth.php';
+    require_once __DIR__ . '/../models/User.php';
+    if (Auth::isAdmin()) {
+        return true;
+    }
+    $userModel = new User();
+    return $userModel->hasPermission(Auth::userId(), $workplaceId, $section, $perm);
+}

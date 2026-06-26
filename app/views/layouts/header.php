@@ -3,8 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title><?= $title ?? 'Parazitologická Evidence' ?></title>
+    <title><?= htmlspecialchars($title ?? 'Parazitologická Evidence', ENT_QUOTES, 'UTF-8') ?></title>
     <link rel="stylesheet" href="/assets/css/style.css">
+    <meta name="csrf-token" content="<?= csrf_token() ?>">
+    <script>
+    // CSRF bootstrap (runs early, before page scripts). Attaches the token to
+    // same-origin fetch() POSTs and injects a hidden _csrf field into POST forms.
+    (function () {
+        var meta = document.querySelector('meta[name="csrf-token"]');
+        var token = meta ? meta.getAttribute('content') : '';
+        if (window.fetch) {
+            var _fetch = window.fetch;
+            window.fetch = function (input, init) {
+                init = init || {};
+                try {
+                    var url = (typeof input === 'string') ? input : (input && input.url) || '';
+                    var sameOrigin = url.indexOf('http') !== 0 || url.indexOf(window.location.origin) === 0;
+                    if (sameOrigin) {
+                        var h = new Headers(init.headers || (typeof input !== 'string' && input.headers) || {});
+                        if (!h.has('X-CSRF-Token')) { h.set('X-CSRF-Token', token); }
+                        init.headers = h;
+                    }
+                } catch (e) {}
+                return _fetch(input, init);
+            };
+        }
+        document.addEventListener('DOMContentLoaded', function () {
+            document.querySelectorAll('form').forEach(function (f) {
+                if ((f.getAttribute('method') || '').toLowerCase() === 'post' &&
+                    !f.querySelector('input[name="_csrf"]')) {
+                    var i = document.createElement('input');
+                    i.type = 'hidden'; i.name = '_csrf'; i.value = token;
+                    f.appendChild(i);
+                }
+            });
+        });
+    })();
+    </script>
 </head>
 <body>
     <?php

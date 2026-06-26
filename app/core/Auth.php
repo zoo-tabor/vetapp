@@ -7,6 +7,15 @@ class Auth {
     
     public static function init() {
         if (session_status() === PHP_SESSION_NONE) {
+            // Harden the session cookie. HTTPS is enforced by .htaccess so 'secure'
+            // is safe; SameSite=Lax still allows top-level navigation (e.g. /zootrack).
+            session_set_cookie_params([
+                'lifetime' => 0,
+                'path'     => '/',
+                'secure'   => true,
+                'httponly' => true,
+                'samesite' => 'Lax',
+            ]);
             session_start();
         }
     }
@@ -19,6 +28,8 @@ class Auth {
         
         if ($user && password_verify($password, $user['password_hash'])) {
             if ($user['is_active'] == 1) {
+                // Prevent session fixation: issue a fresh session id on login.
+                session_regenerate_id(true);
                 $_SESSION['user_id'] = $user['id'];
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];

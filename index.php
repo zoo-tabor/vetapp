@@ -52,6 +52,30 @@ if (strpos($_uri, '/biochemistry') === 0) {
 // Admin / user / login / etc. leave the session unchanged so the last section stays highlighted.
 unset($_uri);
 
+// ============================================
+// CSRF PROTECTION (state-changing requests)
+// Two-step rollout: monitor first (log only), then enforce by flipping CSRF_ENFORCE.
+// ============================================
+define('CSRF_ENFORCE', false);
+if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
+    $__csrfPath = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
+    // Public pre-auth endpoints are exempt (no authenticated session token yet).
+    $__csrfExempt = ($__csrfPath === '/login' || $__csrfPath === '/setup-password');
+    if (!$__csrfExempt && !csrf_validate()) {
+        error_log('CSRF check failed for POST ' . $__csrfPath);
+        if (CSRF_ENFORCE) {
+            http_response_code(403);
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode([
+                'success' => false,
+                'error'   => 'Neplatný bezpečnostní token (CSRF). Obnovte stránku a zkuste to znovu.'
+            ], JSON_UNESCAPED_UNICODE);
+            exit;
+        }
+    }
+    unset($__csrfPath, $__csrfExempt);
+}
+
 // Global exception handler
 set_exception_handler(function(Throwable $e) {
     error_log("Uncaught exception: " . $e->getMessage() . "\n" . $e->getTraceAsString());
