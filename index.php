@@ -56,7 +56,7 @@ unset($_uri);
 // CSRF PROTECTION (state-changing requests)
 // Two-step rollout: monitor first (log only), then enforce by flipping CSRF_ENFORCE.
 // ============================================
-define('CSRF_ENFORCE', false);
+define('CSRF_ENFORCE', true); // verified live: form + fetch(FormData/JSON) POSTs all carry the token
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $__csrfPath = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     // Public pre-auth endpoints are exempt (no authenticated session token yet).
