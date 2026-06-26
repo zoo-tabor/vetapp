@@ -46,9 +46,6 @@ class AnimalController {
     public function detail($id) {
         Auth::requireLogin();
 
-        // DEBUG: Log what ID we received
-        error_log("AnimalController::detail() - Received ID: " . var_export($id, true));
-
         $animalModel = new Animal();
         $animal = $animalModel->getDetail($id);
 

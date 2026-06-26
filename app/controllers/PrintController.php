@@ -8,9 +8,6 @@ require_once __DIR__ . '/../models/User.php';
 class PrintController {
 
     public function history() {
-        error_log("PrintController::history() called");
-        error_log("GET params: " . print_r($_GET, true));
-
         Auth::requireLogin();
 
         $workplaceId = $_GET['workplace_id'] ?? null;
@@ -18,10 +15,7 @@ class PrintController {
         $type = $_GET['type'] ?? 'animals'; // 'animals' or 'enclosures'
         $ids = explode(',', $_GET['ids'] ?? '');
 
-        error_log("Parsed: workplace=$workplaceId, count=$printCount, type=$type, ids=" . implode(',', $ids));
-
         if (empty($workplaceId) || empty($ids)) {
-            error_log("Missing parameters - returning error");
             die('Chybějící parametry: workplace_id=' . var_export($workplaceId, true) . ', ids=' . var_export($ids, true));
         }
 
