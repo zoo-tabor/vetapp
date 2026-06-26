@@ -101,6 +101,12 @@
                     Přihlásit se
                 </button>
             </form>
+
+            <?php if (isset($error)): ?>
+                <p style="text-align:center;margin-top:18px">
+                    <a href="/forgot-password">Zapomněli jste heslo?</a>
+                </p>
+            <?php endif; ?>
         </div>
     </div>
 </body>

@@ -240,8 +240,26 @@ class Email {
         return self::send($email, $subject, $body);
     }
 
-    private static function getPasswordSetupEmailTemplate($fullName, $setupUrl) {
+    public static function sendPasswordReset($email, $fullName, $token) {
+        $setupUrl = (isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? "https" : "http")
+                  . "://" . $_SERVER['HTTP_HOST'] . "/setup-password?token=" . urlencode($token);
+
+        $subject = 'Obnova hesla - VetApp ZOO Tábor';
+
+        $body = self::getPasswordSetupEmailTemplate($fullName, $setupUrl, true);
+
+        return self::send($email, $subject, $body);
+    }
+
+    private static function getPasswordSetupEmailTemplate($fullName, $setupUrl, $isReset = false) {
         $name = $fullName ?: 'Uživateli';
+        $heading = $isReset ? 'Obnova hesla' : 'Vítejte v systému!';
+        $intro = $isReset
+            ? 'pro váš účet v aplikaci VetApp ZOO Tábor byla vyžádána obnova hesla.'
+            : 'Byl pro vás vytvořen účet v aplikaci VetApp ZOO Tábor pro správu veterinární evidence.';
+        $cta = $isReset
+            ? 'Pro nastavení nového hesla klikněte na tlačítko níže:'
+            : 'Pro dokončení registrace a nastavení hesla klikněte na tlačítko níže:';
 
         return "
 <!DOCTYPE html>
@@ -267,13 +285,13 @@ class Email {
                     <!-- Content -->
                     <tr>
                         <td style='padding: 40px 30px;'>
-                            <h2 style='margin: 0 0 20px 0; color: #2c3e50; font-size: 22px; font-weight: 600;'>Vítejte v systému!</h2>
+                            <h2 style='margin: 0 0 20px 0; color: #2c3e50; font-size: 22px; font-weight: 600;'>$heading</h2>
 
                             <p style='margin: 0 0 15px 0; color: #555; line-height: 1.6;'>Dobrý den <strong>$name</strong>,</p>
 
-                            <p style='margin: 0 0 15px 0; color: #555; line-height: 1.6;'>Byl pro vás vytvořen účet v aplikaci VetApp ZOO Tábor pro správu veterinární evidence.</p>
+                            <p style='margin: 0 0 15px 0; color: #555; line-height: 1.6;'>$intro</p>
 
-                            <p style='margin: 0 0 25px 0; color: #555; line-height: 1.6;'>Pro dokončení registrace a nastavení hesla klikněte na tlačítko níže:</p>
+                            <p style='margin: 0 0 25px 0; color: #555; line-height: 1.6;'>$cta</p>
 
                             <!-- Button -->
                             <table width='100%' cellpadding='0' cellspacing='0'>

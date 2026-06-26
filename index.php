@@ -60,7 +60,7 @@ define('CSRF_ENFORCE', true); // verified live: form + fetch(FormData/JSON) POST
 if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'POST') {
     $__csrfPath = strtok($_SERVER['REQUEST_URI'] ?? '/', '?');
     // Public pre-auth endpoints are exempt (no authenticated session token yet).
-    $__csrfExempt = ($__csrfPath === '/login' || $__csrfPath === '/setup-password');
+    $__csrfExempt = ($__csrfPath === '/login' || $__csrfPath === '/setup-password' || $__csrfPath === '/forgot-password');
     if (!$__csrfExempt && !csrf_validate()) {
         error_log('CSRF check failed for POST ' . $__csrfPath);
         if (CSRF_ENFORCE) {
@@ -114,6 +114,19 @@ $router->get('/logout', function() {
     require_once APP_PATH . '/controllers/AuthController.php';
     $controller = new AuthController();
     $controller->logout();
+});
+
+// Self-service password recovery
+$router->get('/forgot-password', function() {
+    require_once APP_PATH . '/controllers/AuthController.php';
+    $controller = new AuthController();
+    $controller->forgotPassword();
+});
+
+$router->post('/forgot-password', function() {
+    require_once APP_PATH . '/controllers/AuthController.php';
+    $controller = new AuthController();
+    $controller->processForgotPassword();
 });
 
 // Dashboard routes

@@ -52,6 +52,48 @@ class AuthController {
         Auth::logout();
     }
 
+    public function forgotPassword() {
+        if (Auth::check()) {
+            View::redirect('/animals');
+        }
+        View::render('auth/forgot-password', ['layout' => false]);
+    }
+
+    public function processForgotPassword() {
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            View::redirect('/forgot-password');
+            return;
+        }
+
+        $username = trim($_POST['username'] ?? '');
+
+        // Same generic response whether or not the account exists (no enumeration).
+        $genericMessage = 'Pokud účet s tímto uživatelským jménem existuje a má nastavený e-mail, '
+                        . 'poslali jsme na něj odkaz pro obnovu hesla. Zkontrolujte prosím svou schránku.';
+
+        if ($username !== '') {
+            require_once __DIR__ . '/../models/User.php';
+            $userModel = new User();
+            $user = $userModel->findByUsername($username);
+
+            if ($user && !empty($user['email'])) {
+                require_once __DIR__ . '/../core/Email.php';
+                try {
+                    $token = $userModel->generatePasswordResetToken($user['id']);
+                    Email::sendPasswordReset($user['email'], $user['full_name'], $token);
+                } catch (Exception $e) {
+                    error_log('processForgotPassword error: ' . $e->getMessage());
+                    // fall through to the generic message regardless
+                }
+            }
+        }
+
+        View::render('auth/forgot-password', [
+            'layout'  => false,
+            'success' => $genericMessage
+        ]);
+    }
+
     public function setupPassword() {
         $token = $_GET['token'] ?? '';
 
