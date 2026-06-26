@@ -313,6 +313,22 @@ function csrf_validate() {
 }
 
 /**
+ * Sanitize a redirect target so it can only point to an internal (same-site) path.
+ * Rejects absolute URLs and protocol-relative (//host) values -> returns $default.
+ */
+function internalPath($value, $default = '/') {
+    $value = (string)$value;
+    if ($value === '' || $value[0] !== '/') {
+        return $default;
+    }
+    // Block "//host" and "/\host" (protocol-relative / backslash tricks)
+    if (isset($value[1]) && ($value[1] === '/' || $value[1] === '\\')) {
+        return $default;
+    }
+    return $value;
+}
+
+/**
  * Single permission gate helper (admin bypass + per-workplace section check).
  * Returns bool; controllers decide how to respond (HTML vs JSON).
  */

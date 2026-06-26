@@ -396,6 +396,20 @@ class UrineAnalysisController {
             exit;
         }
 
+        // Authorize: require urine:edit on the animal's workplace.
+        $animalModel = new Animal();
+        $animalForAuth = $animalModel->findById($animalId);
+        if (!$animalForAuth) {
+            $_SESSION['error'] = 'Zvíře nenalezeno';
+            header('Location: /urineanalysis');
+            exit;
+        }
+        if (!userCan((int)$animalForAuth['workplace_id'], 'urine', 'edit')) {
+            $_SESSION['error'] = 'Nemáte oprávnění přidávat testy k tomuto zvířeti';
+            header('Location: /urineanalysis/animal/' . $animalId);
+            exit;
+        }
+
         try {
             $db = Database::getInstance()->getConnection();
             $db->beginTransaction();
@@ -603,6 +617,27 @@ class UrineAnalysisController {
 
         try {
             $db = Database::getInstance()->getConnection();
+
+            // Authorize: result -> test -> animal -> workplace, require urine:edit.
+            $chk = $db->prepare("
+                SELECT a.workplace_id
+                FROM urine_results r
+                JOIN urine_tests t ON r.test_id = t.id
+                JOIN animals a ON t.animal_id = a.id
+                WHERE r.id = ?
+            ");
+            $chk->execute([$resultId]);
+            $workplaceId = $chk->fetchColumn();
+            if ($workplaceId === false) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => 'Výsledek nenalezen']);
+                return;
+            }
+            if (!userCan((int)$workplaceId, 'urine', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění editovat tento výsledek']);
+                return;
+            }
 
             // Update the result
             $stmt = $db->prepare("

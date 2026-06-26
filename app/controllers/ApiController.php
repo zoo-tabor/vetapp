@@ -105,6 +105,12 @@ class ApiController {
             return;
         }
 
+        if (!userCan((int)$workplaceId, 'parasitology', 'view')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden']);
+            return;
+        }
+
         try {
             $db = Database::getInstance()->getConnection();
 
@@ -145,6 +151,12 @@ class ApiController {
         if (!$workplaceId || !$drug) {
             http_response_code(400);
             echo json_encode(['error' => 'Missing required parameters']);
+            return;
+        }
+
+        if (!userCan((int)$workplaceId, 'parasitology', 'view')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden']);
             return;
         }
 

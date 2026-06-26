@@ -52,6 +52,31 @@ class ExaminationController {
 
             $examinationModel = new Examination();
 
+            // SEC-06: every target animal/enclosure must belong to the authorized workplace.
+            $db = Database::getInstance()->getConnection();
+            if (!empty($animalIds)) {
+                $aStmt = $db->prepare("SELECT workplace_id FROM animals WHERE id = ?");
+                foreach ($animalIds as $aid) {
+                    $aStmt->execute([$aid]);
+                    if ((int)$aStmt->fetchColumn() !== (int)$workplaceId) {
+                        http_response_code(403);
+                        echo json_encode(['success' => false, 'error' => 'Některé zvíře nepatří do tohoto pracoviště']);
+                        return;
+                    }
+                }
+            }
+            if (!empty($enclosureIds)) {
+                $eStmt = $db->prepare("SELECT workplace_id FROM enclosures WHERE id = ?");
+                foreach ($enclosureIds as $eid) {
+                    $eStmt->execute([$eid]);
+                    if ((int)$eStmt->fetchColumn() !== (int)$workplaceId) {
+                        http_response_code(403);
+                        echo json_encode(['success' => false, 'error' => 'Některý výběh nepatří do tohoto pracoviště']);
+                        return;
+                    }
+                }
+            }
+
             try {
                 // Create multiple examination records for each selected animal
                 if (!empty($animalIds)) {
@@ -147,7 +172,8 @@ class ExaminationController {
             $examinations = [];
             foreach ($ids as $id) {
                 $exam = $examinationModel->findById(trim($id));
-                if ($exam) {
+                // Only include examinations from workplaces the user may view.
+                if ($exam && userCan((int)$exam['workplace_id'], 'animals', 'view')) {
                     $examinations[] = $exam;
                 }
             }
@@ -316,6 +342,22 @@ class ExaminationController {
 
         try {
             $db = Database::getInstance()->getConnection();
+
+            // Authorize: keep only animals in workplaces the user may view.
+            $allowedIds = [];
+            $wpStmt = $db->prepare("SELECT workplace_id FROM animals WHERE id = ?");
+            foreach ($animalIdsArray as $aid) {
+                $wpStmt->execute([$aid]);
+                $wid = $wpStmt->fetchColumn();
+                if ($wid !== false && userCan((int)$wid, 'animals', 'view')) {
+                    $allowedIds[] = $aid;
+                }
+            }
+            if (empty($allowedIds)) {
+                echo json_encode(['success' => true, 'examinations' => []]);
+                return;
+            }
+            $animalIdsArray = array_values($allowedIds);
 
             // Create placeholders for IN clause
             $placeholders = implode(',', array_fill(0, count($animalIdsArray), '?'));

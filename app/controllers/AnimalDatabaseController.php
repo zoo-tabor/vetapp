@@ -322,7 +322,7 @@ class AnimalDatabaseController {
             'weightHistory' => $weightHistory,
             'vaccinationUpcoming' => $vaccinationUpcoming,
             'vaccinationCompleted' => $vaccinationCompleted,
-            'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'edit')
+            'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals', 'edit')
         ]);
     }
 }

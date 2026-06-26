@@ -116,6 +116,20 @@ class WarehouseController {
         $userWorkplaces = $workplaceModel->getUserWorkplaces(Auth::userId());
         $workplaceIds = array_column($userWorkplaces, 'id');
 
+        // No accessible workplaces -> render an empty central view (avoids str_repeat(-1) crash).
+        if (empty($workplaceIds)) {
+            View::render('warehouse/workplace', [
+                'layout' => 'main',
+                'title' => 'Centrální sklad',
+                'workplace' => ['id' => 'central', 'name' => 'Centrální sklad'],
+                'items' => [],
+                'expiringItems' => [],
+                'lowStockItems' => [],
+                'isCentral' => true
+            ]);
+            return;
+        }
+
         // Get ALL items from all accessible workplaces (consolidated view)
         $placeholders = str_repeat('?,', count($workplaceIds) - 1) . '?';
         $stmt = $db->prepare("
@@ -181,6 +195,13 @@ class WarehouseController {
         }
 
         $workplaceId = (int)$_POST['workplace_id'];
+
+        if (!userCan($workplaceId, 'warehouse', 'edit')) {
+            $_SESSION['error'] = 'Nemáte oprávnění přidávat položky v tomto pracovišti';
+            header('Location: /warehouse');
+            exit;
+        }
+
         $itemCode = trim($_POST['item_code']);
         $category = $_POST['category'];
         $name = trim($_POST['name']);
@@ -249,6 +270,16 @@ class WarehouseController {
 
         $db = Database::getInstance()->getConnection();
 
+        // Authorize: the item must belong to a workplace the user may edit.
+        $wpStmt = $db->prepare("SELECT workplace_id FROM warehouse_items WHERE id = ?");
+        $wpStmt->execute([$itemId]);
+        $itemWorkplaceId = $wpStmt->fetchColumn();
+        if ($itemWorkplaceId === false || !userCan((int)$itemWorkplaceId, 'warehouse', 'edit')) {
+            $_SESSION['error'] = 'Nemáte oprávnění upravovat tuto položku';
+            header('Location: /warehouse');
+            exit;
+        }
+
         try {
             $stmt = $db->prepare("
                 UPDATE warehouse_items
@@ -286,8 +317,8 @@ class WarehouseController {
             $_SESSION['error'] = 'Chyba při aktualizaci položky: ' . $e->getMessage();
         }
 
-        // Redirect back to item detail or specified redirect
-        $redirect = $_POST['redirect'] ?? "/warehouse/item/$itemId";
+        // Redirect back to item detail or specified redirect (internal paths only)
+        $redirect = internalPath($_POST['redirect'] ?? '', "/warehouse/item/$itemId");
         header("Location: $redirect");
         exit;
     }
@@ -310,6 +341,16 @@ class WarehouseController {
         $expirationDate = trim($_POST['expiration_date'] ?? '');
 
         $db = Database::getInstance()->getConnection();
+
+        // Authorize: the item must belong to a workplace the user may edit.
+        $wpStmt = $db->prepare("SELECT workplace_id FROM warehouse_items WHERE id = ?");
+        $wpStmt->execute([$itemId]);
+        $itemWorkplaceId = $wpStmt->fetchColumn();
+        if ($itemWorkplaceId === false || !userCan((int)$itemWorkplaceId, 'warehouse', 'edit')) {
+            $_SESSION['error'] = 'Nemáte oprávnění zaznamenat pohyb u této položky';
+            header('Location: /warehouse');
+            exit;
+        }
 
         try {
             $db->beginTransaction();
@@ -383,8 +424,8 @@ class WarehouseController {
             $_SESSION['error'] = 'Chyba při zaznamenávání pohybu: ' . $e->getMessage();
         }
 
-        // Redirect back
-        $redirect = $_POST['redirect'] ?? '/warehouse';
+        // Redirect back (internal paths only)
+        $redirect = internalPath($_POST['redirect'] ?? '', '/warehouse');
         header("Location: $redirect");
         exit;
     }
@@ -403,6 +444,16 @@ class WarehouseController {
         $notes = trim($_POST['notes'] ?? '');
 
         $db = Database::getInstance()->getConnection();
+
+        // Authorize: the item must belong to a workplace the user may edit.
+        $wpStmt = $db->prepare("SELECT workplace_id FROM warehouse_items WHERE id = ?");
+        $wpStmt->execute([$itemId]);
+        $itemWorkplaceId = $wpStmt->fetchColumn();
+        if ($itemWorkplaceId === false || !userCan((int)$itemWorkplaceId, 'warehouse', 'edit')) {
+            $_SESSION['error'] = 'Nemáte oprávnění nastavovat spotřebu u této položky';
+            header('Location: /warehouse');
+            exit;
+        }
 
         try {
             $stmt = $db->prepare("
@@ -432,7 +483,7 @@ class WarehouseController {
             $_SESSION['error'] = 'Chyba při nastavování spotřeby: ' . $e->getMessage();
         }
 
-        $redirect = $_POST['redirect'] ?? '/warehouse';
+        $redirect = internalPath($_POST['redirect'] ?? '', '/warehouse');
         header("Location: $redirect");
         exit;
     }
@@ -593,6 +644,13 @@ class WarehouseController {
 
         if (!$item) {
             $_SESSION['error'] = 'Položka nenalezena';
+            header('Location: /warehouse');
+            exit;
+        }
+
+        // Authorize: the item must belong to a workplace the user may view.
+        if (!userCan((int)$item['workplace_id'], 'warehouse', 'view')) {
+            $_SESSION['error'] = 'Nemáte přístup k této položce';
             header('Location: /warehouse');
             exit;
         }

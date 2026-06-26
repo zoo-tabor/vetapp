@@ -351,6 +351,12 @@ class VaccinationPlanController {
         Auth::requireLogin();
         header('Content-Type: application/json');
 
+        if (!userCan((int)$workplaceId, 'vaccination', 'view')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění k tomuto pracovišti']);
+            exit;
+        }
+
         try {
             $db = Database::getInstance()->getConnection();
 
@@ -493,6 +499,12 @@ class VaccinationPlanController {
         Auth::requireLogin();
         header('Content-Type: application/json');
 
+        if (!userCan((int)$workplaceId, 'vaccination', 'view')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění k tomuto pracovišti']);
+            exit;
+        }
+
         try {
             $db = Database::getInstance()->getConnection();
 
@@ -529,6 +541,12 @@ class VaccinationPlanController {
     public function getCategoriesWithAnimals($workplaceId) {
         Auth::requireLogin();
         header('Content-Type: application/json');
+
+        if (!userCan((int)$workplaceId, 'vaccination', 'view')) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění k tomuto pracovišti']);
+            exit;
+        }
 
         try {
             $db = Database::getInstance()->getConnection();

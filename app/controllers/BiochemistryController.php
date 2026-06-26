@@ -1240,13 +1240,13 @@ class BiochemistryController {
 
         if (!$workplaceId || !$query) {
             http_response_code(400);
-            echo json_encode([
-                'error' => 'Missing required parameters',
-                'debug' => [
-                    'workplace_id' => $workplaceId,
-                    'query' => $query
-                ]
-            ]);
+            echo json_encode(['error' => 'Missing required parameters']);
+            return;
+        }
+
+        if (!userCan((int)$workplaceId, 'biochemistry', 'view')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden']);
             return;
         }
 
@@ -1271,15 +1271,7 @@ class BiochemistryController {
             $stmt->execute([$workplaceId, $searchTerm, $searchTerm]);
             $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-            echo json_encode([
-                'results' => $results,
-                'debug' => [
-                    'workplace_id' => $workplaceId,
-                    'query' => $query,
-                    'search_term' => $searchTerm,
-                    'count' => count($results)
-                ]
-            ]);
+            echo json_encode(['results' => $results]);
         } catch (Exception $e) {
             http_response_code(500);
             echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
@@ -1299,6 +1291,12 @@ class BiochemistryController {
         if (!$workplaceId || !$paramType || !$paramName || !$direction) {
             http_response_code(400);
             echo json_encode(['error' => 'Missing required parameters']);
+            return;
+        }
+
+        if (!userCan((int)$workplaceId, 'biochemistry', 'view')) {
+            http_response_code(403);
+            echo json_encode(['error' => 'Forbidden']);
             return;
         }
 
@@ -1375,20 +1373,11 @@ class BiochemistryController {
                 }
             }
 
-            echo json_encode([
-                'results' => $results,
-                'debug' => [
-                    'sql' => $sql,
-                    'params' => $params,
-                    'count' => count($results)
-                ]
-            ]);
+            echo json_encode(['results' => $results]);
         } catch (Exception $e) {
+            error_log('BiochemistryController::searchParameterApi error: ' . $e->getMessage());
             http_response_code(500);
-            echo json_encode([
-                'error' => 'Database error: ' . $e->getMessage(),
-                'trace' => $e->getTraceAsString()
-            ]);
+            echo json_encode(['error' => 'Database error']);
         }
     }
 
