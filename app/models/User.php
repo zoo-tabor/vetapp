@@ -21,6 +21,40 @@ class User extends Model {
         return $stmt->fetch();
     }
 
+    // --- Brute-force login throttling (SEC-10). Fail-open so a missing table or DB
+    //     hiccup never locks legitimate users out. ---
+    const LOGIN_MAX_ATTEMPTS = 10;   // failures allowed within the window
+    const LOGIN_WINDOW_MIN   = 15;   // rolling window in minutes
+
+    public function tooManyLoginAttempts($username) {
+        try {
+            $sql = "SELECT COUNT(*) FROM login_attempts
+                    WHERE username = ?
+                      AND attempted_at > (NOW() - INTERVAL " . self::LOGIN_WINDOW_MIN . " MINUTE)";
+            $stmt = $this->db->prepare($sql);
+            $stmt->execute([$username]);
+            return (int)$stmt->fetchColumn() >= self::LOGIN_MAX_ATTEMPTS;
+        } catch (Exception $e) {
+            return false;
+        }
+    }
+
+    public function recordLoginFailure($username, $ip = null) {
+        try {
+            $this->execute("INSERT INTO login_attempts (username, ip_address) VALUES (?, ?)", [$username, $ip]);
+        } catch (Exception $e) {
+            // table may not exist yet — ignore
+        }
+    }
+
+    public function clearLoginAttempts($username) {
+        try {
+            $this->execute("DELETE FROM login_attempts WHERE username = ?", [$username]);
+        } catch (Exception $e) {
+            // ignore
+        }
+    }
+
     public function getAllActive() {
         return $this->findAll(['is_active' => 1], 'full_name ASC');
     }

@@ -23,10 +23,24 @@ class AuthController {
         
         $username = $_POST['username'] ?? '';
         $password = $_POST['password'] ?? '';
-        
+
+        require_once __DIR__ . '/../models/User.php';
+        $userModel = new User();
+
+        // Throttle brute force: block this username after too many recent failures.
+        if ($username !== '' && $userModel->tooManyLoginAttempts($username)) {
+            View::render('auth/login', [
+                'layout' => false,
+                'error' => 'Příliš mnoho neúspěšných pokusů. Zkuste to prosím za 15 minut.'
+            ]);
+            return;
+        }
+
         if (Auth::login($username, $password)) {
+            $userModel->clearLoginAttempts($username);
             View::redirect('/animals');
         } else {
+            $userModel->recordLoginFailure($username, $_SERVER['REMOTE_ADDR'] ?? null);
             View::render('auth/login', [
                 'layout' => false,
                 'error' => 'Nesprávné přihlašovací údaje'
