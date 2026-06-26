@@ -179,13 +179,6 @@ function isValidEmail($email) {
 }
 
 /**
- * Sanitizovat string (odstranit nebezpečné znaky)
- */
-function sanitizeString($string) {
-    return filter_var($string, FILTER_SANITIZE_STRING);
-}
-
-/**
  * Získat hodnotu z pole, nebo vrátit výchozí
  */
 function arrayGet($array, $key, $default = null) {
@@ -294,21 +287,4 @@ function formatNumber($number, $decimals = 0) {
 function currentUrl() {
     $protocol = isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] === 'on' ? 'https' : 'http';
     return $protocol . '://' . $_SERVER['HTTP_HOST'] . $_SERVER['REQUEST_URI'];
-}
-
-/**
- * Zkontrolovat, zda uživatel má oprávnění
- */
-function hasPermission($permission) {
-    require_once __DIR__ . '/../core/Auth.php';
-    
-    if ($permission === 'admin') {
-        return Auth::isAdmin();
-    }
-    
-    if ($permission === 'edit') {
-        return Auth::canEdit();
-    }
-    
-    return Auth::check();
 }

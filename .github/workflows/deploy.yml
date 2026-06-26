@@ -29,3 +29,5 @@ jobs:
             **/database/backups/**
             **/cache/**
             **/tmp/**
+            **/.import/**
+            logic_schema/**

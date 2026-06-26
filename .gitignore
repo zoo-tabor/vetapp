@@ -1,6 +1,9 @@
 # Claude Code folder
 .claude/
 
+# Local static-analysis output (must NOT be deployed to the public web)
+logic_schema/
+
 # IDE and editor files
 .vscode/
 .idea/
