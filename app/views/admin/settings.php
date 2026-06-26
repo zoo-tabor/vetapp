@@ -212,6 +212,14 @@ $__currentApp = $_SESSION['current_app'] ?? 'parasitology';
                 </label>
             </div>
 
+            <div class="form-group">
+                <label>
+                    <input type="checkbox" id="zootrack_edit" name="zootrack_edit">
+                    Smí upravovat ZooTrack
+                </label>
+                <small class="form-text">Umožní úpravy dat v ZooTracku (admin má vždy). Projeví se po dalším přihlášení uživatele.</small>
+            </div>
+
             <div class="form-actions">
                 <button type="submit" class="btn btn-admin-primary">Uložit</button>
                 <button type="button" class="btn btn-outline" onclick="closeUserModal()">Zrušit</button>
@@ -517,6 +525,7 @@ function editUser(userId) {
                 document.getElementById('email').value = user.email || '';
                 document.getElementById('role').value = user.role;
                 document.getElementById('is_active').checked = user.is_active == 1;
+                document.getElementById('zootrack_edit').checked = user.zootrack_edit == 1;
 
                 // Password field is shown for manual password reset in edit mode
                 document.getElementById('passwordGroup').style.display = 'block';

@@ -88,13 +88,13 @@ class User extends Model {
         return $stmt->fetch() !== false;
     }
 
-    public function createUser($username, $password = null, $fullName = null, $email = null, $role = 'user', $isActive = 1) {
+    public function createUser($username, $password = null, $fullName = null, $email = null, $role = 'user', $isActive = 1, $zootrackEdit = 0) {
         $passwordHash = $password
             ? password_hash($password, PASSWORD_DEFAULT)
             : password_hash(bin2hex(random_bytes(32)), PASSWORD_DEFAULT);
 
-        $sql = "INSERT INTO users (username, password_hash, full_name, email, role, is_active) VALUES (?, ?, ?, ?, ?, ?)";
-        $this->execute($sql, [$username, $passwordHash, $fullName, $email, $role, $isActive]);
+        $sql = "INSERT INTO users (username, password_hash, full_name, email, role, is_active, zootrack_edit) VALUES (?, ?, ?, ?, ?, ?, ?)";
+        $this->execute($sql, [$username, $passwordHash, $fullName, $email, $role, $isActive, $zootrackEdit ? 1 : 0]);
         return $this->db->lastInsertId();
     }
 
@@ -124,17 +124,17 @@ class User extends Model {
         );
     }
 
-    public function updateUser($userId, $username, $password = null, $fullName = null, $email = null, $role = 'user', $isActive = 1) {
+    public function updateUser($userId, $username, $password = null, $fullName = null, $email = null, $role = 'user', $isActive = 1, $zootrackEdit = 0) {
         if ($password) {
             $passwordHash = password_hash($password, PASSWORD_DEFAULT);
             return $this->execute(
-                "UPDATE users SET username = ?, password_hash = ?, full_name = ?, email = ?, role = ?, is_active = ? WHERE id = ?",
-                [$username, $passwordHash, $fullName, $email, $role, $isActive, $userId]
+                "UPDATE users SET username = ?, password_hash = ?, full_name = ?, email = ?, role = ?, is_active = ?, zootrack_edit = ? WHERE id = ?",
+                [$username, $passwordHash, $fullName, $email, $role, $isActive, $zootrackEdit ? 1 : 0, $userId]
             );
         }
         return $this->execute(
-            "UPDATE users SET username = ?, full_name = ?, email = ?, role = ?, is_active = ? WHERE id = ?",
-            [$username, $fullName, $email, $role, $isActive, $userId]
+            "UPDATE users SET username = ?, full_name = ?, email = ?, role = ?, is_active = ?, zootrack_edit = ? WHERE id = ?",
+            [$username, $fullName, $email, $role, $isActive, $zootrackEdit ? 1 : 0, $userId]
         );
     }
 

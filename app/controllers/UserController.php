@@ -80,7 +80,8 @@ class UserController {
                     $fullName,
                     $user['email'],
                     $user['role'],
-                    $user['is_active']
+                    $user['is_active'],
+                    (int)($user['zootrack_edit'] ?? 0)
                 );
             } else {
                 $userModel->updateUser(
@@ -90,7 +91,8 @@ class UserController {
                     $fullName,
                     $user['email'],
                     $user['role'],
-                    $user['is_active']
+                    $user['is_active'],
+                    (int)($user['zootrack_edit'] ?? 0)
                 );
             }
 

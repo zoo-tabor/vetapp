@@ -87,6 +87,7 @@ class AdminController {
         $email = trim($_POST['email'] ?? '');
         $role = $_POST['role'] ?? 'user';
         $isActive = isset($_POST['is_active']) ? 1 : 0;
+        $zootrackEdit = isset($_POST['zootrack_edit']) ? 1 : 0;
 
         // Validate required fields
         if (empty($username) || empty($email)) {
@@ -115,7 +116,7 @@ class AdminController {
             require_once __DIR__ . '/../core/Email.php';
 
             // Create user without password (temporary hash will be used)
-            $userId = $userModel->createUser($username, null, $fullName, $email, $role, $isActive);
+            $userId = $userModel->createUser($username, null, $fullName, $email, $role, $isActive, $zootrackEdit);
 
             if ($userId) {
                 // Generate password reset token
@@ -179,6 +180,7 @@ class AdminController {
         $role = $_POST['role'] ?? 'user';
         $password = $_POST['password'] ?? '';
         $isActive = isset($_POST['is_active']) ? 1 : 0;
+        $zootrackEdit = isset($_POST['zootrack_edit']) ? 1 : 0;
 
         // Validate required fields
         if (empty($username)) {
@@ -195,7 +197,7 @@ class AdminController {
         }
 
         try {
-            $success = $userModel->updateUser($userId, $username, $password, $fullName, $email, $role, $isActive);
+            $success = $userModel->updateUser($userId, $username, $password, $fullName, $email, $role, $isActive, $zootrackEdit);
 
             if ($success) {
                 echo json_encode(['success' => true]);

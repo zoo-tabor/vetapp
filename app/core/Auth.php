@@ -23,7 +23,9 @@ class Auth {
                 $_SESSION['username'] = $user['username'];
                 $_SESSION['role'] = $user['role'];
                 $_SESSION['full_name'] = $user['full_name'];
-                
+                // Global ZooTrack edit capability (column added by migration 013).
+                $_SESSION['zootrack_edit'] = (int)($user['zootrack_edit'] ?? 0);
+
                 return true;
             }
         }
