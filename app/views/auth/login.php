@@ -127,14 +127,18 @@
                 return pts.map(function(p){ return [(p[0]-ctX)/m, (p[1]-ctY)/m]; });
             }
             var silCache = [];
-            var bgAnimals = [], animalTimer = 2.0, MAX_ANIMALS = 2;
+            var bgAnimals = [], animalTimer = 2.0, MAX_ANIMALS = 2, animalSide = (Math.random()<0.5)?0:1;
             function spawnAnimal(){
                 var idx = (Math.random()*SIL.length)|0;
                 var pts = silCache[idx] || (silCache[idx] = sampleSil(SIL[idx], 150));
-                var scale = rnd(0.30,0.46)*minDim, px = rnd(0.14,0.86)*W, py = rnd(0.24,0.78)*H;
+                var scale = rnd(0.26,0.40)*minDim;
+                // Spawn only in the side margins (left/right), alternating, so the centered
+                // login box never hides them. Gentle drift keeps them on their side.
+                var left = (animalSide++ % 2 === 0);
+                var px = left ? rnd(0.07,0.25)*W : rnd(0.75,0.93)*W, py = rnd(0.20,0.80)*H;
                 var parts = pts.map(function(p){ return { nx:p[0], ny:p[1], x:px+rnd(-1,1)*scale, y:py+rnd(-1,1)*scale,
                     vx:0, vy:0, tw:rnd(0,6.28), twS:rnd(1,2.4), accent:Math.random()<0.18 }; });
-                bgAnimals.push({ parts:parts, px:px, py:py, scale:scale, vx:rnd(-10,10), vy:rnd(-4,4),
+                bgAnimals.push({ parts:parts, px:px, py:py, scale:scale, vx:rnd(-4,4), vy:rnd(-7,7),
                     life:0, maxLife:rnd(9,13), col:Math.random()<0.5?'g':'o' });
             }
 
@@ -211,7 +215,7 @@
                 var inten=1+Math.min(pSpeed,2.4), useMouse=interactive&&hovering, damp=Math.exp(-DAMP*dt);
 
                 animalTimer-=dt;
-                if(animalTimer<=0 && bgAnimals.length<MAX_ANIMALS && elapsed>PEAK-1){ spawnAnimal(); animalTimer=rnd(4,7); }
+                if(animalTimer<=0 && bgAnimals.length<MAX_ANIMALS && elapsed>PEAK-1){ spawnAnimal(); animalTimer=rnd(3,5); }
                 for(var ax=bgAnimals.length-1; ax>=0; ax--){
                     var an=bgAnimals[ax]; an.life+=dt; an.px+=an.vx*dt; an.py+=an.vy*dt;
                     if(an.life>=an.maxLife){ bgAnimals.splice(ax,1); continue; }
