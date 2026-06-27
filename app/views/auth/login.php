@@ -184,7 +184,7 @@
 
             var elapsed=0, last=0;
             var APPROACH=2.6, CAM_START=3.6, ASM_DUR=1.15, PEAK=2.05+0.85+1.15;
-            var DOCK_START=PEAK+1.25, DOCK_DUR=1.1, REVEAL_AT=DOCK_START+0.45;
+            var RELEASE_START=PEAK+1.45, RELEASE_DUR=1.2, REVEAL_AT=RELEASE_START+0.35;
             var STIFF=30, DAMP=9, R=120, FORCE=2600;
             var interactive=false, flash=0, ringOn=false, ringT=0, burst=false, revealedOnce=false;
             function camDist(t){ var p=Math.min(t/APPROACH,1); var b=1+(CAM_START-1)*(1-easeOut(p)); if(t>APPROACH) b+=Math.sin(t*0.6)*0.012; return b; }
@@ -204,11 +204,10 @@
                 var settle=clamp((elapsed-APPROACH)/1.2,0,1);
                 var pX=Math.sin(elapsed*0.25)*16*settle, pY=Math.cos(elapsed*0.21)*11*settle;
                 if(!interactive && elapsed>3.1) interactive=true;
-                var dockP=easeIO(clamp((elapsed-DOCK_START)/DOCK_DUR,0,1));
-                var dScale=1-0.46*dockP, dY=-H*0.30*dockP;
+                var relP=easeIO(clamp((elapsed-RELEASE_START)/RELEASE_DUR,0,1));
                 if(!burst && elapsed>=PEAK){ burst=true; flash=1; ringOn=true; ringT=0; for(var bs=0;bs<signals.length;bs++) if(Math.random()<0.7) relocate(signals[bs]); }
 
-                var trail=0.18+0.64*settle;
+                var trail=0.14+0.42*settle;
                 ctx.globalCompositeOperation='source-over'; ctx.globalAlpha=1;
                 ctx.fillStyle='rgba(12,15,12,'+trail+')'; ctx.fillRect(0,0,W,H);
                 ctx.globalCompositeOperation='lighter';
@@ -226,14 +225,14 @@
                         if(useMouse){ var qx=pp.x-mx, qy=pp.y-my, di=Math.sqrt(qx*qx+qy*qy)+0.001; if(di<R){ var f=(1-di/R); f=f*f*1700*inten; axx+=qx/di*f; ayy+=qy/di*f; } }
                         pp.vx+=axx*dt; pp.vy+=ayy*dt; pp.vx*=dA; pp.vy*=dA; pp.x+=pp.vx*dt; pp.y+=pp.vy*dt;
                         var tk=0.85+0.15*Math.sin(elapsed*pp.twS+pp.tw), spr=pp.accent?gAccent:(an.col==='g'?gNet:gSignal);
-                        ctx.globalAlpha=lifeA*0.5*tk; var rr=2.4*tk; ctx.drawImage(spr,pp.x-rr,pp.y-rr,rr*2,rr*2); }
+                        ctx.globalAlpha=lifeA*0.6*tk; var rr=2.7*tk; ctx.drawImage(spr,pp.x-rr,pp.y-rr,rr*2,rr*2); }
                 }
 
                 cell=Math.max(50,0.075*minDim); grid={};
                 for(var i=0;i<nodes.length;i++){
                     var nd=nodes[i]; var fp=proj(nd,cam,pX,pY); var tgX=fp.x, tgY=fp.y, sc=fp.s;
-                    if(nd.recruited){ var b=easeIO(clamp((elapsed-nd.t0)/ASM_DUR,0,1));
-                        var nameX=cx+nd.tx*scaleLayout*dScale+pX, nameY=cy+nd.ty*scaleLayout*dScale+pY+dY;
+                    if(nd.recruited){ var b=easeIO(clamp((elapsed-nd.t0)/ASM_DUR,0,1))*(1-relP);
+                        var nameX=cx+nd.tx*scaleLayout+pX, nameY=cy+nd.ty*scaleLayout+pY;
                         tgX=fp.x+(nameX-fp.x)*b; tgY=fp.y+(nameY-fp.y)*b; sc=fp.s+((1/cam)-fp.s)*b; nd.assembled=b; }
                     var ax2=(tgX-nd.x)*STIFF, ay2=(tgY-nd.y)*STIFF;
                     if(useMouse){ var ddx=nd.x-mx, ddy=nd.y-my, dist=Math.sqrt(ddx*ddx+ddy*ddy)+0.001;
@@ -259,7 +258,7 @@
                 for(var m2=0;m2<nodes.length;m2++){ var p=nodes[m2]; if(p.alpha<=0.02) continue;
                     var nm2=p.recruited&&p.assembled>0.45, spr2=p.accent?gAccent:(nm2?gName:gNet), tk2=0.9+0.1*Math.sin(elapsed*p.twS+p.tw);
                     var al=Math.min(1,p.alpha*(nm2?1:0.8)*tk2*(1+flash*0.4)); ctx.globalAlpha=al;
-                    var rr=(p.size+(nm2?0.5:0.7))*p.scale*2.1*(1+flash*0.6); if(rr<0.5) rr=0.5;
+                    var rr=(p.size+(nm2?0.9:0.7))*p.scale*2.5*(1+flash*0.6); if(rr<0.6) rr=0.6;
                     ctx.drawImage(spr2,p.x-rr,p.y-rr,rr*2,rr*2); }
 
                 if(useMouse){ for(var cf=0;cf<3;cf++){ var cand=(Math.random()*nodes.length)|0, cn=nodes[cand];
