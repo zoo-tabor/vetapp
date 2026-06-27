@@ -25,10 +25,7 @@
 
     <div class="login-container">
         <div class="login-box">
-            <div class="logo-container">
-                <img src="/assets/logo.png" alt="ZOO Tábor" class="login-logo">
-            </div>
-            <h1>VetApp <span style="white-space: nowrap;">ZOO Tábor</span></h1>
+            <h1>VetApp</h1>
             <p class="login-subtitle">Přihlaste se pro pokračování</p>
 
             <?php if (isset($error)): ?>
@@ -184,7 +181,7 @@
 
             var elapsed=0, last=0;
             var APPROACH=2.6, CAM_START=3.6, ASM_DUR=1.15, PEAK=2.05+0.85+1.15;
-            var RELEASE_START=PEAK+1.45, RELEASE_DUR=1.2, REVEAL_AT=RELEASE_START+0.35;
+            var REVEAL_AT=PEAK+1.7;
             var STIFF=30, DAMP=9, R=120, FORCE=2600;
             var interactive=false, flash=0, ringOn=false, ringT=0, burst=false, revealedOnce=false;
             function camDist(t){ var p=Math.min(t/APPROACH,1); var b=1+(CAM_START-1)*(1-easeOut(p)); if(t>APPROACH) b+=Math.sin(t*0.6)*0.012; return b; }
@@ -204,7 +201,6 @@
                 var settle=clamp((elapsed-APPROACH)/1.2,0,1);
                 var pX=Math.sin(elapsed*0.25)*16*settle, pY=Math.cos(elapsed*0.21)*11*settle;
                 if(!interactive && elapsed>3.1) interactive=true;
-                var relP=easeIO(clamp((elapsed-RELEASE_START)/RELEASE_DUR,0,1));
                 if(!burst && elapsed>=PEAK){ burst=true; flash=1; ringOn=true; ringT=0; for(var bs=0;bs<signals.length;bs++) if(Math.random()<0.7) relocate(signals[bs]); }
 
                 var trail=0.14+0.42*settle;
@@ -231,8 +227,8 @@
                 cell=Math.max(50,0.075*minDim); grid={};
                 for(var i=0;i<nodes.length;i++){
                     var nd=nodes[i]; var fp=proj(nd,cam,pX,pY); var tgX=fp.x, tgY=fp.y, sc=fp.s;
-                    if(nd.recruited){ var b=easeIO(clamp((elapsed-nd.t0)/ASM_DUR,0,1))*(1-relP);
-                        var nameX=cx+nd.tx*scaleLayout+pX, nameY=cy+nd.ty*scaleLayout+pY;
+                    if(nd.recruited){ var b=easeIO(clamp((elapsed-nd.t0)/ASM_DUR,0,1));
+                        var nameX=cx+nd.tx*scaleLayout+pX, nameY=cy+nd.ty*scaleLayout+pY-H*0.13;
                         tgX=fp.x+(nameX-fp.x)*b; tgY=fp.y+(nameY-fp.y)*b; sc=fp.s+((1/cam)-fp.s)*b; nd.assembled=b; }
                     var ax2=(tgX-nd.x)*STIFF, ay2=(tgY-nd.y)*STIFF;
                     if(useMouse){ var ddx=nd.x-mx, ddy=nd.y-my, dist=Math.sqrt(ddx*ddx+ddy*ddy)+0.001;
