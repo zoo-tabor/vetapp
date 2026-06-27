@@ -10,7 +10,7 @@
         #ztScene { position: fixed; inset: 0; z-index: 0; display: block; }
         .zt-vignette { position: fixed; inset: 0; z-index: 1; pointer-events: none;
             background: radial-gradient(120% 90% at 50% 45%, transparent 40%, rgba(6,10,6,.5) 80%, rgba(4,7,4,.92) 100%); }
-        .zt .login-container { position: relative; z-index: 3; pointer-events: none; }
+        .zt .login-container { position: relative; z-index: 3; pointer-events: none; max-width: 350px; }
         .zt .login-box { pointer-events: auto; box-shadow: 0 16px 40px rgba(0,0,0,0.45); }
         /* Box is hidden only while the intro animation is actually running (JS adds zt-anim).
            Without JS / on fallback the box stays visible by default. */
@@ -137,7 +137,7 @@
                 var left = (animalSide++ % 2 === 0);
                 var px = left ? rnd(0.07,0.25)*W : rnd(0.75,0.93)*W, py = rnd(0.20,0.80)*H;
                 var parts = pts.map(function(p){ return { nx:p[0], ny:p[1], x:px+rnd(-1,1)*scale, y:py+rnd(-1,1)*scale,
-                    vx:0, vy:0, tw:rnd(0,6.28), twS:rnd(1,2.4), accent:Math.random()<0.18 }; });
+                    vx:0, vy:0, tw:rnd(0,6.28), twS:rnd(1,2.4), accent:Math.random()<0.32 }; });
                 bgAnimals.push({ parts:parts, px:px, py:py, scale:scale, vx:rnd(-4,4), vy:rnd(-7,7),
                     life:0, maxLife:rnd(9,13), col:Math.random()<0.5?'g':'o' });
             }
@@ -205,6 +205,9 @@
                 var settle=clamp((elapsed-APPROACH)/1.2,0,1);
                 var pX=Math.sin(elapsed*0.25)*16*settle, pY=Math.cos(elapsed*0.21)*11*settle;
                 if(!interactive && elapsed>3.1) interactive=true;
+                // After the box reveals, dock the wordmark up into the free space above it.
+                var dockP=easeIO(clamp((elapsed-REVEAL_AT)/1.1,0,1));
+                var dScale=1-0.32*dockP, headY=(cy-0.13*H)+((0.15*H)-(cy-0.13*H))*dockP;
                 if(!burst && elapsed>=PEAK){ burst=true; flash=1; ringOn=true; ringT=0; for(var bs=0;bs<signals.length;bs++) if(Math.random()<0.7) relocate(signals[bs]); }
 
                 var trail=0.14+0.42*settle;
@@ -225,14 +228,14 @@
                         if(useMouse){ var qx=pp.x-mx, qy=pp.y-my, di=Math.sqrt(qx*qx+qy*qy)+0.001; if(di<R){ var f=(1-di/R); f=f*f*1700*inten; axx+=qx/di*f; ayy+=qy/di*f; } }
                         pp.vx+=axx*dt; pp.vy+=ayy*dt; pp.vx*=dA; pp.vy*=dA; pp.x+=pp.vx*dt; pp.y+=pp.vy*dt;
                         var tk=0.85+0.15*Math.sin(elapsed*pp.twS+pp.tw), spr=pp.accent?gAccent:(an.col==='g'?gNet:gSignal);
-                        ctx.globalAlpha=lifeA*0.6*tk; var rr=2.7*tk; ctx.drawImage(spr,pp.x-rr,pp.y-rr,rr*2,rr*2); }
+                        ctx.globalAlpha=lifeA*0.95*tk; var rr=3.3*tk; ctx.drawImage(spr,pp.x-rr,pp.y-rr,rr*2,rr*2); }
                 }
 
                 cell=Math.max(50,0.075*minDim); grid={};
                 for(var i=0;i<nodes.length;i++){
                     var nd=nodes[i]; var fp=proj(nd,cam,pX,pY); var tgX=fp.x, tgY=fp.y, sc=fp.s;
                     if(nd.recruited){ var b=easeIO(clamp((elapsed-nd.t0)/ASM_DUR,0,1));
-                        var nameX=cx+nd.tx*scaleLayout+pX, nameY=cy+nd.ty*scaleLayout+pY-H*0.13;
+                        var nameX=cx+nd.tx*scaleLayout*dScale+pX, nameY=headY+nd.ty*scaleLayout*dScale+pY;
                         tgX=fp.x+(nameX-fp.x)*b; tgY=fp.y+(nameY-fp.y)*b; sc=fp.s+((1/cam)-fp.s)*b; nd.assembled=b; }
                     var ax2=(tgX-nd.x)*STIFF, ay2=(tgY-nd.y)*STIFF;
                     if(useMouse){ var ddx=nd.x-mx, ddy=nd.y-my, dist=Math.sqrt(ddx*ddx+ddy*ddy)+0.001;
