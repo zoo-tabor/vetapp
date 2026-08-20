@@ -187,11 +187,12 @@ return function(PDO $pdo) {
         }
     }
 
-    // --- helper: zajistí sloupec parameter_id ---
-    $ensureParamIdColumn = function($table) use ($pdo) {
+    // --- helper: zajistí sloupec parameter_id (umístění dle tabulky) ---
+    $ensureParamIdColumn = function($table, $afterColumn = null) use ($pdo) {
         $stmt = $pdo->query("SHOW COLUMNS FROM {$table} LIKE 'parameter_id'");
         if ($stmt->fetch() === false) {
-            $pdo->exec("ALTER TABLE {$table} ADD COLUMN parameter_id INT(11) DEFAULT NULL AFTER test_id");
+            $after = $afterColumn ? " AFTER {$afterColumn}" : '';
+            $pdo->exec("ALTER TABLE {$table} ADD COLUMN parameter_id INT(11) DEFAULT NULL{$after}");
             $pdo->exec("ALTER TABLE {$table} ADD KEY parameter_id (parameter_id)");
         }
     };
@@ -231,7 +232,7 @@ return function(PDO $pdo) {
     ];
 
     foreach ($resultTables as $table => $testType) {
-        $ensureParamIdColumn($table);
+        $ensureParamIdColumn($table, 'test_id');
 
         $rows = $pdo->query("SELECT id, parameter_name, unit FROM {$table}")->fetchAll(PDO::FETCH_ASSOC);
         $upd = $pdo->prepare("UPDATE {$table} SET parameter_id = ?, parameter_name = ? WHERE id = ?");
@@ -271,7 +272,7 @@ return function(PDO $pdo) {
     // --- 3b. referenční meze ---
     $stmt = $pdo->query("SHOW TABLES LIKE 'reference_ranges'");
     if ($stmt->fetch() !== false) {
-        $ensureParamIdColumn('reference_ranges');
+        $ensureParamIdColumn('reference_ranges', 'parameter_name');
 
         $rows = $pdo->query("SELECT id, test_type, parameter_name, unit FROM reference_ranges")->fetchAll(PDO::FETCH_ASSOC);
         $upd = $pdo->prepare("UPDATE reference_ranges SET parameter_id = ?, parameter_name = ? WHERE id = ?");
