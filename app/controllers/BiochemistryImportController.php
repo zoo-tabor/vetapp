@@ -5,6 +5,7 @@ require_once __DIR__ . '/../core/View.php';
 require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Animal.php';
+require_once __DIR__ . '/../models/LabParameter.php';
 
 class BiochemistryImportController {
 
@@ -72,6 +73,9 @@ class BiochemistryImportController {
         $filename = $_SESSION['import_filename'] ?? 'unknown.ldt';
         $validatedData = $this->validateData($data);
         $animalAssignmentGroups = $this->getAnimalAssignmentGroups($validatedData);
+        $parameterAssignmentGroups = $this->getParameterAssignmentGroups($validatedData);
+
+        $labParam = new LabParameter();
 
         View::render('biochemistry/import_preview', [
             'layout' => 'main',
@@ -79,7 +83,10 @@ class BiochemistryImportController {
             'data' => $validatedData,
             'filename' => $filename,
             'animalAssignmentGroups' => $animalAssignmentGroups,
-            'animals' => empty($animalAssignmentGroups) ? [] : $this->getAnimalsForManualAssignment()
+            'animals' => empty($animalAssignmentGroups) ? [] : $this->getAnimalsForManualAssignment(),
+            'parameterAssignmentGroups' => $parameterAssignmentGroups,
+            'biochemParamList' => empty($parameterAssignmentGroups) ? [] : $labParam->all('biochemistry'),
+            'hematoParamList' => empty($parameterAssignmentGroups) ? [] : $labParam->all('hematology')
         ]);
     }
 
@@ -132,6 +139,59 @@ class BiochemistryImportController {
                 $animal['name'],
                 $updatedRows
             );
+        }
+
+        header('Location: /biochemistry/import/preview');
+        exit;
+    }
+
+    public function assignParameter() {
+        Auth::requireLogin();
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /biochemistry/import');
+            exit;
+        }
+
+        if (!isset($_SESSION['import_preview'])) {
+            $_SESSION['error'] = 'Zadna data k importu.';
+            header('Location: /biochemistry/import');
+            exit;
+        }
+
+        $testType = $_POST['test_type'] ?? '';
+        $rawName = trim($_POST['parameter_name_ldt'] ?? '');
+        $target = $_POST['parameter_id'] ?? ''; // číselné id nebo "__new__"
+        $newUnit = trim($_POST['unit'] ?? '');
+
+        if (!in_array($testType, ['biochemistry', 'hematology'], true) || $rawName === '' || $target === '') {
+            $_SESSION['error'] = 'Vyberte prosim parametr pro sparovani.';
+            header('Location: /biochemistry/import/preview');
+            exit;
+        }
+
+        $labParam = new LabParameter();
+
+        try {
+            if ($target === '__new__') {
+                // Založit nový kanonický parametr z názvu v LDT.
+                $param = $labParam->resolveOrCreate($testType, $rawName, $newUnit);
+                $_SESSION['success'] = sprintf('Parametr "%s" byl zalozen jako novy.', $param['name']);
+            } else {
+                $param = $labParam->find((int)$target);
+                if (!$param || $param['test_type'] !== $testType) {
+                    $_SESSION['error'] = 'Vybrany parametr nebyl nalezen.';
+                    header('Location: /biochemistry/import/preview');
+                    exit;
+                }
+                // Uložit alias – od teď se stejný název páruje automaticky.
+                $labParam->addAlias($param['id'], $testType, $rawName);
+                $_SESSION['success'] = sprintf('Parametr "%s" byl sparovan s "%s".', $rawName, $param['name']);
+            }
+        } catch (Exception $e) {
+            error_log('LDT parameter assignment error: ' . $e->getMessage());
+            $_SESSION['error'] = 'Chyba pri parovani parametru: ' . $e->getMessage();
         }
 
         header('Location: /biochemistry/import/preview');
@@ -430,6 +490,7 @@ class BiochemistryImportController {
 
     private function validateData($data) {
         $validated = [];
+        $labParam = new LabParameter();
 
         foreach ($data as $index => $row) {
             $errors = [];
@@ -463,8 +524,27 @@ class BiochemistryImportController {
                 }
             }
 
-            if (empty($row['parameter_name'])) {
+            // Napárování parametru na kanonický číselník.
+            $row['parameter_name_ldt'] = $row['parameter_name_ldt'] ?? ($row['parameter_name'] ?? '');
+            $rawParam = trim($row['parameter_name_ldt']);
+            $row['parameter_id'] = null;
+            $row['parameter_unmatched'] = false;
+
+            if ($rawParam === '') {
                 $errors[] = 'Chybi nazev parametru.';
+            } elseif (!empty($row['test_type']) && in_array($row['test_type'], ['biochemistry', 'hematology'], true)) {
+                $param = $labParam->resolve($row['test_type'], $rawParam);
+                if ($param) {
+                    // sjednotit na kanonický název i jednotku
+                    $row['parameter_id'] = (int)$param['id'];
+                    $row['parameter_name'] = $param['name'];
+                    if (empty($row['unit']) && !empty($param['unit'])) {
+                        $row['unit'] = $param['unit'];
+                    }
+                } else {
+                    $row['parameter_unmatched'] = true;
+                    $warnings[] = 'Parametr "' . $rawParam . '" neni v ciselniku – naparujte jej, nebo se zalozi novy.';
+                }
             }
 
             if (!isset($row['value']) || $row['value'] === '') {
@@ -577,6 +657,41 @@ class BiochemistryImportController {
         return array_values($groups);
     }
 
+    private function getParameterAssignmentKey($testType, $rawName) {
+        return sha1($testType . '|' . LabParameter::normalize($rawName));
+    }
+
+    private function getParameterAssignmentGroups($validatedData) {
+        $groups = [];
+
+        foreach ($validatedData as $row) {
+            if (empty($row['parameter_unmatched'])) {
+                continue;
+            }
+
+            $testType = $row['test_type'] ?? '';
+            $rawName = trim($row['parameter_name_ldt'] ?? ($row['parameter_name'] ?? ''));
+            if ($testType === '' || $rawName === '') {
+                continue;
+            }
+
+            $key = $this->getParameterAssignmentKey($testType, $rawName);
+            if (!isset($groups[$key])) {
+                $groups[$key] = [
+                    'key' => $key,
+                    'test_type' => $testType,
+                    'parameter_name_ldt' => $rawName,
+                    'unit' => trim($row['unit'] ?? ''),
+                    'row_count' => 0,
+                ];
+            }
+
+            $groups[$key]['row_count']++;
+        }
+
+        return array_values($groups);
+    }
+
     private function getAnimalsForManualAssignment() {
         $db = Database::getInstance()->getConnection();
         $stmt = $db->query("
@@ -634,11 +749,15 @@ class BiochemistryImportController {
             }
 
             $groupedData[$key]['parameters'][] = [
+                'parameter_id' => $row['parameter_id'] ?? null,
                 'parameter_name' => $row['parameter_name'],
+                'parameter_name_ldt' => $row['parameter_name_ldt'] ?? $row['parameter_name'],
                 'value' => $row['value'],
                 'unit' => $row['unit'] ?? ''
             ];
         }
+
+        $labParam = new LabParameter();
 
         foreach ($groupedData as $testData) {
             try {
@@ -684,28 +803,27 @@ class BiochemistryImportController {
 
                 $resultsTableName = $testData['test_type'] === 'biochemistry' ? 'biochemistry_results' : 'hematology_results';
                 foreach ($testData['parameters'] as $param) {
-                    $stmt = $db->prepare("
-                        SELECT id FROM {$resultsTableName}
-                        WHERE test_id = ? AND parameter_name = ?
-                    ");
-                    $stmt->execute([$testId, $param['parameter_name']]);
-                    $existingParam = $stmt->fetch(PDO::FETCH_ASSOC);
+                    // Zajistit kanonický parametr (napárovaný nebo nově založený).
+                    $canonical = $labParam->resolveOrCreate(
+                        $testData['test_type'],
+                        $param['parameter_name_ldt'] ?? $param['parameter_name'],
+                        $param['unit']
+                    );
+                    $parameterId = (int)$canonical['id'];
+                    $parameterName = $canonical['name'];
+                    $unit = $param['unit'] !== '' ? $param['unit'] : ($canonical['unit'] ?? '');
 
-                    if ($existingParam) {
-                        $stmt = $db->prepare("
-                            UPDATE {$resultsTableName}
-                            SET value = ?, unit = ?
-                            WHERE id = ?
-                        ");
-                        $stmt->execute([$param['value'], $param['unit'], $existingParam['id']]);
-                    } else {
-                        $stmt = $db->prepare("
-                            INSERT INTO {$resultsTableName}
-                            (test_id, parameter_name, value, unit)
-                            VALUES (?, ?, ?, ?)
-                        ");
-                        $stmt->execute([$testId, $param['parameter_name'], $param['value'], $param['unit']]);
-                    }
+                    // Jeden parametr max jednou v testu (unikátní klíč test_id+parameter_id).
+                    $stmt = $db->prepare("
+                        INSERT INTO {$resultsTableName}
+                        (test_id, parameter_id, parameter_name, value, unit)
+                        VALUES (?, ?, ?, ?, ?)
+                        ON DUPLICATE KEY UPDATE
+                            parameter_name = VALUES(parameter_name),
+                            value = VALUES(value),
+                            unit = VALUES(unit)
+                    ");
+                    $stmt->execute([$testId, $parameterId, $parameterName, $param['value'], $unit]);
                 }
 
                 $db->commit();

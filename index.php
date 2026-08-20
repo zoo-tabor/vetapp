@@ -487,6 +487,12 @@ $router->post('/biochemistry/import/assign-animal', function() {
     $controller->assignAnimal();
 });
 
+$router->post('/biochemistry/import/assign-parameter', function() {
+    require_once APP_PATH . '/controllers/BiochemistryImportController.php';
+    $controller = new BiochemistryImportController();
+    $controller->assignParameter();
+});
+
 $router->post('/biochemistry/import/execute', function() {
     require_once APP_PATH . '/controllers/BiochemistryImportController.php';
     $controller = new BiochemistryImportController();

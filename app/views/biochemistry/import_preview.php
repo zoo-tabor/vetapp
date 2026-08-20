@@ -139,6 +139,48 @@
         </div>
     <?php endif; ?>
 
+    <?php if (!empty($parameterAssignmentGroups)): ?>
+        <div class="card">
+            <div class="card-header">
+                <h2>Sparovani parametru</h2>
+            </div>
+            <div class="card-body">
+                <p>Nasledujici parametry z LDT nejsou v ciselniku. Naparujte je na existujici parametr (aby nevznikal duplikat), nebo je zalozte jako novy. Volba se ulozi jako alias a priste probehne automaticky.</p>
+
+                <?php foreach ($parameterAssignmentGroups as $group): ?>
+                    <?php $paramOptions = $group['test_type'] === 'biochemistry' ? ($biochemParamList ?? []) : ($hematoParamList ?? []); ?>
+                    <form action="/biochemistry/import/assign-parameter" method="POST" class="param-assignment-form">
+                        <input type="hidden" name="test_type" value="<?= htmlspecialchars($group['test_type']) ?>">
+                        <input type="hidden" name="parameter_name_ldt" value="<?= htmlspecialchars($group['parameter_name_ldt']) ?>">
+                        <input type="hidden" name="unit" value="<?= htmlspecialchars($group['unit']) ?>">
+
+                        <div class="assignment-summary">
+                            <strong><?= htmlspecialchars($group['parameter_name_ldt']) ?></strong>
+                            <span><?= $group['test_type'] === 'biochemistry' ? 'Biochemie' : 'Hematologie' ?></span>
+                            <?php if (!empty($group['unit'])): ?>
+                                <span>Jednotka: <?= htmlspecialchars($group['unit']) ?></span>
+                            <?php endif; ?>
+                            <span><?= (int)$group['row_count'] ?> radku</span>
+                        </div>
+
+                        <div class="assignment-controls">
+                            <select name="parameter_id" class="form-control" required>
+                                <option value="">-- Vyberte parametr z ciselniku --</option>
+                                <option value="__new__">➕ Zalozit jako novy parametr "<?= htmlspecialchars($group['parameter_name_ldt']) ?>"</option>
+                                <?php foreach ($paramOptions as $opt): ?>
+                                    <option value="<?= (int)$opt['id'] ?>">
+                                        <?= htmlspecialchars($opt['name']) ?><?= !empty($opt['unit']) ? ' (' . htmlspecialchars($opt['unit']) . ')' : '' ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
+                            <button type="submit" class="btn btn-primary">Sparovat</button>
+                        </div>
+                    </form>
+                <?php endforeach; ?>
+            </div>
+        </div>
+    <?php endif; ?>
+
     <div class="card">
         <div class="card-header">
             <h2>Nahled dat</h2>
@@ -236,7 +278,8 @@
         .row-success:hover {
             filter: brightness(0.95);
         }
-        .animal-assignment-form {
+        .animal-assignment-form,
+        .param-assignment-form {
             border: 1px solid #e0e6ed;
             border-radius: 6px;
             padding: 1rem;

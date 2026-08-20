@@ -45,63 +45,8 @@
                 <div id="biochemParameters" style="display: none;">
                     <div class="parameters-grid">
                         <?php
-                        $biochemParams = [
-                            ['name' => 'Amyláza', 'unit' => 'U/L'],
-                            ['name' => 'Lipáza', 'unit' => 'U/L'],
-                            ['name' => 'Glukóza', 'unit' => 'mmol/L'],
-                            ['name' => 'Fruktozamin', 'unit' => 'µmol/L'],
-                            ['name' => 'Triacylglyceridy', 'unit' => 'mmol/L'],
-                            ['name' => 'Cholesterol', 'unit' => 'mmol/L'],
-                            ['name' => 'Bilirubin celkový', 'unit' => 'µmol/L'],
-                            ['name' => 'ALP', 'unit' => 'U/L'],
-                            ['name' => 'GLDH', 'unit' => 'U/L'],
-                            ['name' => 'y-GT', 'unit' => 'U/L'],
-                            ['name' => 'ALT', 'unit' => 'U/L'],
-                            ['name' => 'AST', 'unit' => 'U/L'],
-                            ['name' => 'CK (Kreatinkináza)', 'unit' => 'U/L'],
-                            ['name' => 'Celková bílkovina', 'unit' => 'g/L'],
-                            ['name' => 'Albumin', 'unit' => 'g/L'],
-                            ['name' => 'Globuliny', 'unit' => 'g/L'],
-                            ['name' => 'A/G poměr', 'unit' => ''],
-                            ['name' => 'SDMA', 'unit' => 'µg/dL'],
-                            ['name' => 'Močovina', 'unit' => 'mmol/L'],
-                            ['name' => 'Kreatinin', 'unit' => 'µmol/L'],
-                            ['name' => 'Fosfor', 'unit' => 'mmol/L'],
-                            ['name' => 'Hořčík', 'unit' => 'mmol/L'],
-                            ['name' => 'Vápník', 'unit' => 'mmol/L'],
-                            ['name' => 'Chloridy', 'unit' => 'mmol/L'],
-                            ['name' => 'Sodík', 'unit' => 'mmol/L'],
-                            ['name' => 'Draslík', 'unit' => 'mmol/L'],
-                            ['name' => 'Na-/K-kvocient', 'unit' => ''],
-                            ['name' => 'Železo', 'unit' => 'µmol/L'],
-                            ['name' => 'T4', 'unit' => 'nmol/L'],
-                            ['name' => 'FT4', 'unit' => 'pmol/L'],
-                            ['name' => 'TSH', 'unit' => 'ng/mL'],
-                        ];
-
-                        $biochemParamMap = [];
-                        foreach (array_merge($biochemParams, $storedBiochemParams ?? []) as $param) {
-                            $name = trim($param['name'] ?? '');
-                            if ($name === '') {
-                                continue;
-                            }
-
-                            $key = strtolower($name);
-                            if (!isset($biochemParamMap[$key])) {
-                                $biochemParamMap[$key] = [
-                                    'name' => $name,
-                                    'unit' => trim($param['unit'] ?? ''),
-                                ];
-                                continue;
-                            }
-
-                            if ($biochemParamMap[$key]['unit'] === '' && !empty($param['unit'])) {
-                                $biochemParamMap[$key]['unit'] = trim($param['unit']);
-                            }
-                        }
-                        $biochemParams = array_values($biochemParamMap);
-
-                        foreach ($biochemParams as $param):
+                        // Kanonický seznam parametrů z číselníku (předává controller).
+                        foreach (($biochemParamList ?? []) as $param):
                         ?>
                             <div class="parameter-input">
                                 <label><?= htmlspecialchars($param['name']) ?></label>
@@ -132,57 +77,8 @@
                 <div id="hematoParameters" style="display: none;">
                     <div class="parameters-grid">
                         <?php
-                        $hematoParams = [
-                            ['name' => 'Erytrocyty', 'unit' => '10^12/L'],
-                            ['name' => 'Hematokrit', 'unit' => '%'],
-                            ['name' => 'Hemoglobin', 'unit' => 'g/L'],
-                            ['name' => 'Hypochromazie', 'unit' => '%'],
-                            ['name' => 'Anizocytoza', 'unit' => '%'],
-                            ['name' => 'MCHC', 'unit' => 'g/L'],
-                            ['name' => 'MCH', 'unit' => 'pg'],
-                            ['name' => 'MCV', 'unit' => 'fL'],
-                            ['name' => 'Retikulocyty', 'unit' => '%'],
-                            ['name' => 'IRF', 'unit' => '%'],
-                            ['name' => 'Ret-He', 'unit' => 'pg'],
-                            ['name' => 'Leukocyty', 'unit' => '10^9/L'],
-                            ['name' => 'Neutrofily', 'unit' => '%'],
-                            ['name' => 'Lymfocyty', 'unit' => '%'],
-                            ['name' => 'Monocyty', 'unit' => '%'],
-                            ['name' => 'Eozinofily', 'unit' => '%'],
-                            ['name' => 'Bazofily', 'unit' => '%'],
-                            ['name' => 'Tyčky', 'unit' => '%'],
-                            ['name' => 'Neutrofily - absolutní', 'unit' => '10^9/L'],
-                            ['name' => 'Lymfocyty - absolutní', 'unit' => '10^9/L'],
-                            ['name' => 'Monocyty - absolutní', 'unit' => '10^9/L'],
-                            ['name' => 'Eozinofily - absolutní', 'unit' => '10^9/L'],
-                            ['name' => 'Bazofily - absolutní', 'unit' => '10^9/L'],
-                            ['name' => 'Tyčky - absolutní', 'unit' => '10^9/L'],
-                            ['name' => 'Trombocyty', 'unit' => '10^9/L'],
-                        ];
-
-                        $hematoParamMap = [];
-                        foreach (array_merge($hematoParams, $storedHematoParams ?? []) as $param) {
-                            $name = trim($param['name'] ?? '');
-                            if ($name === '') {
-                                continue;
-                            }
-
-                            $key = strtolower($name);
-                            if (!isset($hematoParamMap[$key])) {
-                                $hematoParamMap[$key] = [
-                                    'name' => $name,
-                                    'unit' => trim($param['unit'] ?? ''),
-                                ];
-                                continue;
-                            }
-
-                            if ($hematoParamMap[$key]['unit'] === '' && !empty($param['unit'])) {
-                                $hematoParamMap[$key]['unit'] = trim($param['unit']);
-                            }
-                        }
-                        $hematoParams = array_values($hematoParamMap);
-
-                        foreach ($hematoParams as $param):
+                        // Kanonický seznam parametrů z číselníku (předává controller).
+                        foreach (($hematoParamList ?? []) as $param):
                         ?>
                             <div class="parameter-input">
                                 <label><?= htmlspecialchars($param['name']) ?></label>

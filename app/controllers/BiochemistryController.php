@@ -6,6 +6,7 @@ require_once __DIR__ . '/../core/Database.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Workplace.php';
 require_once __DIR__ . '/../models/Animal.php';
+require_once __DIR__ . '/../models/LabParameter.php';
 
 class BiochemistryController {
 
@@ -216,7 +217,9 @@ class BiochemistryController {
 
         // Get available reference sources
         $referenceSources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
-        $manualParams = $this->getManualParameterDefinitions($animal['id']);
+
+        // Kanonický seznam parametrů je jediný zdroj pravdy pro nabídku v modálu.
+        $labParam = new LabParameter();
 
         View::render('biochemistry/animal', [
             'layout' => 'main',
@@ -225,8 +228,8 @@ class BiochemistryController {
             'biochemTests' => $biochemTests,
             'hematoTests' => $hematoTests,
             'referenceSources' => $referenceSources,
-            'storedBiochemParams' => $manualParams['biochemistry'],
-            'storedHematoParams' => $manualParams['hematology'],
+            'biochemParamList' => $labParam->all('biochemistry'),
+            'hematoParamList' => $labParam->all('hematology'),
             'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry', 'edit')
         ]);
     }
@@ -286,22 +289,28 @@ class BiochemistryController {
 
             $testId = $db->lastInsertId();
 
-            // Insert test results
+            // Insert test results — každý parametr projde kanonickým číselníkem,
+            // takže se název i jednotka sjednotí a nevznikají duplicity.
             $resultsTableName = $testType === 'biochemistry' ? 'biochemistry_results' : 'hematology_results';
             $results = $this->collectPostedResults($_POST['params'] ?? [], $_POST['custom_params'] ?? []);
+            $labParam = new LabParameter();
 
             $stmt = $db->prepare("
                 INSERT INTO {$resultsTableName}
-                (test_id, parameter_name, value, unit)
-                VALUES (?, ?, ?, ?)
+                (test_id, parameter_id, parameter_name, value, unit)
+                VALUES (?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE value = VALUES(value), unit = VALUES(unit)
             ");
 
             foreach ($results as $result) {
+                $param = $labParam->resolveOrCreate($testType, $result['name'], $result['unit']);
+                $unit = $result['unit'] !== '' ? $result['unit'] : ($param['unit'] ?? '');
                 $stmt->execute([
                     $testId,
-                    $result['name'],
+                    $param['id'],
+                    $param['name'],
                     $result['value'],
-                    $result['unit']
+                    $unit
                 ]);
             }
 
@@ -678,68 +687,10 @@ class BiochemistryController {
             $ranges = $stmt->fetchAll(PDO::FETCH_ASSOC);
         }
 
-        // Parameter definitions (same as in add_test_modal.php)
-        $biochemParams = [
-            ['name' => 'Amyláza', 'unit' => 'U/L'],
-            ['name' => 'Lipáza', 'unit' => 'U/L'],
-            ['name' => 'Glukóza', 'unit' => 'mmol/L'],
-            ['name' => 'Fruktozamin', 'unit' => 'µmol/L'],
-            ['name' => 'Triacylglyceridy', 'unit' => 'mmol/L'],
-            ['name' => 'Cholesterol', 'unit' => 'mmol/L'],
-            ['name' => 'Bilirubin celkový', 'unit' => 'µmol/L'],
-            ['name' => 'ALP', 'unit' => 'U/L'],
-            ['name' => 'GLDH', 'unit' => 'U/L'],
-            ['name' => 'y-GT', 'unit' => 'U/L'],
-            ['name' => 'ALT', 'unit' => 'U/L'],
-            ['name' => 'AST', 'unit' => 'U/L'],
-            ['name' => 'CK (Kreatinkináza)', 'unit' => 'U/L'],
-            ['name' => 'Celková bílkovina', 'unit' => 'g/L'],
-            ['name' => 'Albumin', 'unit' => 'g/L'],
-            ['name' => 'Globuliny', 'unit' => 'g/L'],
-            ['name' => 'A/G poměr', 'unit' => ''],
-            ['name' => 'SDMA', 'unit' => 'µg/dL'],
-            ['name' => 'Močovina', 'unit' => 'mmol/L'],
-            ['name' => 'Kreatinin', 'unit' => 'µmol/L'],
-            ['name' => 'Fosfor', 'unit' => 'mmol/L'],
-            ['name' => 'Hořčík', 'unit' => 'mmol/L'],
-            ['name' => 'Vápník', 'unit' => 'mmol/L'],
-            ['name' => 'Chloridy', 'unit' => 'mmol/L'],
-            ['name' => 'Sodík', 'unit' => 'mmol/L'],
-            ['name' => 'Draslík', 'unit' => 'mmol/L'],
-            ['name' => 'Na-/K-kvocient', 'unit' => ''],
-            ['name' => 'Železo', 'unit' => 'µmol/L'],
-            ['name' => 'T4', 'unit' => 'nmol/L'],
-            ['name' => 'FT4', 'unit' => 'pmol/L'],
-            ['name' => 'TSH', 'unit' => 'ng/mL'],
-        ];
-
-        $hematoParams = [
-            ['name' => 'Erytrocyty', 'unit' => '10^12/L'],
-            ['name' => 'Hematokrit', 'unit' => '%'],
-            ['name' => 'Hemoglobin', 'unit' => 'g/L'],
-            ['name' => 'Hypochromazie', 'unit' => '%'],
-            ['name' => 'Anizocytoza', 'unit' => '%'],
-            ['name' => 'MCHC', 'unit' => 'g/L'],
-            ['name' => 'MCH', 'unit' => 'pg'],
-            ['name' => 'MCV', 'unit' => 'fL'],
-            ['name' => 'Retikulocyty', 'unit' => '%'],
-            ['name' => 'IRF', 'unit' => '%'],
-            ['name' => 'Ret-He', 'unit' => 'pg'],
-            ['name' => 'Leukocyty', 'unit' => '10^9/L'],
-            ['name' => 'Neutrofily', 'unit' => '%'],
-            ['name' => 'Lymfocyty', 'unit' => '%'],
-            ['name' => 'Monocyty', 'unit' => '%'],
-            ['name' => 'Eozinofily', 'unit' => '%'],
-            ['name' => 'Bazofily', 'unit' => '%'],
-            ['name' => 'Tyčky', 'unit' => '%'],
-            ['name' => 'Neutrofily - absolutní', 'unit' => '10^9/L'],
-            ['name' => 'Lymfocyty - absolutní', 'unit' => '10^9/L'],
-            ['name' => 'Monocyty - absolutní', 'unit' => '10^9/L'],
-            ['name' => 'Eozinofily - absolutní', 'unit' => '10^9/L'],
-            ['name' => 'Bazofily - absolutní', 'unit' => '10^9/L'],
-            ['name' => 'Tyčky - absolutní', 'unit' => '10^9/L'],
-            ['name' => 'Trombocyty', 'unit' => '10^9/L'],
-        ];
+        // Parametry z kanonického číselníku (stejný zdroj jako modal i import).
+        $labParam = new LabParameter();
+        $biochemParams = $labParam->all('biochemistry');
+        $hematoParams = $labParam->all('hematology');
 
         View::render('biochemistry/reference_ranges', [
             'layout' => 'main',
@@ -781,14 +732,16 @@ class BiochemistryController {
 
             $stmt = $db->prepare("
                 INSERT INTO reference_ranges
-                (test_type, parameter_name, species, source, min_value, max_value, unit)
-                VALUES (?, ?, ?, ?, ?, ?, ?)
+                (test_type, parameter_id, parameter_name, species, source, min_value, max_value, unit)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
                 ON DUPLICATE KEY UPDATE
+                    parameter_name = VALUES(parameter_name),
                     min_value = VALUES(min_value),
                     max_value = VALUES(max_value),
                     unit = VALUES(unit)
             ");
 
+            $labParam = new LabParameter();
             $count = 0;
             foreach ($params as $paramName => $paramData) {
                 $min = !empty($paramData['min']) ? $paramData['min'] : null;
@@ -797,9 +750,12 @@ class BiochemistryController {
 
                 // Only save if at least min or max is provided
                 if ($min !== null || $max !== null) {
+                    // Sjednotit na kanonický parametr (název přišel z číselníku).
+                    $param = $labParam->resolveOrCreate($testType, $paramName, $unit);
                     $stmt->execute([
                         $testType,
-                        $paramName,
+                        $param['id'],
+                        $param['name'],
                         $species,
                         $source,
                         $min,
@@ -1439,65 +1395,6 @@ class BiochemistryController {
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Chyba databáze: ' . $e->getMessage()]);
         }
-    }
-
-    private function getManualParameterDefinitions($animalId) {
-        return [
-            'biochemistry' => $this->getStoredParameterDefinitions('biochemistry', $animalId),
-            'hematology' => $this->getStoredParameterDefinitions('hematology', $animalId),
-        ];
-    }
-
-    private function getStoredParameterDefinitions($testType, $animalId) {
-        $tables = [
-            'biochemistry' => ['results' => 'biochemistry_results', 'tests' => 'biochemistry_tests'],
-            'hematology' => ['results' => 'hematology_results', 'tests' => 'hematology_tests'],
-        ];
-
-        if (!isset($tables[$testType])) {
-            return [];
-        }
-
-        $db = Database::getInstance()->getConnection();
-        $resultsTable = $tables[$testType]['results'];
-        $testsTable = $tables[$testType]['tests'];
-
-        $stmt = $db->prepare("
-            SELECT r.parameter_name, r.unit, t.test_date
-            FROM {$resultsTable} r
-            JOIN {$testsTable} t ON r.test_id = t.id
-            WHERE t.animal_id = ?
-              AND r.parameter_name IS NOT NULL
-              AND r.parameter_name != ''
-            ORDER BY r.parameter_name ASC, t.test_date DESC, r.id DESC
-        ");
-        $stmt->execute([$animalId]);
-        $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-
-        $params = [];
-        foreach ($rows as $row) {
-            $name = trim($row['parameter_name'] ?? '');
-            if ($name === '') {
-                continue;
-            }
-
-            $key = strtolower($name);
-            $unit = trim($row['unit'] ?? '');
-
-            if (!isset($params[$key])) {
-                $params[$key] = [
-                    'name' => $name,
-                    'unit' => $unit,
-                ];
-                continue;
-            }
-
-            if ($params[$key]['unit'] === '' && $unit !== '') {
-                $params[$key]['unit'] = $unit;
-            }
-        }
-
-        return array_values($params);
     }
 
     private function collectPostedResults($params, $customParams) {
