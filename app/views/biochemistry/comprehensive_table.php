@@ -529,22 +529,17 @@ th.sticky-col-2 {
     color: #27ae60;
 }
 
-/* Vyhodnocení (%): černý text, světlé barevné pozadí. */
+/* Vyhodnocení (%): černý text, světlé barevné pozadí.
+   !important kvůli zebra pruhování tabulky (tr:nth-child(2n) td). */
 .evaluation.low {
-    background: #dbe9ff;
+    background: #dbe9ff !important;
     color: #000;
 }
 
-.evaluation.high {
-    background: #ffd6da;
-    color: #000;
-}
-
-/* MIMO MEZ = červeně, tučně. */
+.evaluation.high,
 .evaluation.mimo {
-    background: #ffd6da;
-    color: #c0392b;
-    font-weight: 700;
+    background: #ffd6da !important;
+    color: #000;
 }
 
 /* Sloupec s hodnotou: průhledné pozadí, barevný text. */

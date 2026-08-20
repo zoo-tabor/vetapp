@@ -521,8 +521,8 @@ body {
 /* Sloupec s vyhodnocením (%): černý text, světlé barevné pozadí. */
 .eval-cell.deviation-high { background-color: #ffd6da !important; color: #000 !important; }
 .eval-cell.deviation-low  { background-color: #dbe9ff !important; color: #000 !important; }
-/* MIMO MEZ zvýrazněno červeně. */
-.eval-cell.mimo { color: #c0392b !important; font-weight: bold; }
+/* MIMO MEZ vypadá stejně jako procenta: černý text, světle červené pozadí. */
+.eval-cell.mimo { background-color: #ffd6da !important; color: #000 !important; }
 
 /* Alternate column colors for better readability */
 .alt-col {
@@ -592,8 +592,10 @@ body {
     }
 
     .eval-cell.mimo {
-        color: #c0392b !important;
-        font-weight: bold;
+        background-color: #ffd6da !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
     }
 
     .section-header td {
