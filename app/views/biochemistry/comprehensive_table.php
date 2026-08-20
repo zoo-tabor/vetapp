@@ -529,12 +529,33 @@ th.sticky-col-2 {
     color: #27ae60;
 }
 
+/* Vyhodnocení (%): černý text, světlé barevné pozadí. */
 .evaluation.low {
-    color: #3498db;
+    background: #dbe9ff;
+    color: #000;
 }
 
 .evaluation.high {
-    color: #e74c3c;
+    background: #ffd6da;
+    color: #000;
+}
+
+/* MIMO MEZ = červeně, tučně. */
+.evaluation.mimo {
+    background: #ffd6da;
+    color: #c0392b;
+    font-weight: 700;
+}
+
+/* Sloupec s hodnotou: průhledné pozadí, barevný text. */
+.value-col.val-low {
+    color: #2563eb;
+    font-weight: bold;
+}
+
+.value-col.val-high {
+    color: #c0392b;
+    font-weight: bold;
 }
 
 /* Buttons */
@@ -858,10 +879,12 @@ async function loadEvaluations() {
                 }
 
                 evalCell.textContent = displayText;
-                evalCell.className = `eval-col evaluation ${status}`;
+                evalCell.className = 'eval-col evaluation ' + status + (displayText === 'MIMO MEZ' ? ' mimo' : '');
+                applyValueColor(evalCell, status);
             } else {
                 evalCell.textContent = '-';
                 evalCell.className = 'eval-col evaluation';
+                applyValueColor(evalCell, null);
             }
         }
     }
@@ -986,10 +1009,12 @@ async function loadEvaluationsForSection(section, testType) {
                 }
 
                 evalCell.textContent = displayText;
-                evalCell.className = `eval-col evaluation ${status}`;
+                evalCell.className = 'eval-col evaluation ' + status + (displayText === 'MIMO MEZ' ? ' mimo' : '');
+                applyValueColor(evalCell, status);
             } else {
                 evalCell.textContent = '-';
                 evalCell.className = 'eval-col evaluation';
+                applyValueColor(evalCell, null);
             }
         }
     }
@@ -1336,10 +1361,23 @@ async function updateSingleCellEvaluation(cell) {
         }
 
         evalCell.textContent = displayText;
-        evalCell.className = `eval-col evaluation ${status}`;
+        evalCell.className = 'eval-col evaluation ' + status + (displayText === 'MIMO MEZ' ? ' mimo' : '');
+        applyValueColor(evalCell, status);
     } else {
         evalCell.textContent = '-';
         evalCell.className = 'eval-col evaluation';
+        applyValueColor(evalCell, null);
     }
+}
+
+// Obarví sousední buňku s hodnotou podle vyhodnocení (červeně/modře text, průhledné pozadí).
+function applyValueColor(evalCell, status) {
+    const row = evalCell.closest('tr');
+    if (!row) return;
+    const vCell = row.querySelector('.value-col[data-test-key="' + evalCell.dataset.for + '"]');
+    if (!vCell) return;
+    vCell.classList.remove('val-low', 'val-high');
+    if (status === 'low') vCell.classList.add('val-low');
+    else if (status === 'high') vCell.classList.add('val-high');
 }
 </script>

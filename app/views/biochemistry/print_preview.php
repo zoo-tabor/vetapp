@@ -140,19 +140,21 @@
                                                 $percentage = ($min - $numValue) / $min * 100;
                                                 $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
                                                 $evalClass = 'deviation-low';
+                                                $valueClass = 'deviation-low';
                                             } else {
                                                 $evalText = 'MIMO MEZ';
-                                                $evalClass = 'deviation-high';
+                                                $evalClass = 'deviation-high mimo';
+                                                $valueClass = 'deviation-high';
                                             }
-                                            $valueClass = $evalClass;
                                         } elseif ($numValue > $max) {
                                             if ($max != 0) {
                                                 $percentage = ($numValue - $max) / $max * 100;
                                                 $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
+                                                $evalClass = 'deviation-high';
                                             } else {
                                                 $evalText = 'MIMO MEZ';
+                                                $evalClass = 'deviation-high mimo';
                                             }
-                                            $evalClass = 'deviation-high';
                                             $valueClass = 'deviation-high';
                                         } else {
                                             $evalText = 'OK';
@@ -242,19 +244,21 @@
                                                 $percentage = ($min - $numValue) / $min * 100;
                                                 $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
                                                 $evalClass = 'deviation-low';
+                                                $valueClass = 'deviation-low';
                                             } else {
                                                 $evalText = 'MIMO MEZ';
-                                                $evalClass = 'deviation-high';
+                                                $evalClass = 'deviation-high mimo';
+                                                $valueClass = 'deviation-high';
                                             }
-                                            $valueClass = $evalClass;
                                         } elseif ($numValue > $max) {
                                             if ($max != 0) {
                                                 $percentage = ($numValue - $max) / $max * 100;
                                                 $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
+                                                $evalClass = 'deviation-high';
                                             } else {
                                                 $evalText = 'MIMO MEZ';
+                                                $evalClass = 'deviation-high mimo';
                                             }
-                                            $evalClass = 'deviation-high';
                                             $valueClass = 'deviation-high';
                                         } else {
                                             $evalText = 'OK';
@@ -510,33 +514,19 @@ body {
     color: #000;
 }
 
-/* Zvýšené hodnoty (nad referenční mezí) = červeně */
-.eval-cell.deviation-high,
-.value-cell.deviation-high {
-    background-color: #ffc7ce !important;
-    color: #9c0006;
-}
+/* Sloupec s hodnotou: průhledné pozadí, barevný text (červeně nad, modře pod). */
+.value-cell.deviation-high { background: transparent !important; color: #c0392b !important; font-weight: bold; }
+.value-cell.deviation-low  { background: transparent !important; color: #2563eb !important; font-weight: bold; }
 
-/* Snížené hodnoty (pod referenční mezí) = modře */
-.eval-cell.deviation-low,
-.value-cell.deviation-low {
-    background-color: #cfe2ff !important;
-    color: #084298;
-}
+/* Sloupec s vyhodnocením (%): černý text, světlé barevné pozadí. */
+.eval-cell.deviation-high { background-color: #ffd6da !important; color: #000 !important; }
+.eval-cell.deviation-low  { background-color: #dbe9ff !important; color: #000 !important; }
+/* MIMO MEZ zvýrazněno červeně. */
+.eval-cell.mimo { color: #c0392b !important; font-weight: bold; }
 
 /* Alternate column colors for better readability */
 .alt-col {
     background-color: #f5f5f5;
-}
-
-.alt-col.deviation-high {
-    background-color: #ffc7ce !important;
-    color: #9c0006;
-}
-
-.alt-col.deviation-low {
-    background-color: #cfe2ff !important;
-    color: #084298;
 }
 
 /* Print styles */
@@ -573,20 +563,37 @@ body {
         print-color-adjust: exact !important;
     }
 
-    .eval-cell.deviation-high,
     .value-cell.deviation-high {
-        background-color: #ffc7ce !important;
-        color: #9c0006 !important;
+        background: transparent !important;
+        color: #c0392b !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
 
-    .eval-cell.deviation-low,
     .value-cell.deviation-low {
-        background-color: #cfe2ff !important;
-        color: #084298 !important;
+        background: transparent !important;
+        color: #2563eb !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
+    }
+
+    .eval-cell.deviation-high {
+        background-color: #ffd6da !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .eval-cell.deviation-low {
+        background-color: #dbe9ff !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .eval-cell.mimo {
+        color: #c0392b !important;
+        font-weight: bold;
     }
 
     .section-header td {
@@ -607,19 +614,8 @@ body {
         print-color-adjust: exact !important;
     }
 
-    .alt-col.deviation-high {
-        background-color: #ffc7ce !important;
-        color: #9c0006 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    .alt-col.deviation-low {
-        background-color: #cfe2ff !important;
-        color: #084298 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
+    .eval-cell.alt-col.deviation-high { background-color: #ffd6da !important; }
+    .eval-cell.alt-col.deviation-low { background-color: #dbe9ff !important; }
 
     @page {
         size: landscape;
