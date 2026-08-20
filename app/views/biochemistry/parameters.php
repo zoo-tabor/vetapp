@@ -30,20 +30,23 @@
         <div class="param-section">
             <h2><?= htmlspecialchars($section['label']) ?></h2>
 
+            <p class="params-hint">Tip: přetáhni řádek za ikonu ⠿ pro změnu pořadí. Čísla „Pořadí" se přepočítají, pak ulož.</p>
             <form method="POST" action="/biochemistry/parameters/save" class="params-form">
                 <div class="table-responsive">
                     <table class="params-table">
                         <thead>
                             <tr>
+                                <th style="width:32px;"></th>
                                 <th style="width:90px;">Pořadí</th>
                                 <th>Název parametru</th>
                                 <th style="width:120px;">Jednotka</th>
                                 <th style="width:90px;">Výsledků</th>
                             </tr>
                         </thead>
-                        <tbody>
+                        <tbody class="sortable">
                             <?php foreach ($params as $p): ?>
-                                <tr>
+                                <tr draggable="true" class="param-row">
+                                    <td class="drag-handle" title="Přetáhni pro změnu pořadí">⠿</td>
                                     <td>
                                         <input type="number" class="form-control ord"
                                                name="params[<?= (int)$p['id'] ?>][sort_order]"
@@ -63,7 +66,7 @@
                                 </tr>
                             <?php endforeach; ?>
                             <?php if (empty($params)): ?>
-                                <tr><td colspan="4" class="empty">Zatím žádné parametry.</td></tr>
+                                <tr><td colspan="5" class="empty">Zatím žádné parametry.</td></tr>
                             <?php endif; ?>
                         </tbody>
                     </table>
@@ -157,4 +160,56 @@
 .alert { padding: 14px 18px; border-radius: 6px; margin-bottom: 18px; }
 .alert-success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
 .alert-error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+
+.drag-handle { cursor: grab; text-align: center; color: #b0b0b0; font-size: 18px; user-select: none; }
+.drag-handle:active { cursor: grabbing; }
+.param-row.dragging { opacity: 0.4; }
+.param-row.drop-target td { border-top: 2px solid #c0392b; }
+.params-hint { color: #7f8c8d; font-size: 13px; margin: 0 0 10px 0; }
 </style>
+
+<script>
+(function () {
+    document.querySelectorAll('tbody.sortable').forEach(function (tbody) {
+        var dragged = null;
+
+        tbody.addEventListener('dragstart', function (e) {
+            var row = e.target.closest('.param-row');
+            if (!row) return;
+            dragged = row;
+            row.classList.add('dragging');
+            e.dataTransfer.effectAllowed = 'move';
+        });
+
+        tbody.addEventListener('dragend', function () {
+            if (dragged) dragged.classList.remove('dragging');
+            tbody.querySelectorAll('.drop-target').forEach(function (r) { r.classList.remove('drop-target'); });
+            dragged = null;
+            renumber(tbody);
+        });
+
+        tbody.addEventListener('dragover', function (e) {
+            e.preventDefault();
+            var row = e.target.closest('.param-row');
+            if (!row || row === dragged) return;
+            tbody.querySelectorAll('.drop-target').forEach(function (r) { r.classList.remove('drop-target'); });
+            var rect = row.getBoundingClientRect();
+            var after = (e.clientY - rect.top) > rect.height / 2;
+            if (after) {
+                row.parentNode.insertBefore(dragged, row.nextSibling);
+            } else {
+                row.parentNode.insertBefore(dragged, row);
+            }
+        });
+    });
+
+    // Přepočítá čísla "Pořadí" podle aktuálního pořadí řádků (krok 10).
+    function renumber(tbody) {
+        var order = 0;
+        tbody.querySelectorAll('.param-row .ord').forEach(function (input) {
+            order += 10;
+            input.value = order;
+        });
+    }
+})();
+</script>
