@@ -135,12 +135,12 @@
 
                                     if ($min !== null && $max !== null) {
                                         if ($numValue < $min) {
-                                            $percentage = (($min - $numValue) / $min * 100);
+                                            $percentage = $min != 0 ? (($min - $numValue) / $min * 100) : 0;
                                             $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
                                             $evalClass = 'deviation-low';
                                             $valueClass = 'deviation-low';
                                         } elseif ($numValue > $max) {
-                                            $percentage = (($numValue - $max) / $max * 100);
+                                            $percentage = $max != 0 ? (($numValue - $max) / $max * 100) : 0;
                                             $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
                                             $evalClass = 'deviation-high';
                                             $valueClass = 'deviation-high';
@@ -227,12 +227,12 @@
 
                                     if ($min !== null && $max !== null) {
                                         if ($numValue < $min) {
-                                            $percentage = (($min - $numValue) / $min * 100);
+                                            $percentage = $min != 0 ? (($min - $numValue) / $min * 100) : 0;
                                             $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
                                             $evalClass = 'deviation-low';
                                             $valueClass = 'deviation-low';
                                         } elseif ($numValue > $max) {
-                                            $percentage = (($numValue - $max) / $max * 100);
+                                            $percentage = $max != 0 ? (($numValue - $max) / $max * 100) : 0;
                                             $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
                                             $evalClass = 'deviation-high';
                                             $valueClass = 'deviation-high';
@@ -618,7 +618,20 @@ function updatePreview() {
 }
 
 function updateFontSize() {
-    const fontSize = document.getElementById('fontSizeSelect').value;
-    document.querySelector('.print-table').style.fontSize = fontSize + 'px';
+    const fontSize = parseInt(document.getElementById('fontSizeSelect').value, 10);
+    let styleEl = document.getElementById('fontSizeOverride');
+    if (!styleEl) {
+        styleEl = document.createElement('style');
+        styleEl.id = 'fontSizeOverride';
+        document.head.appendChild(styleEl);
+    }
+    // Přepíšeme pevné px velikosti v jednotlivých buňkách, jinak by select nic nedělal.
+    styleEl.textContent =
+        '.print-table, .print-table td, .print-table th,' +
+        '.param-cell, .ref-cell, .unit-cell, .value-cell, .eval-cell {' +
+        'font-size: ' + fontSize + 'px !important; }';
 }
+
+// Aplikovat výchozí velikost hned po načtení.
+document.addEventListener('DOMContentLoaded', updateFontSize);
 </script>

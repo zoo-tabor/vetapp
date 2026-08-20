@@ -842,11 +842,11 @@ async function loadEvaluations() {
 
                 if (value < min) {
                     status = 'low';
-                    const percentage = ((min - value) / min * 100).toFixed(2);
+                    const percentage = min !== 0 ? ((min - value) / min * 100).toFixed(2) : '0.00';
                     displayText = `↓ ${percentage}%`;
                 } else if (value > max) {
                     status = 'high';
-                    const percentage = ((value - max) / max * 100).toFixed(2);
+                    const percentage = max !== 0 ? ((value - max) / max * 100).toFixed(2) : '0.00';
                     displayText = `↑ ${percentage}%`;
                 }
 
@@ -963,11 +963,11 @@ async function loadEvaluationsForSection(section, testType) {
 
                 if (value < min) {
                     status = 'low';
-                    const percentage = ((min - value) / min * 100).toFixed(2);
+                    const percentage = min !== 0 ? ((min - value) / min * 100).toFixed(2) : '0.00';
                     displayText = `↓ ${percentage}%`;
                 } else if (value > max) {
                     status = 'high';
-                    const percentage = ((value - max) / max * 100).toFixed(2);
+                    const percentage = max !== 0 ? ((value - max) / max * 100).toFixed(2) : '0.00';
                     displayText = `↑ ${percentage}%`;
                 }
 

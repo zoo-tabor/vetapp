@@ -1515,10 +1515,10 @@ class BiochemistryController {
 
                 if ($value > $max) {
                     $result['status'] = 'high';
-                    $result['deviation'] = number_format((($value - $max) / $max) * 100, 2);
+                    $result['deviation'] = $max != 0 ? number_format((($value - $max) / $max) * 100, 2) : '0.00';
                 } elseif ($value < $min) {
                     $result['status'] = 'low';
-                    $result['deviation'] = number_format((($min - $value) / $min) * 100, 2);
+                    $result['deviation'] = $min != 0 ? number_format((($min - $value) / $min) * 100, 2) : '0.00';
                 } else {
                     $result['status'] = 'normal';
                     $result['deviation'] = '0.00';
