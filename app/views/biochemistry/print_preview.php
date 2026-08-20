@@ -137,25 +137,25 @@
                                         if ($numValue < $min) {
                                             $percentage = (($min - $numValue) / $min * 100);
                                             $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
-                                            $evalClass = 'deviation';
-                                            $valueClass = 'deviation';
+                                            $evalClass = 'deviation-low';
+                                            $valueClass = 'deviation-low';
                                         } elseif ($numValue > $max) {
                                             $percentage = (($numValue - $max) / $max * 100);
                                             $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
-                                            $evalClass = 'deviation';
-                                            $valueClass = 'deviation';
+                                            $evalClass = 'deviation-high';
+                                            $valueClass = 'deviation-high';
                                         } else {
                                             $evalText = 'OK';
                                             $evalClass = 'ok';
                                         }
                                     } elseif ($min !== null && $numValue < $min) {
                                         $evalText = '↓';
-                                        $evalClass = 'deviation';
-                                        $valueClass = 'deviation';
+                                        $evalClass = 'deviation-low';
+                                        $valueClass = 'deviation-low';
                                     } elseif ($max !== null && $numValue > $max) {
                                         $evalText = '↑';
-                                        $evalClass = 'deviation';
-                                        $valueClass = 'deviation';
+                                        $evalClass = 'deviation-high';
+                                        $valueClass = 'deviation-high';
                                     } else {
                                         $evalText = 'OK';
                                         $evalClass = 'ok';
@@ -229,25 +229,25 @@
                                         if ($numValue < $min) {
                                             $percentage = (($min - $numValue) / $min * 100);
                                             $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
-                                            $evalClass = 'deviation';
-                                            $valueClass = 'deviation';
+                                            $evalClass = 'deviation-low';
+                                            $valueClass = 'deviation-low';
                                         } elseif ($numValue > $max) {
                                             $percentage = (($numValue - $max) / $max * 100);
                                             $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
-                                            $evalClass = 'deviation';
-                                            $valueClass = 'deviation';
+                                            $evalClass = 'deviation-high';
+                                            $valueClass = 'deviation-high';
                                         } else {
                                             $evalText = 'OK';
                                             $evalClass = 'ok';
                                         }
                                     } elseif ($min !== null && $numValue < $min) {
                                         $evalText = '↓';
-                                        $evalClass = 'deviation';
-                                        $valueClass = 'deviation';
+                                        $evalClass = 'deviation-low';
+                                        $valueClass = 'deviation-low';
                                     } elseif ($max !== null && $numValue > $max) {
                                         $evalText = '↑';
-                                        $evalClass = 'deviation';
-                                        $valueClass = 'deviation';
+                                        $evalClass = 'deviation-high';
+                                        $valueClass = 'deviation-high';
                                     } else {
                                         $evalText = 'OK';
                                         $evalClass = 'ok';
@@ -490,11 +490,18 @@ body {
     color: #000;
 }
 
-/* All deviations are red - matching Google Sheets style */
-.eval-cell.deviation,
-.value-cell.deviation {
+/* Zvýšené hodnoty (nad referenční mezí) = červeně */
+.eval-cell.deviation-high,
+.value-cell.deviation-high {
     background-color: #ffc7ce !important;
     color: #9c0006;
+}
+
+/* Snížené hodnoty (pod referenční mezí) = modře */
+.eval-cell.deviation-low,
+.value-cell.deviation-low {
+    background-color: #cfe2ff !important;
+    color: #084298;
 }
 
 /* Alternate column colors for better readability */
@@ -502,9 +509,14 @@ body {
     background-color: #f5f5f5;
 }
 
-.alt-col.deviation {
+.alt-col.deviation-high {
     background-color: #ffc7ce !important;
     color: #9c0006;
+}
+
+.alt-col.deviation-low {
+    background-color: #cfe2ff !important;
+    color: #084298;
 }
 
 /* Print styles */
@@ -541,10 +553,18 @@ body {
         print-color-adjust: exact !important;
     }
 
-    .eval-cell.deviation,
-    .value-cell.deviation {
+    .eval-cell.deviation-high,
+    .value-cell.deviation-high {
         background-color: #ffc7ce !important;
         color: #9c0006 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .eval-cell.deviation-low,
+    .value-cell.deviation-low {
+        background-color: #cfe2ff !important;
+        color: #084298 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
@@ -567,9 +587,16 @@ body {
         print-color-adjust: exact !important;
     }
 
-    .alt-col.deviation {
+    .alt-col.deviation-high {
         background-color: #ffc7ce !important;
         color: #9c0006 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .alt-col.deviation-low {
+        background-color: #cfe2ff !important;
+        color: #084298 !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }

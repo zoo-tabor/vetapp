@@ -18,11 +18,12 @@
         <?php unset($_SESSION['error']); ?>
     <?php endif; ?>
 
-    <div class="page-header">
+    <div class="page-header" style="display:flex; justify-content:space-between; align-items:center; gap:16px;">
         <div>
             <h1>Správa referenčních hodnot</h1>
             <p>Definice referenčních rozsahů pro biochemii a hematologii</p>
         </div>
+        <a href="/biochemistry/parameters" class="btn-outline" style="white-space:nowrap; text-decoration:none;">⚙ Správa parametrů</a>
     </div>
 
     <!-- Species selection -->

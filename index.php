@@ -444,6 +444,30 @@ $router->get('/biochemistry/reference-ranges', function() {
     $controller->referenceRanges();
 });
 
+$router->get('/biochemistry/parameters', function() {
+    require_once APP_PATH . '/controllers/BiochemistryController.php';
+    $controller = new BiochemistryController();
+    $controller->parameters();
+});
+
+$router->post('/biochemistry/parameters/save', function() {
+    require_once APP_PATH . '/controllers/BiochemistryController.php';
+    $controller = new BiochemistryController();
+    $controller->saveParameters();
+});
+
+$router->post('/biochemistry/parameters/add', function() {
+    require_once APP_PATH . '/controllers/BiochemistryController.php';
+    $controller = new BiochemistryController();
+    $controller->addParameter();
+});
+
+$router->post('/biochemistry/parameters/merge', function() {
+    require_once APP_PATH . '/controllers/BiochemistryController.php';
+    $controller = new BiochemistryController();
+    $controller->mergeParameters();
+});
+
 $router->post('/biochemistry/reference-ranges/save', function() {
     require_once APP_PATH . '/controllers/BiochemistryController.php';
     $controller = new BiochemistryController();

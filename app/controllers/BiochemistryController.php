@@ -381,13 +381,16 @@ class BiochemistryController {
         // Get all unique parameters from both test types
         $allParameters = [];
 
-        // Get unique biochemistry parameters
+        // Get unique biochemistry parameters (řazeno dle pořadí v číselníku)
         $stmtBiochemParams = $db->prepare("
-            SELECT DISTINCT parameter_name, unit
+            SELECT br.parameter_name, MIN(br.unit) AS unit,
+                   MIN(COALESCE(lp.sort_order, 999999)) AS sort_order
             FROM biochemistry_results br
             JOIN biochemistry_tests bt ON br.test_id = bt.id
+            LEFT JOIN lab_parameters lp ON lp.id = br.parameter_id
             WHERE bt.animal_id = ?
-            ORDER BY parameter_name ASC
+            GROUP BY br.parameter_name
+            ORDER BY sort_order ASC, br.parameter_name ASC
         ");
         $stmtBiochemParams->execute([$animalId]);
         $biochemParams = $stmtBiochemParams->fetchAll(PDO::FETCH_ASSOC);
@@ -399,13 +402,16 @@ class BiochemistryController {
             ];
         }
 
-        // Get unique hematology parameters
+        // Get unique hematology parameters (řazeno dle pořadí v číselníku)
         $stmtHematoParams = $db->prepare("
-            SELECT DISTINCT parameter_name, unit
+            SELECT hr.parameter_name, MIN(hr.unit) AS unit,
+                   MIN(COALESCE(lp.sort_order, 999999)) AS sort_order
             FROM hematology_results hr
             JOIN hematology_tests ht ON hr.test_id = ht.id
+            LEFT JOIN lab_parameters lp ON lp.id = hr.parameter_id
             WHERE ht.animal_id = ?
-            ORDER BY parameter_name ASC
+            GROUP BY hr.parameter_name
+            ORDER BY sort_order ASC, hr.parameter_name ASC
         ");
         $stmtHematoParams->execute([$animalId]);
         $hematoParams = $stmtHematoParams->fetchAll(PDO::FETCH_ASSOC);
@@ -521,13 +527,16 @@ class BiochemistryController {
             $stmtBiochem->execute([$animalId]);
             $biochemTests = $stmtBiochem->fetchAll(PDO::FETCH_ASSOC);
 
-            // Get unique biochemistry parameters
+            // Get unique biochemistry parameters (řazeno dle pořadí v číselníku)
             $stmtBiochemParams = $db->prepare("
-                SELECT DISTINCT parameter_name, unit
+                SELECT br.parameter_name, MIN(br.unit) AS unit,
+                       MIN(COALESCE(lp.sort_order, 999999)) AS sort_order
                 FROM biochemistry_results br
                 JOIN biochemistry_tests bt ON br.test_id = bt.id
+                LEFT JOIN lab_parameters lp ON lp.id = br.parameter_id
                 WHERE bt.animal_id = ?
-                ORDER BY parameter_name ASC
+                GROUP BY br.parameter_name
+                ORDER BY sort_order ASC, br.parameter_name ASC
             ");
             $stmtBiochemParams->execute([$animalId]);
             $biochemParams = $stmtBiochemParams->fetchAll(PDO::FETCH_ASSOC);
@@ -583,13 +592,16 @@ class BiochemistryController {
             $stmtHemato->execute([$animalId]);
             $hematoTests = $stmtHemato->fetchAll(PDO::FETCH_ASSOC);
 
-            // Get unique hematology parameters
+            // Get unique hematology parameters (řazeno dle pořadí v číselníku)
             $stmtHematoParams = $db->prepare("
-                SELECT DISTINCT parameter_name, unit
+                SELECT hr.parameter_name, MIN(hr.unit) AS unit,
+                       MIN(COALESCE(lp.sort_order, 999999)) AS sort_order
                 FROM hematology_results hr
                 JOIN hematology_tests ht ON hr.test_id = ht.id
+                LEFT JOIN lab_parameters lp ON lp.id = hr.parameter_id
                 WHERE ht.animal_id = ?
-                ORDER BY parameter_name ASC
+                GROUP BY hr.parameter_name
+                ORDER BY sort_order ASC, hr.parameter_name ASC
             ");
             $stmtHematoParams->execute([$animalId]);
             $hematoParams = $stmtHematoParams->fetchAll(PDO::FETCH_ASSOC);
@@ -779,6 +791,190 @@ class BiochemistryController {
             header("Location: /biochemistry/reference-ranges?species=" . urlencode($species) . "&test_type={$testType}&source={$source}");
             exit;
         }
+    }
+
+    /**
+     * Správa kanonického číselníku parametrů: pořadí (sort_order), názvy,
+     * jednotky, zakládání a slučování duplicit.
+     */
+    public function parameters() {
+        Auth::requireLogin();
+        Auth::requireAdmin();
+
+        $labParam = new LabParameter();
+        $db = Database::getInstance()->getConnection();
+
+        // počet výsledků na parametr (kvůli varování před smazáním / info)
+        $usage = [];
+        foreach (['biochemistry_results', 'hematology_results'] as $t) {
+            $rows = $db->query("SELECT parameter_id, COUNT(*) AS c FROM {$t} WHERE parameter_id IS NOT NULL GROUP BY parameter_id")->fetchAll(PDO::FETCH_ASSOC);
+            foreach ($rows as $r) {
+                $usage[(int)$r['parameter_id']] = ($usage[(int)$r['parameter_id']] ?? 0) + (int)$r['c'];
+            }
+        }
+
+        View::render('biochemistry/parameters', [
+            'layout' => 'main',
+            'title' => 'Správa parametrů',
+            'biochemParams' => $labParam->all('biochemistry'),
+            'hematoParams' => $labParam->all('hematology'),
+            'usage' => $usage
+        ]);
+    }
+
+    public function saveParameters() {
+        Auth::requireLogin();
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /biochemistry/parameters');
+            exit;
+        }
+
+        $rows = $_POST['params'] ?? [];
+        $labParam = new LabParameter();
+        $db = Database::getInstance()->getConnection();
+        $updated = 0;
+
+        try {
+            $db->beginTransaction();
+
+            foreach ($rows as $id => $data) {
+                $id = (int)$id;
+                $existing = $labParam->find($id);
+                if (!$existing) {
+                    continue;
+                }
+
+                $name = trim($data['name'] ?? '');
+                $unit = trim($data['unit'] ?? '');
+                $sortOrder = (int)($data['sort_order'] ?? $existing['sort_order']);
+                if ($name === '') {
+                    $name = $existing['name'];
+                }
+                $testType = $existing['test_type'];
+
+                $db->prepare("UPDATE lab_parameters SET name = ?, unit = ?, sort_order = ? WHERE id = ?")
+                   ->execute([$name, $unit, $sortOrder, $id]);
+
+                // Přejmenování: přidat alias a sjednotit denormalizovaný název ve výsledcích.
+                if ($name !== $existing['name']) {
+                    $labParam->addAlias($id, $testType, $name);
+                    $resultsTable = $testType === 'biochemistry' ? 'biochemistry_results' : 'hematology_results';
+                    $db->prepare("UPDATE {$resultsTable} SET parameter_name = ? WHERE parameter_id = ?")->execute([$name, $id]);
+                    $db->prepare("UPDATE reference_ranges SET parameter_name = ? WHERE parameter_id = ?")->execute([$name, $id]);
+                }
+
+                $updated++;
+            }
+
+            $db->commit();
+            $_SESSION['success'] = "Uloženo {$updated} parametrů.";
+        } catch (Exception $e) {
+            $db->rollBack();
+            error_log('saveParameters error: ' . $e->getMessage());
+            $_SESSION['error'] = 'Chyba při ukládání parametrů: ' . $e->getMessage();
+        }
+
+        header('Location: /biochemistry/parameters');
+        exit;
+    }
+
+    public function addParameter() {
+        Auth::requireLogin();
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /biochemistry/parameters');
+            exit;
+        }
+
+        $testType = $_POST['test_type'] ?? '';
+        $name = trim($_POST['name'] ?? '');
+        $unit = trim($_POST['unit'] ?? '');
+        $sortOrder = ($_POST['sort_order'] ?? '') !== '' ? (int)$_POST['sort_order'] : null;
+
+        if (!in_array($testType, LabParameter::TEST_TYPES, true) || $name === '') {
+            $_SESSION['error'] = 'Vyplňte název a typ parametru.';
+            header('Location: /biochemistry/parameters');
+            exit;
+        }
+
+        try {
+            $labParam = new LabParameter();
+            $labParam->createParameter($testType, $name, $unit, $sortOrder);
+            $_SESSION['success'] = 'Parametr "' . $name . '" byl přidán.';
+        } catch (Exception $e) {
+            error_log('addParameter error: ' . $e->getMessage());
+            $_SESSION['error'] = 'Chyba při přidávání parametru: ' . $e->getMessage();
+        }
+
+        header('Location: /biochemistry/parameters');
+        exit;
+    }
+
+    public function mergeParameters() {
+        Auth::requireLogin();
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /biochemistry/parameters');
+            exit;
+        }
+
+        $sourceId = (int)($_POST['source_id'] ?? 0);
+        $targetId = (int)($_POST['target_id'] ?? 0);
+
+        $labParam = new LabParameter();
+        $source = $labParam->find($sourceId);
+        $target = $labParam->find($targetId);
+
+        if (!$source || !$target || $sourceId === $targetId) {
+            $_SESSION['error'] = 'Vyberte dva různé parametry ke sloučení.';
+            header('Location: /biochemistry/parameters');
+            exit;
+        }
+        if ($source['test_type'] !== $target['test_type']) {
+            $_SESSION['error'] = 'Sloučit lze jen parametry stejného typu.';
+            header('Location: /biochemistry/parameters');
+            exit;
+        }
+
+        $db = Database::getInstance()->getConnection();
+        $resultsTable = $source['test_type'] === 'biochemistry' ? 'biochemistry_results' : 'hematology_results';
+
+        try {
+            $db->beginTransaction();
+
+            // Přemapovat výsledky; kolize (stejný test už má cílový parametr) se zahodí.
+            $db->prepare("UPDATE IGNORE {$resultsTable} SET parameter_id = ?, parameter_name = ? WHERE parameter_id = ?")
+               ->execute([$targetId, $target['name'], $sourceId]);
+            $db->prepare("DELETE FROM {$resultsTable} WHERE parameter_id = ?")->execute([$sourceId]);
+
+            // Referenční meze.
+            $db->prepare("UPDATE IGNORE reference_ranges SET parameter_id = ?, parameter_name = ? WHERE parameter_id = ?")
+               ->execute([$targetId, $target['name'], $sourceId]);
+            $db->prepare("DELETE FROM reference_ranges WHERE parameter_id = ?")->execute([$sourceId]);
+
+            // Aliasy přesunout na cíl, zbytek smazat, a název zdroje uložit jako alias cíle.
+            $db->prepare("UPDATE IGNORE lab_parameter_aliases SET parameter_id = ? WHERE parameter_id = ?")
+               ->execute([$targetId, $sourceId]);
+            $db->prepare("DELETE FROM lab_parameter_aliases WHERE parameter_id = ?")->execute([$sourceId]);
+            $labParam->addAlias($targetId, $target['test_type'], $source['name']);
+
+            // Zrušit zdrojový parametr.
+            $db->prepare("DELETE FROM lab_parameters WHERE id = ?")->execute([$sourceId]);
+
+            $db->commit();
+            $_SESSION['success'] = sprintf('Parametr "%s" byl sloučen do "%s".', $source['name'], $target['name']);
+        } catch (Exception $e) {
+            $db->rollBack();
+            error_log('mergeParameters error: ' . $e->getMessage());
+            $_SESSION['error'] = 'Chyba při slučování: ' . $e->getMessage();
+        }
+
+        header('Location: /biochemistry/parameters');
+        exit;
     }
 
     public function workplaceSearch($workplaceId) {
