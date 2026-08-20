@@ -135,13 +135,23 @@
 
                                     if ($min !== null && $max !== null) {
                                         if ($numValue < $min) {
-                                            $percentage = $min != 0 ? (($min - $numValue) / $min * 100) : 0;
-                                            $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
-                                            $evalClass = 'deviation-low';
-                                            $valueClass = 'deviation-low';
+                                            // Nulová mez by znamenala dělení nulou -> "MIMO MEZ" červeně.
+                                            if ($min != 0) {
+                                                $percentage = ($min - $numValue) / $min * 100;
+                                                $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
+                                                $evalClass = 'deviation-low';
+                                            } else {
+                                                $evalText = 'MIMO MEZ';
+                                                $evalClass = 'deviation-high';
+                                            }
+                                            $valueClass = $evalClass;
                                         } elseif ($numValue > $max) {
-                                            $percentage = $max != 0 ? (($numValue - $max) / $max * 100) : 0;
-                                            $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
+                                            if ($max != 0) {
+                                                $percentage = ($numValue - $max) / $max * 100;
+                                                $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
+                                            } else {
+                                                $evalText = 'MIMO MEZ';
+                                            }
                                             $evalClass = 'deviation-high';
                                             $valueClass = 'deviation-high';
                                         } else {
@@ -227,13 +237,23 @@
 
                                     if ($min !== null && $max !== null) {
                                         if ($numValue < $min) {
-                                            $percentage = $min != 0 ? (($min - $numValue) / $min * 100) : 0;
-                                            $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
-                                            $evalClass = 'deviation-low';
-                                            $valueClass = 'deviation-low';
+                                            // Nulová mez by znamenala dělení nulou -> "MIMO MEZ" červeně.
+                                            if ($min != 0) {
+                                                $percentage = ($min - $numValue) / $min * 100;
+                                                $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
+                                                $evalClass = 'deviation-low';
+                                            } else {
+                                                $evalText = 'MIMO MEZ';
+                                                $evalClass = 'deviation-high';
+                                            }
+                                            $valueClass = $evalClass;
                                         } elseif ($numValue > $max) {
-                                            $percentage = $max != 0 ? (($numValue - $max) / $max * 100) : 0;
-                                            $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
+                                            if ($max != 0) {
+                                                $percentage = ($numValue - $max) / $max * 100;
+                                                $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
+                                            } else {
+                                                $evalText = 'MIMO MEZ';
+                                            }
                                             $evalClass = 'deviation-high';
                                             $valueClass = 'deviation-high';
                                         } else {

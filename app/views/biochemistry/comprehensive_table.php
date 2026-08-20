@@ -841,13 +841,20 @@ async function loadEvaluations() {
                 let displayText = 'OK';
 
                 if (value < min) {
-                    status = 'low';
-                    const percentage = min !== 0 ? ((min - value) / min * 100).toFixed(2) : '0.00';
-                    displayText = `↓ ${percentage}%`;
+                    if (min !== 0) {
+                        status = 'low';
+                        displayText = `↓ ${((min - value) / min * 100).toFixed(2)}%`;
+                    } else {
+                        status = 'high';
+                        displayText = 'MIMO MEZ';
+                    }
                 } else if (value > max) {
                     status = 'high';
-                    const percentage = max !== 0 ? ((value - max) / max * 100).toFixed(2) : '0.00';
-                    displayText = `↑ ${percentage}%`;
+                    if (max !== 0) {
+                        displayText = `↑ ${((value - max) / max * 100).toFixed(2)}%`;
+                    } else {
+                        displayText = 'MIMO MEZ';
+                    }
                 }
 
                 evalCell.textContent = displayText;
@@ -962,13 +969,20 @@ async function loadEvaluationsForSection(section, testType) {
                 let displayText = 'OK';
 
                 if (value < min) {
-                    status = 'low';
-                    const percentage = min !== 0 ? ((min - value) / min * 100).toFixed(2) : '0.00';
-                    displayText = `↓ ${percentage}%`;
+                    if (min !== 0) {
+                        status = 'low';
+                        displayText = `↓ ${((min - value) / min * 100).toFixed(2)}%`;
+                    } else {
+                        status = 'high';
+                        displayText = 'MIMO MEZ';
+                    }
                 } else if (value > max) {
                     status = 'high';
-                    const percentage = max !== 0 ? ((value - max) / max * 100).toFixed(2) : '0.00';
-                    displayText = `↑ ${percentage}%`;
+                    if (max !== 0) {
+                        displayText = `↑ ${((value - max) / max * 100).toFixed(2)}%`;
+                    } else {
+                        displayText = 'MIMO MEZ';
+                    }
                 }
 
                 evalCell.textContent = displayText;
