@@ -177,6 +177,14 @@
             window.addEventListener('pointerdown', function(e){ setP(e.clientX,e.clientY); }, {passive:true});
             window.addEventListener('blur', function(){ hovering=false; });
 
+            // Skip: any key or mouse button fast-forwards the intro to its finished state.
+            var skipping=false;
+            function requestSkip(){ skipping=true; }
+            window.addEventListener('keydown', requestSkip, {passive:true});
+            window.addEventListener('pointerdown', requestSkip, {passive:true});
+            window.addEventListener('mousedown', requestSkip, {passive:true});
+            window.addEventListener('touchstart', requestSkip, {passive:true});
+
             var scaleLayout=1;
             function resize(){ W=window.innerWidth; H=window.innerHeight; canvas.width=W*DPR; canvas.height=H*DPR;
                 canvas.style.width=W+'px'; canvas.style.height=H+'px'; ctx.setTransform(DPR,0,0,DPR,0,0);
@@ -198,6 +206,8 @@
             function frame(now){
                 requestAnimationFrame(frame);
                 var dt=(now-last)/1000; last=now; if(!(dt>0)) dt=0.016; if(dt>0.05) dt=0.05;
+                // Fast-forward the intro when the user asks to skip, until the wordmark has docked.
+                if(skipping && elapsed<REVEAL_AT+1.2) dt*=12;
                 elapsed+=dt; pSpeed*=Math.exp(-dt*3); flash*=Math.exp(-dt*2.4);
                 if(!revealedOnce && elapsed>=REVEAL_AT){ revealedOnce=true; clearTimeout(safety); revealBox(); }
 
