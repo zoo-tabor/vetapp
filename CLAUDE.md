@@ -1,6 +1,19 @@
+---
+name: Repo Navigation
+description: AI assistant entry point for vetapp (Czech zoo/vet clinic management system)
+type: reference
+scope: repo
+source: build
+verified: 2026-08-24
+---
+
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+**Stack:** Vanilla PHP 8.1+, no framework, no Composer (WEDOS hosting doesn't support it — don't suggest Composer-based dependencies). MySQL/MariaDB via PDO. UI is entirely in Czech (staff refer to every feature by its Czech name — don't search for English UI strings).
+
+**Also in this repo, not covered by the sections below:** see [Related Sub-Applications](#related-sub-applications) for `zootrack/`, and [Additional Resources](#additional-resources) for `LDT/`, `.import/`, and `logic_schema/`.
 
 ## Deployment
 
@@ -85,3 +98,64 @@ Admin pages (e.g. `admin/settings.php`) read `$_SESSION['current_app']` and rend
 3. Add the navbar color in `header.php` and the `$__appColors` array in `admin/settings.php`.
 4. Add the dropdown link in `header.php` guarded by `$__all('newkey')`.
 5. Register routes in `index.php`; create controller/views.
+
+## Common Pitfalls to Avoid
+
+### ❌ DON'T
+
+- **Assume a controller checks authorization just because the pattern is documented above.** Not every controller method calls `hasAccess`/`hasPermission`. Grep the specific method before trusting it — see "Known Issues" below for a concrete historical example.
+- **Assume `logic_schema/` (see Additional Resources) is current.** It's a static-analysis snapshot dated 2026-06-26. At least two of its top-severity findings (a missing-authorization bug in `WarehouseController`/`UrineAnalysisController`, and a `ValueError` crash in `WarehouseController::central()`) were already fixed in this codebase within hours of that snapshot being generated — the audit predates its own fix. Treat it as a historical reference and a source of *questions to re-verify*, not as ground truth about the current code.
+- **Re-run a migration file expecting it to no-op if already applied.** Migrations in `database/migrations/` are not written to be idempotent (e.g. `013_add_zootrack_edit_to_users.php` does a raw `ALTER TABLE ... ADD COLUMN` with no existence guard — MySQL/MariaDB has no portable `IF NOT EXISTS` for this). The `/migrate?key=...` runner tracks executed migrations in a `migrations` table and skips already-run ones during normal operation, but if that tracking table is ever out of sync with actual schema state (manual DB change, restored backup, failed partial apply), re-running will hard-fail with a duplicate-column/table error instead of skipping cleanly.
+- **Grep for `urine` and assume you've found every reference to the urine-analysis section.** The `Section` enum / `User::SECTIONS` / `user_permissions.section` key is `urine`, but `index.php` sets `$_SESSION['current_app'] = 'urineanalysis'` (see the color table above, which already uses `urineanalysis`) — the navbar CSS class and session routing state use a different string than the permission system.
+- **Confuse the "animal database" with `zootrack/`.** `AnimalDatabaseController` is the main app's central animal registry across workplaces. `zootrack/` (see Related Sub-Applications) is a *different application* tracking European zoo institutions' CITES/holdings data — unrelated tables, unrelated purpose, just an unfortunate name collision.
+- **Suggest adding a Composer dependency.** Hosting is WEDOS (`.htaccess` calls it "VEDOS"), which doesn't support Composer. There is no autoloader — every controller method manually `require_once`s the models it uses; a missing `require_once` is a runtime fatal, not a build error.
+
+### ✅ DO
+
+- Verify the actual authorization checks present in a controller method by reading it, not by pattern-matching on the section it belongs to.
+- Check the `migrations` table's recorded state before manually re-running or backfilling a migration.
+- When searching for the urine-analysis section, check both `urine` (DB/permissions) and `urineanalysis` (session/CSS).
+- Trust inline code comments — this codebase is written to be explained inline; if something is unclear, check the surrounding comments first before assuming it's undocumented.
+
+## Known Issues / Historical Findings
+
+**Warehouse/UrineAnalysis authorization gap — found and fixed same day (2026-06-26).** A prior static-analysis audit (`logic_schema/`, generated 2026-06-26 10:24) flagged that `WarehouseController` (create/update/movement/consumption) and `UrineAnalysisController::updateResult` only called `Auth::requireLogin()` without the per-workplace `hasPermission`/`hasAccess` check that `BiochemistryController` performs correctly — an IDOR (any logged-in user could write to warehouse/urine-analysis data for workplaces they had no permission for). **As of this verification pass, that gap no longer exists in the code**: every write method in both controllers (`createItem`, `updateItem`, `addMovement`, `setConsumption`, `saveInventory`, `createTest`, `updateResult`) now calls the `userCan($workplaceId, $section, $perm)` helper (`app/helpers/functions.php:335`), which was added the same afternoon as the audit (file timestamps: audit 2026-06-26 10:24, `functions.php`/`WarehouseController.php`/`UrineAnalysisController.php` all modified 2026-06-26 15:54–15:56). A related crash (`WarehouseController::central()` throwing `ValueError` on `str_repeat('?,', -1)` for a user with zero accessible workplaces) was fixed in the same pass — the guard is now explicit at `WarehouseController.php:119-131` with an inline comment referencing the crash it avoids. **Caveat:** this was verified against the source in this repo, not against what's actually deployed to production — given deploy-on-push-to-main (see Deployment above), if `main` was behind this fix at any point there may have been a live-production window where the gap was exploitable. Worth a quick production sanity check (try a write against a workplace the logged-in test user has no permission for) if this hasn't been done since 2026-06-26.
+
+**Two dead-code findings from the same audit are now also resolved / non-issues:** `database/migrate.php` (the duplicate migration runner) no longer exists in this repo — only `MigrateController`'s `/migrate?key=...` route remains. The `app/views/animals/list.php.backup`/`.broken`/`.working_backup` files the audit flagged as shipping to production are also no longer present.
+
+**Vaccination reminder system is a planned, in-progress feature, not dead code.** `VaccinationPlan::getNotificationDue`/`markNotificationSent` and the `notification_sent_*` columns exist with no scheduler wired up yet — this is intentional (meant to become a cron job) and the module currently only has test data, not production data. Don't "clean up" this code path as unused.
+
+## User Roles & Primary Workflows
+
+Three user types, each mapped to a subset of sections (per `user_permissions`):
+
+- **Keepers (zookeepers):** warehouse-focused — check inventory tasks, record stock movements/consumption (`WarehouseController`).
+- **Vets:** lab-result-focused — enter examination/lab results (`parasitology`, `biochemistry`, `urine` sections).
+- **Admins:** oversee the system and manage per-user, per-workplace, per-section permissions; bypass all permission checks automatically (see Permission System above).
+
+**Workplaces ("provozy"):** ZOO Tábor, Babice, Lipence, Deponace — the complete current list, not expected to grow. Confirmed empirically: adding a new workplace requires only a new row in the `workplaces` table; no code change needed — every module picks it up automatically.
+
+## Related Sub-Applications
+
+**`zootrack/`** is a second, fully self-contained application nested in this repo — its own `.git`, `.env`, `.htaccess`, `.github/workflows`, `index.php`, `api.php`. It tracks European zoo institutions and their CITES/animal-holdings data (`institutions`, `zootrack_*`, `geocache` tables) — an entirely different data domain from the main app's `animals`/`examinations` tables, despite the animal-adjacent name. It is actively maintained. It reuses the main app's PHP session (`zootrack/auth_check.php` reads `$_SESSION['user_id']`/`role`/`zootrack_edit`) rather than having a separate login — `zt_require_login_page()`/`zt_require_login_api()` both require an authenticated session, so it is **not** an open/unauthenticated endpoint (a prior audit claim to the contrary, from before auth was added, is stale). Known gap: the front-end is missing email/phone fields for institutions that the backend DB (dump in `vetapp/database`) already has.
+
+## Terminology Quick Reference
+
+See `docs/GLOSSARY.md` for full UI↔code↔DB mappings. Most critical: the `urine`/`urineanalysis` split above, and `Workplace` (code/DB) = *provoz* (what every Czech-speaking user actually calls it).
+
+## Architecture Quick Reference
+
+See `docs/ARCHITECTURE.md` for non-obvious patterns (the `zootrack/` sub-app relationship, the LDT lab-import pipeline, the migration idempotency gotcha, and more detail on the fixed authorization gap above).
+
+## Additional Resources
+
+- `logic_schema/` — a prior static-analysis audit (2026-06-26) with machine-readable `findings.json`/`routes.json`/`database.json`/`functions.json` and an `index.html` viewer. Useful as a *source of questions*, not as current fact — see Common Pitfalls above.
+- `LDT/` — real sample `.ldt` files (German "Labordatenträger" lab-export format) plus `LDT_handling_documentation.md`. This is the actual production import path for `BiochemistryImportController`, distinct from any generic CSV template.
+- `.import/` — ad hoc spreadsheet staging (`current_stock.xls`, `lexikon.xlsx`) plus `gen_migration.py`, a script that generated some of the numbered migration files.
+- [deepwiki.com/zoo-tabor/vetapp](https://deepwiki.com/zoo-tabor/vetapp) — an auto-generated wiki with manual adjustments on top; a secondary external reference for onboarding.
+- `docs/GLOSSARY.md`, `docs/ARCHITECTURE.md`, `docs/BUSINESS_CONTEXT.md` — generated Context Tree docs (see links above).
+
+---
+
+*Context tree built: 2026-08-24*
+*Based on interview with: janstich (project owner)*

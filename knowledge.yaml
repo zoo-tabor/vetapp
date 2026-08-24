@@ -1,0 +1,83 @@
+# Knowledge Context Protocol (KCP) v0.9 Manifest
+# vetapp — Czech zoo/vet-clinic management system (vanilla PHP, PDO, FTP-deployed)
+
+kcp_version: "0.9"
+project: vetapp
+version: "1.0.0"
+updated: "2026-08-24"
+indexing: read-only
+language: en
+
+# Root hints — guide agents to the right starting point
+root_hints:
+  entry_point: root-navigation
+  quick_start:
+    - "Permission checks are not uniformly applied — verify a controller method actually calls hasAccess/hasPermission/userCan, don't assume from the documented pattern"
+    - "logic_schema/ is a static-analysis snapshot from 2026-06-26 — several of its top findings are already fixed in current code; treat it as questions to re-verify, not fact"
+    - "Section key mismatch: DB/permissions use 'urine', session/CSS routing uses 'urineanalysis'"
+    - "Migrations are not idempotent — check the migrations tracking table before re-running one"
+    - "zootrack/ is a separate nested application (own git/deploy) sharing only the main app's PHP session — unrelated data domain (CITES/institutions, not clinic animals)"
+  decision_tree:
+    debugging:
+      description: "Something is broken"
+      routes:
+        - trigger: "permission denied|unauthorized|IDOR|access check"
+          targets: [architecture, root-navigation]
+        - trigger: "migration fail|duplicate column|migrate\\?key"
+          targets: [architecture, root-navigation]
+        - trigger: "can't find|urine|urineanalysis|section key"
+          targets: [glossary]
+    building:
+      description: "Building a new feature"
+      routes:
+        - trigger: "new section|add section"
+          targets: [root-navigation]
+        - trigger: "workplace|provoz|new site"
+          targets: [business-context, architecture]
+        - trigger: "lab import|ldt|biochemistry import"
+          targets: [architecture]
+    understanding:
+      description: "Understanding the system"
+      routes:
+        - trigger: "business|domain|workflow|user role|keeper|vet|admin"
+          targets: [business-context, architecture]
+        - trigger: "zootrack"
+          targets: [architecture, root-navigation]
+
+# Units — one per generated doc
+units:
+  - id: root-navigation
+    path: CLAUDE.md
+    intent: "How do I navigate this codebase, deploy it, and avoid its known pitfalls?"
+    load_strategy: eager
+    priority: critical
+    triggers:
+      - "navigate|where do I start|overview|deploy|pitfall|known issue"
+    depends_on: []
+
+  - id: glossary
+    path: docs/GLOSSARY.md
+    intent: "What does this UI/business term map to in code and the database?"
+    load_strategy: lazy
+    priority: high
+    triggers:
+      - "terminology|glossary|naming|urine|urineanalysis|provoz|workplace"
+    depends_on: []
+
+  - id: architecture
+    path: docs/ARCHITECTURE.md
+    intent: "How does the system fit together, and why is it structured this way?"
+    load_strategy: lazy
+    priority: high
+    triggers:
+      - "architecture|pattern|how does X work|zootrack|migration|authorization|logic_schema"
+    depends_on: []
+
+  - id: business-context
+    path: docs/BUSINESS_CONTEXT.md
+    intent: "What does this system do, for whom, and why?"
+    load_strategy: lazy
+    priority: high
+    triggers:
+      - "business|workflow|domain|why|keeper|vet|admin role|vaccination reminder"
+    depends_on: []

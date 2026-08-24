@@ -31,3 +31,5 @@ jobs:
             **/tmp/**
             **/.import/**
             logic_schema/**
+            docs/**
+            knowledge.yaml
