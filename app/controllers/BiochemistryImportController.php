@@ -198,6 +198,50 @@ class BiochemistryImportController {
         exit;
     }
 
+    public function ignoreParameter() {
+        Auth::requireLogin();
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /biochemistry/import');
+            exit;
+        }
+
+        if (!isset($_SESSION['import_preview'])) {
+            $_SESSION['error'] = 'Zadna data k importu.';
+            header('Location: /biochemistry/import');
+            exit;
+        }
+
+        $testType = $_POST['test_type'] ?? '';
+        $rawName = trim($_POST['parameter_name_ldt'] ?? '');
+        $unit = trim($_POST['unit'] ?? '');
+
+        if (!in_array($testType, ['biochemistry', 'hematology'], true) || $rawName === '') {
+            $_SESSION['error'] = 'Vyberte prosim parametr pro preskoceni.';
+            header('Location: /biochemistry/import/preview');
+            exit;
+        }
+
+        $labParam = new LabParameter();
+
+        try {
+            // Trvale označíme název jako "přeskočit" – uloží se jako alias, takže
+            // se stejný parametr příště v importu automaticky přeskočí.
+            $labParam->ignore($testType, $rawName, $unit);
+            $_SESSION['success'] = sprintf(
+                'Parametr "%s" bude pri importu preskakovan (ulozeno pro dalsi importy).',
+                $rawName
+            );
+        } catch (Exception $e) {
+            error_log('LDT parameter ignore error: ' . $e->getMessage());
+            $_SESSION['error'] = 'Chyba pri oznaceni parametru k preskoceni: ' . $e->getMessage();
+        }
+
+        header('Location: /biochemistry/import/preview');
+        exit;
+    }
+
     public function execute() {
         Auth::requireLogin();
         Auth::requireAdmin();
@@ -509,6 +553,38 @@ class BiochemistryImportController {
                 $row['animal_identifier'] = $animal['identifier'] ?? '';
             }
 
+            // Napárování parametru na kanonický číselník. Číselník je zdrojem
+            // pravdy o zařazení do biochemie/hematologie – hlavička sekce v LDT
+            // je nespolehlivá (hematologické parametry chodí bez jednoznačného
+            // oddělovače), proto test_type přebíráme z napárovaného parametru.
+            $row['parameter_name_ldt'] = $row['parameter_name_ldt'] ?? ($row['parameter_name'] ?? '');
+            $rawParam = trim($row['parameter_name_ldt']);
+            $row['parameter_id'] = null;
+            $row['parameter_unmatched'] = false;
+            $row['skip'] = false;
+
+            if ($rawParam === '') {
+                $errors[] = 'Chybi nazev parametru.';
+            } else {
+                $param = $labParam->resolveAny($rawParam, $row['test_type'] ?? null);
+                if ($param) {
+                    // Zařazení, kanonický název i jednotku sjednotit dle číselníku.
+                    $row['test_type'] = $param['test_type'];
+                    $row['parameter_id'] = (int)$param['id'];
+                    $row['parameter_name'] = $param['name'];
+                    if (empty($row['unit']) && !empty($param['unit'])) {
+                        $row['unit'] = $param['unit'];
+                    }
+                    // Parametr označený k ignorování se neimportuje.
+                    if (!empty($param['is_ignored'])) {
+                        $row['skip'] = true;
+                    }
+                } else {
+                    $row['parameter_unmatched'] = true;
+                    $warnings[] = 'Parametr "' . $rawParam . '" neni v ciselniku – naparujte jej, zalozte novy, nebo jej preskocte.';
+                }
+            }
+
             if (empty($row['test_type']) || !in_array($row['test_type'], ['biochemistry', 'hematology'], true)) {
                 $errors[] = 'Neplatny typ testu v LDT.';
             }
@@ -524,29 +600,6 @@ class BiochemistryImportController {
                 }
             }
 
-            // Napárování parametru na kanonický číselník.
-            $row['parameter_name_ldt'] = $row['parameter_name_ldt'] ?? ($row['parameter_name'] ?? '');
-            $rawParam = trim($row['parameter_name_ldt']);
-            $row['parameter_id'] = null;
-            $row['parameter_unmatched'] = false;
-
-            if ($rawParam === '') {
-                $errors[] = 'Chybi nazev parametru.';
-            } elseif (!empty($row['test_type']) && in_array($row['test_type'], ['biochemistry', 'hematology'], true)) {
-                $param = $labParam->resolve($row['test_type'], $rawParam);
-                if ($param) {
-                    // sjednotit na kanonický název i jednotku
-                    $row['parameter_id'] = (int)$param['id'];
-                    $row['parameter_name'] = $param['name'];
-                    if (empty($row['unit']) && !empty($param['unit'])) {
-                        $row['unit'] = $param['unit'];
-                    }
-                } else {
-                    $row['parameter_unmatched'] = true;
-                    $warnings[] = 'Parametr "' . $rawParam . '" neni v ciselniku – naparujte jej, nebo se zalozi novy.';
-                }
-            }
-
             if (!isset($row['value']) || $row['value'] === '') {
                 $warnings[] = 'Prazdna hodnota parametru.';
             } else {
@@ -555,6 +608,13 @@ class BiochemistryImportController {
 
             if (empty($row['unit'])) {
                 $warnings[] = 'Chybi jednotka parametru.';
+            }
+
+            // Přeskočené parametry se neimportují, takže nesmí blokovat import
+            // ani generovat varování – jen se v náhledu zobrazí jako přeskočené.
+            if ($row['skip']) {
+                $errors = [];
+                $warnings = [];
             }
 
             $row['errors'] = $errors;
@@ -730,6 +790,12 @@ class BiochemistryImportController {
         $groupedData = [];
 
         foreach ($data as $row) {
+            // Parametr označený k přeskočení (např. náklady za kurýra) se
+            // neimportuje a nepočítá se jako chyba.
+            if (!empty($row['skip'])) {
+                continue;
+            }
+
             if (!empty($row['errors'])) {
                 $errorCount++;
                 continue;

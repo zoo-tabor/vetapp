@@ -24,14 +24,16 @@
 
     <?php
     $totalRows = count($data);
-    $validRows = count(array_filter($data, fn($row) => empty($row['errors'])));
-    $errorRows = $totalRows - $validRows;
-    $warningRows = count(array_filter($data, fn($row) => !empty($row['warnings']) && empty($row['errors'])));
+    $skippedRows = count(array_filter($data, fn($row) => !empty($row['skip'])));
+    $validRows = count(array_filter($data, fn($row) => empty($row['skip']) && empty($row['errors'])));
+    $errorRows = count(array_filter($data, fn($row) => empty($row['skip']) && !empty($row['errors'])));
+    $warningRows = count(array_filter($data, fn($row) => empty($row['skip']) && !empty($row['warnings']) && empty($row['errors'])));
     $testKeys = [];
     foreach ($data as $row) {
-        if (empty($row['errors'])) {
-            $testKeys[($row['animal_id'] ?? '') . '_' . ($row['test_type'] ?? '') . '_' . ($row['test_date'] ?? '') . '_' . ($row['ldt_protocol'] ?? '')] = true;
+        if (!empty($row['skip']) || !empty($row['errors'])) {
+            continue;
         }
+        $testKeys[($row['animal_id'] ?? '') . '_' . ($row['test_type'] ?? '') . '_' . ($row['test_date'] ?? '') . '_' . ($row['ldt_protocol'] ?? '')] = true;
     }
     $testCount = count($testKeys);
     ?>
@@ -58,6 +60,10 @@
                 <div class="stat-card">
                     <div class="stat-value" style="color: #f39c12;"><?= $warningRows ?></div>
                     <div class="stat-label">S varovanim</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-value" style="color: #7f8c8d;"><?= $skippedRows ?></div>
+                    <div class="stat-label">Preskoceno</div>
                 </div>
                 <div class="stat-card">
                     <div class="stat-value" style="color: #e74c3c;"><?= $errorRows ?></div>
@@ -145,7 +151,7 @@
                 <h2>Sparovani parametru</h2>
             </div>
             <div class="card-body">
-                <p>Nasledujici parametry z LDT nejsou v ciselniku. Naparujte je na existujici parametr (aby nevznikal duplikat), nebo je zalozte jako novy. Volba se ulozi jako alias a priste probehne automaticky.</p>
+                <p>Nasledujici parametry z LDT nejsou v ciselniku. Naparujte je na existujici parametr (aby nevznikal duplikat), zalozte je jako novy, nebo je <strong>preskocte</strong> (napr. naklady za kuryra). Volba se ulozi jako alias a priste probehne automaticky.</p>
 
                 <?php foreach ($parameterAssignmentGroups as $group): ?>
                     <?php $paramOptions = $group['test_type'] === 'biochemistry' ? ($biochemParamList ?? []) : ($hematoParamList ?? []); ?>
@@ -174,6 +180,11 @@
                                 <?php endforeach; ?>
                             </select>
                             <button type="submit" class="btn btn-primary">Sparovat</button>
+                            <button type="submit" class="btn btn-outline"
+                                    formaction="/biochemistry/import/ignore-parameter" formnovalidate
+                                    title="Tento parametr se nikdy neimportuje (ulozi se natrvalo)">
+                                Preskocit
+                            </button>
                         </div>
                     </form>
                 <?php endforeach; ?>
@@ -206,10 +217,12 @@
                     </thead>
                     <tbody>
                         <?php foreach ($data as $row): ?>
-                            <tr class="<?= !empty($row['errors']) ? 'row-error' : (!empty($row['warnings']) ? 'row-warning' : 'row-success') ?>">
+                            <tr class="<?= !empty($row['skip']) ? 'row-skip' : (!empty($row['errors']) ? 'row-error' : (!empty($row['warnings']) ? 'row-warning' : 'row-success')) ?>">
                                 <td><?= $row['row_number'] ?></td>
                                 <td>
-                                    <?php if (!empty($row['errors'])): ?>
+                                    <?php if (!empty($row['skip'])): ?>
+                                        <span class="badge badge-skip">Preskoceno</span>
+                                    <?php elseif (!empty($row['errors'])): ?>
                                         <span class="badge badge-danger">Chyba</span>
                                     <?php elseif (!empty($row['warnings'])): ?>
                                         <span class="badge badge-warning">Varovani</span>
@@ -240,6 +253,9 @@
                                 <td><?= htmlspecialchars($row['unit'] ?? '') ?></td>
                                 <td><?= htmlspecialchars($row['reference_range'] ?? '') ?></td>
                                 <td>
+                                    <?php if (!empty($row['skip'])): ?>
+                                        <span style="color: #7f8c8d;">Preskoceno – neimportuje se.</span>
+                                    <?php endif; ?>
                                     <?php if (!empty($row['errors'])): ?>
                                         <ul style="margin: 0; padding-left: 1.2rem; color: #e74c3c;">
                                             <?php foreach ($row['errors'] as $error): ?>
@@ -273,10 +289,24 @@
         .row-success {
             background-color: #e8f5e9 !important;
         }
+        .row-skip {
+            background-color: #f2f3f4 !important;
+            color: #7f8c8d;
+        }
+        .row-skip td strong {
+            color: #7f8c8d;
+            font-weight: normal;
+            text-decoration: line-through;
+        }
+        .badge-skip {
+            background-color: #95a5a6;
+            color: #fff;
+        }
         .row-error:hover,
         .row-warning:hover,
-        .row-success:hover {
-            filter: brightness(0.95);
+        .row-success:hover,
+        .row-skip:hover {
+            filter: brightness(0.97);
         }
         .animal-assignment-form,
         .param-assignment-form {
@@ -297,7 +327,7 @@
         }
         .assignment-controls {
             display: grid;
-            grid-template-columns: minmax(260px, 1fr) auto;
+            grid-template-columns: minmax(220px, 1fr) auto auto;
             gap: 0.75rem;
             align-items: center;
         }

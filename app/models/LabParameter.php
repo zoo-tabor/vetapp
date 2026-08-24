@@ -59,17 +59,22 @@ class LabParameter extends Model {
      */
     public function all($testType = null) {
         if ($testType !== null) {
-            return $this->query(
+            $rows = $this->query(
                 "SELECT * FROM lab_parameters WHERE test_type = ? AND is_active = 1
                  ORDER BY sort_order ASC, name ASC",
                 [$testType]
             );
+        } else {
+            $rows = $this->query(
+                "SELECT * FROM lab_parameters WHERE is_active = 1
+                 ORDER BY test_type ASC, sort_order ASC, name ASC"
+            );
         }
 
-        return $this->query(
-            "SELECT * FROM lab_parameters WHERE is_active = 1
-             ORDER BY test_type ASC, sort_order ASC, name ASC"
-        );
+        // Ignorované (přeskakované) parametry se v číselníku nenabízejí.
+        // Filtrujeme v PHP, aby kód fungoval i před spuštěním migrace 019 –
+        // dokud sloupec is_ignored neexistuje, klíč v řádku chybí a bereme 0.
+        return array_values(array_filter($rows, fn($r) => empty($r['is_ignored'])));
     }
 
     /**
@@ -98,6 +103,71 @@ class LabParameter extends Model {
         );
 
         return $rows[0] ?? null;
+    }
+
+    /**
+     * Napáruje surový název bez ohledu na typ testu (biochemie/hematologie).
+     *
+     * Používá se v LDT importu, kde hlavička sekce není spolehlivá – o zařazení
+     * parametru do biochemie/hematologie rozhoduje číselník (test_type
+     * napárovaného parametru), ne hlavička v LDT. Vrací řádek lab_parameters
+     * (včetně test_type a is_ignored) nebo null.
+     *
+     * $preferTestType posune na první místo shodu ve stejné sekci, kdyby
+     * stejný normalizovaný alias existoval v obou sekcích.
+     */
+    public function resolveAny($rawName, $preferTestType = null) {
+        $norm = self::normalize($rawName);
+        if ($norm === '') {
+            return null;
+        }
+
+        // Pozn.: is_ignored zde záměrně není v ORDER BY, aby resolveAny fungoval
+        // i před migrací 019 (sloupec ještě nemusí existovat). Hodnota se vrací
+        // přes p.* a čte se v PHP jako !empty($param['is_ignored']).
+        $rows = $this->query(
+            "SELECT p.* FROM lab_parameter_aliases a
+             JOIN lab_parameters p ON p.id = a.parameter_id
+             WHERE a.alias_norm = ?
+             ORDER BY (p.test_type = ?) DESC, a.id ASC
+             LIMIT 1",
+            [$norm, $preferTestType ?? '']
+        );
+
+        return $rows[0] ?? null;
+    }
+
+    /**
+     * Označí parametr jako ignorovaný (trvalé "přeskočit" pro import).
+     *
+     * Založí (nebo znovupoužije) kanonický parametr daného typu, nastaví
+     * is_ignored = 1 a uloží alias pro surový název, takže se stejný název
+     * příště přeskočí automaticky. Vrací řádek lab_parameters.
+     */
+    public function ignore($testType, $rawName, $unit = '') {
+        if (!in_array($testType, self::TEST_TYPES, true)) {
+            throw new InvalidArgumentException('Neplatný typ testu.');
+        }
+        $name = trim((string)$rawName);
+        if ($name === '') {
+            throw new InvalidArgumentException('Prázdný název parametru.');
+        }
+
+        $existing = $this->query(
+            "SELECT * FROM lab_parameters WHERE test_type = ? AND name = ? LIMIT 1",
+            [$testType, $name]
+        );
+
+        if (!empty($existing)) {
+            $id = (int)$existing[0]['id'];
+        } else {
+            $id = $this->createParameter($testType, $name, $unit);
+        }
+
+        $this->execute("UPDATE lab_parameters SET is_ignored = 1 WHERE id = ?", [$id]);
+        $this->addAlias($id, $testType, $rawName);
+
+        return $this->find($id);
     }
 
     /**

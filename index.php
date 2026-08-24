@@ -517,6 +517,12 @@ $router->post('/biochemistry/import/assign-parameter', function() {
     $controller->assignParameter();
 });
 
+$router->post('/biochemistry/import/ignore-parameter', function() {
+    require_once APP_PATH . '/controllers/BiochemistryImportController.php';
+    $controller = new BiochemistryImportController();
+    $controller->ignoreParameter();
+});
+
 $router->post('/biochemistry/import/execute', function() {
     require_once APP_PATH . '/controllers/BiochemistryImportController.php';
     $controller = new BiochemistryImportController();
