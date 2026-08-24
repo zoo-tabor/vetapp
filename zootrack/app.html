@@ -780,6 +780,29 @@ async function initMap() {
   applyMapFilter();
 }
 
+function sleep(ms){ return new Promise(function(res){ setTimeout(res, ms); }); }
+
+// Geocode one city+country: strict structured query first, then a permissive
+// free-text fallback. The structured `city=` param only matches places OSM tags
+// as city/town, so it misses villages, hamlets, districts, regions and any city
+// string with an extra qualifier (e.g. "Zlín-Lešná"). The `q=` fallback resolves
+// most of those. Returns {lat, lng} or null when both fail.
+async function geocodeOne(city, country) {
+  var base = 'https://nominatim.openstreetmap.org/search?format=json&limit=1&accept-language=en';
+  try {
+    var r1 = await fetch(base + '&city=' + encodeURIComponent(city) + '&country=' + encodeURIComponent(country), { headers: { 'Accept': 'application/json' } });
+    var d1 = await r1.json();
+    if (d1[0]) return { lat: parseFloat(d1[0].lat), lng: parseFloat(d1[0].lon) };
+  } catch(e) { /* try fallback */ }
+  await sleep(1050);                       // second request → respect 1 req/s
+  try {
+    var r2 = await fetch(base + '&q=' + encodeURIComponent(city + ', ' + country), { headers: { 'Accept': 'application/json' } });
+    var d2 = await r2.json();
+    if (d2[0]) return { lat: parseFloat(d2[0].lat), lng: parseFloat(d2[0].lon) };
+  } catch(e) { /* give up */ }
+  return null;
+}
+
 async function geocodeBatch(pairs) {
   mapState.geocoding = true;
   var wrap = g('geo-progress-wrap');
@@ -795,21 +818,14 @@ async function geocodeBatch(pairs) {
     cur.textContent = p.city + ', ' + p.country;
     bar.style.width = Math.round((i / total) * 100) + '%';
 
-    try {
-      var url = 'https://nominatim.openstreetmap.org/search?city='
-        + encodeURIComponent(p.city) + '&country=' + encodeURIComponent(p.country)
-        + '&format=json&limit=1&accept-language=en';
-      var resp = await fetch(url, { headers: { 'Accept': 'application/json' } });
-      var data = await resp.json();
-      var lat = data[0] ? parseFloat(data[0].lat) : null;
-      var lng = data[0] ? parseFloat(data[0].lon) : null;
-      var key = p.country + '|' + p.city;
-      mapState.geocache[key] = { lat: lat, lng: lng, not_found: !data[0] };
-      await api('geocache_save', {}, { city: p.city, country: p.country, lat: lat, lng: lng });
-    } catch(e) { /* skip on network error */ }
+    var geo = await geocodeOne(p.city, p.country);
+    var lat = geo ? geo.lat : null, lng = geo ? geo.lng : null;
+    var key = p.country + '|' + p.city;
+    mapState.geocache[key] = { lat: lat, lng: lng, not_found: !geo };
+    try { await api('geocache_save', {}, { city: p.city, country: p.country, lat: lat, lng: lng }); } catch(e) {}
 
     // Nominatim rate limit: 1 req/s
-    await new Promise(function(res){ setTimeout(res, 1050); });
+    await sleep(1050);
   }
 
   bar.style.width = '100%';
@@ -817,6 +833,25 @@ async function geocodeBatch(pairs) {
   cur.textContent = '';
   setTimeout(function(){ wrap.style.display = 'none'; }, 1500);
   mapState.geocoding = false;
+}
+
+// Re-geocode institutions still missing coordinates (not_found or uncached),
+// using the improved geocodeOne fallback. Triggered by the "Zkusit dohledat"
+// button; safe to run repeatedly — resolved pairs stop being retried.
+async function retryNotFound() {
+  if (mapState.geocoding) return;
+  var seen = {}, pairs = [];
+  mapState.allInst.forEach(function(i) {
+    if (!i.city) return;
+    var key = i.country + '|' + i.city;
+    var geo = mapState.geocache[key];
+    if (geo && geo.lat !== null && !geo.not_found) return;   // already located
+    if (seen[key]) return; seen[key] = true;
+    pairs.push({ city: i.city, country: i.country });
+  });
+  if (!pairs.length) return;
+  await geocodeBatch(pairs);
+  applyMapFilter();
 }
 
 function applyMapFilter() {
@@ -863,8 +898,12 @@ function applyMapFilter() {
 
   var shown = Object.values(byLoc).reduce(function(s, l){ return s + l.items.length; }, 0);
   var notFound = filtered.length - shown;
-  g('map-count').textContent = shown + ' institucí na mapě'
-    + (notFound > 0 ? ' · ' + notFound + ' bez souřadnic' : '');
+  g('map-count').innerHTML = shown + ' institucí na mapě'
+    + (notFound > 0
+        ? ' · ' + notFound + ' bez souřadnic'
+          + ' <button class="btn btn-ghost" style="font-size:11px;padding:2px 8px;margin-left:4px"'
+          + (mapState.geocoding ? ' disabled' : '') + ' onclick="retryNotFound()">↻ Zkusit dohledat</button>'
+        : '');
 }
 
 var IUCN_COL = {EX:'red',EW:'red',CR:'red',EN:'amber',VU:'amber',NT:'blue',LC:'green'};
