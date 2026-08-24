@@ -323,8 +323,8 @@ function addInstitution(PDO $db, array $body): array {
     $db->prepare("
         INSERT INTO `zootrack_institutions`
             (id, country, subdivision, city, institution, institution_aliases,
-             institution_type, website, eaza_status, other_memberships, notes)
-        VALUES (?,?,?,?,?,?,?,?,?,?,?)
+             institution_type, website, email, phone, eaza_status, other_memberships, notes)
+        VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?)
     ")->execute([
         $id, $country,
         trim($body['subdivision'] ?? ''),
@@ -332,6 +332,8 @@ function addInstitution(PDO $db, array $body): array {
         trim($body['institution_aliases'] ?? ''),
         trim($body['institution_type'] ?? ''),
         trim($body['website'] ?? ''),
+        trim($body['email'] ?? ''),
+        trim($body['phone'] ?? ''),
         trim($body['eaza_status'] ?? 'non-EAZA'),
         trim($body['other_memberships'] ?? ''),
         trim($body['notes'] ?? ''),
@@ -345,7 +347,7 @@ function updateInst(PDO $db, array $body): array {
     if (!$id) return ['error'=>'id required'];
 
     $fields = ['institution','city','subdivision','country','institution_type',
-                'eaza_status','website','other_memberships',
+                'eaza_status','website','email','phone','other_memberships',
                 'last_contact_date','contact_notes','notes'];
     $boolFields = ['animals_from_them','animals_at_them'];
 

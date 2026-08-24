@@ -371,6 +371,16 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#f7fafb}tbody tr.sel{backgroun
         <label>Web</label>
         <input type="url" id="im-web" placeholder="https://www.zoo-brno.cz">
       </div>
+      <div class="form-row">
+        <div class="fgroup">
+          <label>E-mail</label>
+          <input type="email" id="im-email" placeholder="info@zoo-brno.cz">
+        </div>
+        <div class="fgroup">
+          <label>Telefon</label>
+          <input type="tel" id="im-phone" placeholder="+420 …">
+        </div>
+      </div>
       <div class="fgroup">
         <label>Ostatní členství (WAZA, IZE, …)</label>
         <input type="text" id="im-memberships">
@@ -1118,6 +1128,8 @@ function renderDetail(r, changes) {
 
   state.instDetail = r;
   var webLink    = r.website ? '<a href="'+esc(r.website)+'" target="_blank" rel="noopener" class="link-sm">'+esc(r.website)+'</a>' : '';
+  var emailLink  = r.email ? '<a href="mailto:'+esc(r.email)+'" class="link-sm">✉ '+esc(r.email)+'</a>' : '';
+  var phoneLink  = r.phone ? '<a href="tel:'+esc(r.phone.replace(/[^\d+]/g,''))+'" class="link-sm">☎ '+esc(r.phone)+'</a>' : '';
   var instDataStr = esc(r.id);
 
   var contactSec = '';
@@ -1140,6 +1152,8 @@ function renderDetail(r, changes) {
         '<div class="d-loc">'+esc(r.city)+(r.subdivision?', '+esc(r.subdivision):'')+', '+esc(r.country)+'</div>'+
         '<div class="crow" style="margin-top:6px">'+eazaChip(r.eaza_status)+(r.institution_type?' '+chip('gray sm',r.institution_type):'')+'</div>'+
         (webLink?'<div style="margin-top:6px">'+webLink+'</div>':'')+
+        (emailLink?'<div style="margin-top:4px">'+emailLink+'</div>':'')+
+        (phoneLink?'<div style="margin-top:4px">'+phoneLink+'</div>':'')+
       '</div>'+
       '<button class="btn btn-ghost" style="font-size:11px;padding:4px 10px;white-space:nowrap;flex-shrink:0" onclick="toggleInstEdit()">&#x270E; Upravit</button>'+
     '</div>'+
@@ -1163,6 +1177,10 @@ function renderDetail(r, changes) {
         '</div>'+
       '</div>'+
       '<div class="fgroup"><label>Web</label><input id="ie-web" type="url" value="'+esc(r.website||'')+'"></div>'+
+      '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
+        '<div class="fgroup"><label>E-mail</label><input id="ie-email" type="email" value="'+esc(r.email||'')+'"></div>'+
+        '<div class="fgroup"><label>Telefon</label><input id="ie-phone" type="tel" value="'+esc(r.phone||'')+'"></div>'+
+      '</div>'+
       '<hr style="border:none;border-top:1px solid var(--line);margin:8px 0">'+
       '<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'+
         '<div class="fgroup"><label>Poslední kontakt</label><input id="ie-contact-date" type="date" value="'+esc(r.last_contact_date||'')+'"></div>'+
@@ -1216,6 +1234,8 @@ async function saveInstDetail() {
     institution_type:  document.getElementById('ie-type').value,
     eaza_status:       document.getElementById('ie-eaza').value,
     website:           document.getElementById('ie-web').value,
+    email:             document.getElementById('ie-email').value,
+    phone:             document.getElementById('ie-phone').value,
     last_contact_date: document.getElementById('ie-contact-date').value,
     contact_notes:     document.getElementById('ie-contact-notes').value,
     notes:             document.getElementById('ie-notes').value,
@@ -1339,7 +1359,7 @@ async function submitSpecies() {
 function openInstModal() {
   g('im-title').textContent = 'Přidat instituci';
   g('im-mode').value = 'add';
-  ['im-id','im-country','im-subdivision','im-city','im-name','im-aliases','im-web','im-memberships','im-notes'].forEach(function(id){ sv(id,''); });
+  ['im-id','im-country','im-subdivision','im-city','im-name','im-aliases','im-web','im-email','im-phone','im-memberships','im-notes'].forEach(function(id){ sv(id,''); });
   sv('im-type',''); sv('im-eaza','non-EAZA');
   g('im-id').disabled = false;
   g('inst-overlay').classList.add('open');
@@ -1358,6 +1378,8 @@ async function submitInst() {
     institution_type: gv('im-type'),
     eaza_status:      gv('im-eaza'),
     website:          gv('im-web'),
+    email:            gv('im-email'),
+    phone:            gv('im-phone'),
     other_memberships: gv('im-memberships'),
     notes:            gv('im-notes'),
   };
