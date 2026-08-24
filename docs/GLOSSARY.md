@@ -35,7 +35,7 @@ verified: 2026-08-24
 ### "Animal database" vs. `zootrack/`
 - **Looks like:** Both deal with "animals," easy to conflate.
 - **`AnimalDatabaseController` / `AnimalDatabaseController::central()`:** the main app's central animal registry, aggregated across workplaces (`animals` table).
-- **`zootrack/`:** a completely separate nested application tracking *European zoo institutions and their CITES/animal holdings* (institutional data, not the clinic's own animals) — `institutions`, `zootrack_*`, `geocache` tables.
+- **`zootrack/`:** a distinct in-repo application area (own `index.php`/`api.php`, merged into this repo 2026-08-24 — no longer a separate git repo/deploy) tracking *European zoo institutions and their CITES/animal holdings* (institutional data, not the clinic's own animals) — `zootrack_institutions`, `zootrack_*`, `zootrack_geocache` tables.
 - **Why different:** Name collision only — the two systems share no tables, no controllers, no models.
 - **Where to look:** `app/controllers/AnimalDatabaseController.php` vs. `zootrack/index.php`, `zootrack/api.php`
 

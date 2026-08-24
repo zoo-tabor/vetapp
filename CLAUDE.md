@@ -19,7 +19,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Every push to `main` triggers `.github/workflows/deploy.yml`, which uploads all files via FTP to the production server (`vetapp.zootabor.eu`). There is no build step. **Pushing to main = live deploy.**
 
-Excluded from FTP upload: `.git*`, `.github/`, `.claude/`, `.env`, `*.log`, `database/backups/`, `cache/`, `tmp/`, `.import/`.
+Excluded from FTP upload (see `.github/workflows/deploy.yml`): `.git*`, `.github/`, `.claude/`, `.env`, `*.log`, `database/backups/`, `database/*.sql` (DB dumps), `cache/`, `tmp/`, `.import/`, `logic_schema/`, `docs/`, `knowledge.yaml`, and zootrack dev-only files (`zootrack/create_db.py`, `zootrack/sqlite_to_mariadb.php`, `zootrack/MANUAL.md`). Internal docs (`docs/`, `logic_schema/`, `knowledge.yaml`) stay in git but off the public web.
 
 ## Database Migrations
 
@@ -137,7 +137,9 @@ Three user types, each mapped to a subset of sections (per `user_permissions`):
 
 ## Related Sub-Applications
 
-**`zootrack/`** is a second, fully self-contained application nested in this repo — its own `.git`, `.env`, `.htaccess`, `.github/workflows`, `index.php`, `api.php`. It tracks European zoo institutions and their CITES/animal-holdings data (`institutions`, `zootrack_*`, `geocache` tables) — an entirely different data domain from the main app's `animals`/`examinations` tables, despite the animal-adjacent name. It is actively maintained. It reuses the main app's PHP session (`zootrack/auth_check.php` reads `$_SESSION['user_id']`/`role`/`zootrack_edit`) rather than having a separate login — `zt_require_login_page()`/`zt_require_login_api()` both require an authenticated session, so it is **not** an open/unauthenticated endpoint (a prior audit claim to the contrary, from before auth was added, is stale). Known gap: the front-end is missing email/phone fields for institutions that the backend DB (dump in `vetapp/database`) already has.
+**`zootrack/`** is a distinct application *area* living inside this repo. As of 2026-08-24 it was **merged into this repo** as ordinary tracked files and is **deployed together with the main app** by the same FTP workflow (`/zootrack/` is a subfolder of the shared docroot). It previously had its own `.git` and its own deploy pipeline as a separate repo (`github.com/zoo-tabor/zootrack`, full history preserved there, last commit `a7370cf`); **that separate repo is retired — commit zootrack changes here and push `main`**, do not push to the old repo (its Action would re-deploy stale files). Its dev-only files (`create_db.py`, `sqlite_to_mariadb.php`, `MANUAL.md`) are kept in git but excluded from the FTP upload; `zootrack/.htaccess` hardens direct access on the server.
+
+It tracks European zoo institutions and their CITES/animal-holdings data (`zootrack_institutions`, `zootrack_*`, `zootrack_geocache` tables) — an entirely different data domain from the main app's `animals`/`examinations` tables, despite the animal-adjacent name. It is **not** wired into the main app's routing/`Router`, models, or `Section`/`user_permissions` system: it has its own `index.php`/`api.php` and reuses only the main app's PHP session (`zootrack/auth_check.php` reads `$_SESSION['user_id']`/`role`/`zootrack_edit`) rather than a separate login — `zt_require_login_page()`/`zt_require_login_api()` both require an authenticated session, so it is **not** an open/unauthenticated endpoint (a prior audit claim to the contrary, from before auth was added, is stale). Known gap: dedicated `email`/`phone` columns exist on `zootrack_institutions` in the live DB but have **no migration** (added out-of-band, so not reproducible from `database/migrations/`) and aren't surfaced in the front-end; contact-tracking fields (`last_contact_date`, `contact_notes`, `animals_from_them`, `animals_at_them`) were added via migration 012 and are wired into `app.html`.
 
 ## Terminology Quick Reference
 

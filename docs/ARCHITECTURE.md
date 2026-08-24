@@ -25,17 +25,19 @@ verified: 2026-08-24
 
 ## Critical Architectural Patterns
 
-### `zootrack/` — nested independent sub-application sharing the parent's auth session
+### `zootrack/` — in-repo application area with its own entry point, sharing the parent's auth session
 
-**What it is:** A second, self-contained application living inside this repo, with its own `.git`, `.env`, `.htaccess`, and `.github/workflows/deploy.yml` — a genuinely separate deployable unit, not a module of the main app.
+**What it is:** A self-contained application *area* living inside this repo under `zootrack/`, with its own `index.php`/`api.php` entry points, `app.html` SPA, and `.htaccess` — but **not** its own git repo or deploy anymore. As of 2026-08-24 it was merged into this repo as ordinary tracked files (its former nested `.git` and `.github/` were removed) and now deploys with the main app via the same FTP workflow; `/zootrack/` is a subfolder of the shared docroot.
 
-**How it works:** Despite being a separate app, it does *not* have its own login system — `zootrack/auth_check.php` reads the main app's `$_SESSION['user_id']`, `$_SESSION['role']`, and a `$_SESSION['zootrack_edit']` flag, meaning both apps run in the same PHP session pool on the same host. `zt_require_login_page()` redirects unauthenticated visitors to `/login` (the main app's login), `zt_require_login_api()` returns 401 JSON.
+**History (important):** It used to be a genuinely separate repo (`github.com/zoo-tabor/zootrack`) with an independent deploy pipeline. That repo is retired but retains the full pre-merge history (last commit `a7370cf`). **Make zootrack changes here and push `main`** — do not push to the old repo, whose Action would otherwise re-deploy stale files to `/zootrack/`.
 
-**Code evidence:** `zootrack/auth_check.php:43,52`; `database/migrations/013_add_zootrack_edit_to_users.php` (adds the global, non-workplace-scoped `zootrack_edit` column to `users`, with a comment explaining ZooTrack data is global rather than workplace-scoped).
+**How it works:** It does *not* have its own login system — `zootrack/auth_check.php` reads the main app's `$_SESSION['user_id']`, `$_SESSION['role']`, and a `$_SESSION['zootrack_edit']` flag, so both areas run in the same PHP session on the same host. `zt_require_login_page()` redirects unauthenticated visitors to `/login` (the main app's login), `zt_require_login_api()` returns 401 JSON. It is otherwise **decoupled** from the main app: no shared `Router`, models, or `Section`/`user_permissions` integration.
 
-**Critical rule:** Don't assume `zootrack/` is either fully independent (it isn't — it depends on the main app's session/login) or fully integrated (it isn't — separate `.git`, separate deploy workflow, separate data domain: `institutions`/`zootrack_*`/`geocache` tables, unrelated to `animals`/`examinations`).
+**Code evidence:** `zootrack/auth_check.php:43,52`; `database/migrations/013_add_zootrack_edit_to_users.php` (adds the global, non-workplace-scoped `zootrack_edit` column to `users`); `.github/workflows/deploy.yml` (excludes `zootrack/create_db.py`, `sqlite_to_mariadb.php`, `MANUAL.md` from the FTP upload — dev-only files kept in git but off the server).
 
-**What breaks if violated:** Treating it as unauthenticated (per a stale prior audit) would incorrectly flag it as an open write endpoint when it's actually gated by the shared session. Treating it as part of the main app's routing/permission system would be wrong too — it has no `Section`/`user_permissions` integration.
+**Critical rule:** `zootrack/` shares this repo and this deploy, but shares almost nothing else at the code level — its own entry points and data domain (`zootrack_institutions`/`zootrack_*`/`zootrack_geocache`, unrelated to `animals`/`examinations`). Don't wire it into the main `Router`/permission system, and don't treat it as a separate deployable unit anymore.
+
+**What breaks if violated:** Treating it as unauthenticated (per a stale prior audit) would incorrectly flag it as an open write endpoint when it's actually gated by the shared session. Pushing to the retired standalone repo would re-deploy stale `/zootrack/` files over the current ones.
 
 ### LDT lab-import pipeline
 
@@ -84,13 +86,13 @@ verified: 2026-08-24
 
 ### Main app ↔ `zootrack/`
 
-**Relationship:** Shared PHP session/login only — no shared routing, models, or `Section`/permission system.
+**Relationship:** Shared PHP session/login and shared repo/deploy — but no shared routing, models, or `Section`/permission system.
 
-**Data flow:** Both read/write `$_SESSION` set by the main app's `Auth`. `zootrack/` has its own DB tables (`institutions`, `zootrack_*`, `geocache`) and its own `.env` DB connection — schema-independent from the main app's `animals`/`examinations`/`workplaces` tables.
+**Data flow:** Both read/write `$_SESSION` set by the main app's `Auth`. `zootrack/` has its own DB tables (`zootrack_institutions`, `zootrack_*`, `zootrack_geocache`) and its own `zootrack/.env` DB connection — schema-independent from the main app's `animals`/`examinations`/`workplaces` tables.
 
 **Code evidence:** `zootrack/auth_check.php`, `zootrack/.env_example`
 
-**Gotchas:** Deploying `zootrack/` changes — check whether `zootrack/.github/workflows/deploy.yml` is a separate CI pipeline from the main app's `.github/workflows/deploy.yml`, since they're independent git histories nested in one working tree.
+**Gotchas:** Deploying `zootrack/` changes now goes through the **main** app's `.github/workflows/deploy.yml` — one push to `main` deploys both. (Before 2026-08-24 zootrack had its own repo and CI; that repo is retired — pushing to it would re-deploy stale `/zootrack/` files.) `zootrack/.env` stays out of git (gitignored) and off the server upload path.
 
 ---
 

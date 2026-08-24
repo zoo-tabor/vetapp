@@ -16,7 +16,7 @@ root_hints:
     - "logic_schema/ is a static-analysis snapshot from 2026-06-26 — several of its top findings are already fixed in current code; treat it as questions to re-verify, not fact"
     - "Section key mismatch: DB/permissions use 'urine', session/CSS routing uses 'urineanalysis'"
     - "Migrations are not idempotent — check the migrations tracking table before re-running one"
-    - "zootrack/ is a separate nested application (own git/deploy) sharing only the main app's PHP session — unrelated data domain (CITES/institutions, not clinic animals)"
+    - "zootrack/ is a distinct in-repo application area (own index.php/api.php) merged into this repo 2026-08-24 — deploys with the main app (one FTP workflow), shares only the PHP session, unrelated data domain (CITES/institutions, not clinic animals); the old standalone zootrack repo is retired"
   decision_tree:
     debugging:
       description: "Something is broken"
