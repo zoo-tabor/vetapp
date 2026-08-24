@@ -214,6 +214,7 @@ tbody tr{cursor:pointer}tbody tr:hover{background:#f7fafb}tbody tr.sel{backgroun
   <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
     <button class="btn btn-primary" onclick="openInstModal()">+ Přidat instituci</button>
     <button class="btn btn-primary" onclick="openSpeciesModal(null,false)">+ Přidat druh</button>
+    <button class="btn btn-ghost" onclick="exportEmails()" title="Export e-mailů institucí odpovídajících aktuálnímu filtru do CSV">&#x2B07; Export e-mailů (CSV)</button>
     <button class="btn btn-ghost" id="cites-all-btn" onclick="citesUpdateAll()" style="margin-left:auto">&#x21BB; Aktualizovat CITES</button>
   </div>
 
@@ -1032,6 +1033,33 @@ async function loadInst(page) {
   g('tloading').classList.remove('on');
   g('twrap').style.opacity='1';
   renderTable(); renderPagination();
+}
+
+// ── CSV export of institution e-mails (respects the current filter) ─────────
+function csvCell(v) {
+  v = (v == null ? '' : String(v));
+  return /[;"\r\n]/.test(v) ? '"' + v.replace(/"/g, '""') + '"' : v;
+}
+function downloadCsv(text, filename) {
+  // Prepend a UTF-8 BOM so Excel reads the diacritics correctly.
+  var blob = new Blob(['﻿' + text], { type: 'text/csv;charset=utf-8' });
+  var url  = URL.createObjectURL(blob);
+  var a = document.createElement('a');
+  a.href = url; a.download = filename;
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function(){ URL.revokeObjectURL(url); }, 1000);
+}
+async function exportEmails() {
+  var sid = gv('f-species');
+  var rows = await api('export_institutions', {
+    q: gv('q'), country: gv('f-country'), eaza: gv('f-eaza'),
+    species_id: sid, breeding: sid ? gv('f-breed') : ''
+  });
+  if (!Array.isArray(rows)) { alert('Chyba exportu.'); return; }
+  if (!rows.length) { alert('Žádná instituce s e-mailem pro aktuální filtr.'); return; }
+  var csv = 'Email;Název instituce\r\n'
+    + rows.map(function(r){ return csvCell(r.email) + ';' + csvCell(r.institution); }).join('\r\n');
+  downloadCsv(csv, 'instituce-emaily.csv');
 }
 
 function renderTable() {

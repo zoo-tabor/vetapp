@@ -64,6 +64,7 @@ try {
         case 'countries':      echo json_encode(getCountries($db));           break;
         case 'inst_types':     echo json_encode(getInstTypes($db));           break;
         case 'institutions':   echo json_encode(getInstitutions($db));        break;
+        case 'export_institutions': echo json_encode(exportInstitutions($db)); break;
         case 'institution':    echo json_encode(getInstitution($db));         break;
         case 'species':        echo json_encode(getSpecies($db));             break;
         case 'save_species':   echo json_encode(saveSpecies($db,$body));      break;
@@ -108,27 +109,15 @@ function getInstTypes(PDO $db): array {
                ->fetchAll(PDO::FETCH_COLUMN);
 }
 
-// ── Institutions list (paginated, filtered) ────────────────────────────────
-function getInstitutions(PDO $db): array {
-    $page    = max(1, (int)($_GET['page'] ?? 1));
-    $per     = min(100, max(10, (int)($_GET['per'] ?? 50)));
-    $offset  = ($page - 1) * $per;
+// Shared institution filter (q / country / eaza / species_id / breeding) →
+// [whereSql, params]. Used by the paginated list and the CSV e-mail export so
+// both always apply the exact same filtering.
+function institutionFilter(): array {
     $q       = trim($_GET['q']           ?? '');
     $country = trim($_GET['country']     ?? '');
     $eaza    = trim($_GET['eaza']        ?? '');
     $sid     = (int)($_GET['species_id'] ?? 0);
     $breed   = trim($_GET['breeding']    ?? '');
-
-    $sortMap = [
-        'institution'      => 'i.institution',
-        'country'          => 'i.country, i.city, i.institution',
-        'eaza_status'      => 'i.eaza_status, i.country, i.institution',
-        'institution_type' => 'i.institution_type, i.country, i.institution',
-        'holding_count'    => 'holding_count',
-    ];
-    $sortKey = trim($_GET['sort'] ?? '');
-    $sortDir = strtoupper(trim($_GET['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
-    $orderBy = isset($sortMap[$sortKey]) ? $sortMap[$sortKey].' '.$sortDir : 'i.country, i.city, i.institution';
 
     $w = ['1=1']; $p = [];
     if ($q) {
@@ -147,8 +136,42 @@ function getInstitutions(PDO $db): array {
         }
         $p[':sid'] = $sid;
     }
+    return [implode(' AND ', $w), $p];
+}
 
-    $where = implode(' AND ', $w);
+// Export (CSV) — all institutions matching the current filter that have an
+// e-mail. Returns [{email, institution}] with no pagination.
+function exportInstitutions(PDO $db): array {
+    [$where, $p] = institutionFilter();
+    $stmt = $db->prepare("
+        SELECT i.email, i.institution
+        FROM `zootrack_institutions` i
+        WHERE $where AND i.email IS NOT NULL AND i.email <> ''
+        ORDER BY i.institution
+    ");
+    $stmt->execute($p);
+    return $stmt->fetchAll(PDO::FETCH_ASSOC);
+}
+
+// ── Institutions list (paginated, filtered) ────────────────────────────────
+function getInstitutions(PDO $db): array {
+    $page    = max(1, (int)($_GET['page'] ?? 1));
+    $per     = min(100, max(10, (int)($_GET['per'] ?? 50)));
+    $offset  = ($page - 1) * $per;
+    $sid     = (int)($_GET['species_id'] ?? 0);
+
+    $sortMap = [
+        'institution'      => 'i.institution',
+        'country'          => 'i.country, i.city, i.institution',
+        'eaza_status'      => 'i.eaza_status, i.country, i.institution',
+        'institution_type' => 'i.institution_type, i.country, i.institution',
+        'holding_count'    => 'holding_count',
+    ];
+    $sortKey = trim($_GET['sort'] ?? '');
+    $sortDir = strtoupper(trim($_GET['dir'] ?? 'ASC')) === 'DESC' ? 'DESC' : 'ASC';
+    $orderBy = isset($sortMap[$sortKey]) ? $sortMap[$sortKey].' '.$sortDir : 'i.country, i.city, i.institution';
+
+    [$where, $p] = institutionFilter();
 
     $cStmt = $db->prepare("SELECT COUNT(*) FROM `zootrack_institutions` i WHERE $where");
     $cStmt->execute($p);
