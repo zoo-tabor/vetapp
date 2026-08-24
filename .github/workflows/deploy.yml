@@ -33,3 +33,6 @@ jobs:
             logic_schema/**
             docs/**
             knowledge.yaml
+            zootrack/create_db.py
+            zootrack/sqlite_to_mariadb.php
+            zootrack/MANUAL.md
