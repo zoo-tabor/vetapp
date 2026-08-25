@@ -143,10 +143,12 @@ $__currentApp = $_SESSION['current_app'] ?? 'parasitology';
                             <td class="animal-id"><?= htmlspecialchars($animal['identifier'] ?: '-') ?></td>
                             <td><?= htmlspecialchars($animal['species']) ?></td>
                             <td>
-                                <?php if ($animal['assigned_user']): ?>
-                                    <span class="badge badge-success">
-                                        <?= htmlspecialchars($animal['assigned_user']) ?>
-                                    </span>
+                                <?php if (!empty($animal['keepers'])): ?>
+                                    <?php foreach ($animal['keepers'] as $keeper): ?>
+                                        <span class="badge badge-success" style="margin: 2px; display: inline-block;">
+                                            <?= htmlspecialchars($keeper['full_name'] ?: $keeper['username']) ?>
+                                        </span>
+                                    <?php endforeach; ?>
                                 <?php else: ?>
                                     <span class="badge badge-secondary">Nepřiřazeno</span>
                                 <?php endif; ?>
@@ -261,18 +263,17 @@ $__currentApp = $_SESSION['current_app'] ?? 'parasitology';
             <input type="hidden" id="keeper_animal_id" name="animal_id">
 
             <div class="form-group">
-                <label for="assigned_user">Ošetřovatel (uživatelské jméno): *</label>
-                <select id="assigned_user" name="assigned_user" class="form-control" required>
-                    <option value="">-- Nepřiřazeno --</option>
+                <label for="assigned_users">Ošetřovatelé (lze vybrat více):</label>
+                <select id="assigned_users" name="assigned_users[]" class="form-control" multiple size="10">
                     <?php foreach ($users as $user): ?>
                         <?php if ($user['is_active']): ?>
-                            <option value="<?= htmlspecialchars($user['username']) ?>">
+                            <option value="<?= (int)$user['id'] ?>">
                                 <?= htmlspecialchars($user['full_name'] ? $user['full_name'] . ' (' . $user['username'] . ')' : $user['username']) ?>
                             </option>
                         <?php endif; ?>
                     <?php endforeach; ?>
                 </select>
-                <small class="form-text">Vyberte uživatele, který bude zodpovídat za péči o toto zvíře</small>
+                <small class="form-text">Držte <strong>Ctrl</strong> (na Macu <strong>Cmd</strong>) pro výběr více ošetřovatelů. Prázdný výběr = nepřiřazeno.</small>
             </div>
 
             <div class="form-actions">
@@ -837,7 +838,11 @@ function assignKeeper(animalId, animalName) {
         .then(response => response.json())
         .then(data => {
             if (data.success) {
-                document.getElementById('assigned_user').value = data.assigned_user || '';
+                const select = document.getElementById('assigned_users');
+                const ids = (data.keeper_ids || []).map(String);
+                for (const opt of select.options) {
+                    opt.selected = ids.includes(opt.value);
+                }
                 document.getElementById('keeperModal').style.display = 'block';
             } else {
                 alert('Chyba při načítání přiřazení: ' + (data.error || 'Neznámá chyba'));

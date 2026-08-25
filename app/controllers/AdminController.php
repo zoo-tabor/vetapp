@@ -3,6 +3,7 @@ require_once __DIR__ . '/../core/Auth.php';
 require_once __DIR__ . '/../core/View.php';
 require_once __DIR__ . '/../models/User.php';
 require_once __DIR__ . '/../models/Workplace.php';
+require_once __DIR__ . '/../models/Animal.php';
 
 class AdminController {
 
@@ -29,7 +30,6 @@ class AdminController {
                 a.identifier,
                 a.species,
                 a.workplace_id,
-                a.assigned_user,
                 w.name as workplace_name
             FROM animals a
             JOIN workplaces w ON a.workplace_id = w.id
@@ -37,6 +37,14 @@ class AdminController {
             ORDER BY w.name, a.species, a.name
         ");
         $animals = $stmt->fetchAll(PDO::FETCH_ASSOC);
+
+        // Přiřazení ošetřovatelé (M:N) najednou pro všechna zvířata.
+        $animalModel = new Animal();
+        $keepersMap = $animalModel->getKeepersMap(array_column($animals, 'id'));
+        foreach ($animals as &$__animal) {
+            $__animal['keepers'] = $keepersMap[(int)$__animal['id']] ?? [];
+        }
+        unset($__animal);
 
         View::render('admin/settings', [
             'title' => 'Administrace systému',
@@ -411,19 +419,18 @@ class AdminController {
 
         try {
             $db = \Database::getInstance()->getConnection();
-            $stmt = $db->prepare("SELECT assigned_user FROM animals WHERE id = ?");
+            $stmt = $db->prepare("SELECT id FROM animals WHERE id = ?");
             $stmt->execute([$animalId]);
-            $animal = $stmt->fetch(PDO::FETCH_ASSOC);
-
-            if (!$animal) {
+            if (!$stmt->fetch()) {
                 http_response_code(404);
                 echo json_encode(['success' => false, 'error' => 'Zvíře nenalezeno']);
                 return;
             }
 
+            $animalModel = new Animal();
             echo json_encode([
                 'success' => true,
-                'assigned_user' => $animal['assigned_user']
+                'keeper_ids' => $animalModel->getKeeperUserIds($animalId)
             ]);
         } catch (Exception $e) {
             error_log("AdminController::getAnimalKeeper error: " . $e->getMessage());
@@ -447,12 +454,15 @@ class AdminController {
             return;
         }
 
-        $assignedUser = trim($_POST['assigned_user'] ?? '');
-
-        // If empty string, set to NULL
-        if ($assignedUser === '') {
-            $assignedUser = null;
+        // Ošetřovatelé jako pole user_id (prázdné pole = nepřiřazeno).
+        $rawUserIds = $_POST['assigned_users'] ?? [];
+        if (!is_array($rawUserIds)) {
+            $rawUserIds = ($rawUserIds === '' ? [] : [$rawUserIds]);
         }
+        $userIds = array_values(array_unique(array_filter(
+            array_map('intval', $rawUserIds),
+            fn($v) => $v > 0
+        )));
 
         try {
             $db = \Database::getInstance()->getConnection();
@@ -466,28 +476,23 @@ class AdminController {
                 return;
             }
 
-            // If assigning to a user, verify the username exists
-            if ($assignedUser !== null) {
-                $userModel = new User();
-                $stmt = $db->prepare("SELECT id FROM users WHERE username = ? AND is_active = 1");
-                $stmt->execute([$assignedUser]);
-                if (!$stmt->fetch()) {
+            // Ověřit, že všichni vybraní uživatelé existují a jsou aktivní.
+            if (!empty($userIds)) {
+                $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+                $stmt = $db->prepare("SELECT id FROM users WHERE id IN ($placeholders) AND is_active = 1");
+                $stmt->execute($userIds);
+                $validIds = array_map(fn($r) => (int)$r['id'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+                if (count($validIds) !== count($userIds)) {
                     http_response_code(400);
-                    echo json_encode(['success' => false, 'error' => 'Uživatelské jméno nenalezeno nebo není aktivní']);
+                    echo json_encode(['success' => false, 'error' => 'Některý vybraný uživatel neexistuje nebo není aktivní']);
                     return;
                 }
             }
 
-            // Update the assignment
-            $stmt = $db->prepare("UPDATE animals SET assigned_user = ? WHERE id = ?");
-            $success = $stmt->execute([$assignedUser, $animalId]);
+            $animalModel = new Animal();
+            $animalModel->setKeepers($animalId, $userIds);
 
-            if ($success) {
-                echo json_encode(['success' => true]);
-            } else {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'error' => 'Nepodařilo se aktualizovat přiřazení']);
-            }
+            echo json_encode(['success' => true]);
         } catch (Exception $e) {
             error_log("AdminController::updateAnimalKeeper error: " . $e->getMessage());
             http_response_code(500);

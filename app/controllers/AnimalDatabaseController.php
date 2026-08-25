@@ -120,12 +120,8 @@ class AnimalDatabaseController {
         // Get all animals for this workplace
         $animals = $animalModel->getByWorkplace($id);
 
-        // Get current user's username for filtering assigned animals
-        $db = Database::getInstance()->getConnection();
-        $stmt = $db->prepare("SELECT username FROM users WHERE id = ?");
-        $stmt->execute([Auth::userId()]);
-        $currentUser = $stmt->fetch(PDO::FETCH_ASSOC);
-        $currentUsername = $currentUser['username'] ?? null;
+        // Zvířata, kterých je přihlášený uživatel ošetřovatelem (M:N), jako množina id.
+        $myAnimalIds = array_flip($animalModel->getAnimalIdsByKeeper(Auth::userId()));
 
         // Group animals by species (separate active, deceased, přesunutá/vyřazená, and my animals)
         $animalsBySpecies = [];
@@ -136,8 +132,8 @@ class AnimalDatabaseController {
         foreach ($animals as $animal) {
             $species = $animal['species'] ?: 'Nezadáno';
 
-            // Check if this animal is assigned to current user
-            if ($currentUsername && $animal['assigned_user'] === $currentUsername && $animal['current_status'] === 'active') {
+            // Je přihlášený uživatel ošetřovatelem tohoto (aktivního) zvířete?
+            if (isset($myAnimalIds[(int)$animal['id']]) && $animal['current_status'] === 'active') {
                 if (!isset($myAnimalsBySpecies[$species])) {
                     $myAnimalsBySpecies[$species] = [];
                 }

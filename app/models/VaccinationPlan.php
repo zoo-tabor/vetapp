@@ -147,7 +147,6 @@ class VaccinationPlan {
                 a.name as animal_name,
                 a.identifier as animal_identifier,
                 a.species as animal_species,
-                a.assigned_user,
                 m.name as vaccine_name
             FROM vaccination_plans vp
             JOIN animals a ON vp.animal_id = a.id
@@ -331,7 +330,6 @@ class VaccinationPlan {
                 vp.*,
                 a.name as animal_name,
                 a.identifier as animal_identifier,
-                a.assigned_user,
                 a.workplace_id,
                 m.name as vaccine_name,
                 w.name as workplace_name

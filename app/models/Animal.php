@@ -11,6 +11,99 @@ class Animal extends Model {
         return $result[0] ?? null;
     }
 
+    /* ---- Ošetřovatelé (vztah M:N přes animal_keepers) --------------------
+       Čtecí metody jsou odolné vůči stavu před migrací 021 (tabulka
+       animal_keepers ještě nemusí existovat) – vrátí prázdno místo chyby. */
+
+    /** ID ošetřovatelů (users.id) přiřazených ke zvířeti. */
+    public function getKeeperUserIds($animalId) {
+        try {
+            $rows = $this->query(
+                "SELECT user_id FROM animal_keepers WHERE animal_id = ?",
+                [(int)$animalId]
+            );
+            return array_map(fn($r) => (int)$r['user_id'], $rows);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /** ID zvířat, kterých je daný uživatel ošetřovatelem. */
+    public function getAnimalIdsByKeeper($userId) {
+        try {
+            $rows = $this->query(
+                "SELECT animal_id FROM animal_keepers WHERE user_id = ?",
+                [(int)$userId]
+            );
+            return array_map(fn($r) => (int)$r['animal_id'], $rows);
+        } catch (Exception $e) {
+            return [];
+        }
+    }
+
+    /**
+     * Ošetřovatelé pro sadu zvířat najednou (bez N+1).
+     * Vrací [animal_id => [ ['id','username','full_name'], ... ]].
+     */
+    public function getKeepersMap(array $animalIds) {
+        $animalIds = array_values(array_filter(array_map('intval', $animalIds), fn($v) => $v > 0));
+        if (empty($animalIds)) {
+            return [];
+        }
+        $placeholders = implode(',', array_fill(0, count($animalIds), '?'));
+        try {
+            $rows = $this->query(
+                "SELECT ak.animal_id, u.id, u.username, u.full_name
+                 FROM animal_keepers ak
+                 JOIN users u ON u.id = ak.user_id
+                 WHERE ak.animal_id IN ($placeholders)
+                 ORDER BY u.full_name, u.username",
+                $animalIds
+            );
+        } catch (Exception $e) {
+            return [];
+        }
+
+        $map = [];
+        foreach ($rows as $r) {
+            $map[(int)$r['animal_id']][] = [
+                'id' => (int)$r['id'],
+                'username' => $r['username'],
+                'full_name' => $r['full_name'],
+            ];
+        }
+        return $map;
+    }
+
+    /** Nastaví ošetřovatele zvířete (nahradí celou množinu). */
+    public function setKeepers($animalId, array $userIds) {
+        $animalId = (int)$animalId;
+        $userIds = array_values(array_unique(array_filter(
+            array_map('intval', $userIds),
+            fn($v) => $v > 0
+        )));
+
+        $this->db->beginTransaction();
+        try {
+            $del = $this->db->prepare("DELETE FROM animal_keepers WHERE animal_id = ?");
+            $del->execute([$animalId]);
+
+            if (!empty($userIds)) {
+                $ins = $this->db->prepare(
+                    "INSERT IGNORE INTO animal_keepers (animal_id, user_id) VALUES (?, ?)"
+                );
+                foreach ($userIds as $uid) {
+                    $ins->execute([$animalId, $uid]);
+                }
+            }
+
+            $this->db->commit();
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
     public function getByWorkplace($workplaceId, $filters = []) {
         $sql = "
             SELECT
