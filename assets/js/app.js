@@ -40,6 +40,14 @@ function initForms() {
     forms.forEach(form => {
         // Validace před odesláním
         form.addEventListener('submit', function(e) {
+            // Respektovat formnovalidate na tlačítku, které odeslání spustilo
+            // (např. „Přeskočit" u LDT importu) – tam se validace povinných polí
+            // vynechává stejně jako u nativní HTML5 validace.
+            const submitter = e.submitter || document.activeElement;
+            if (submitter && submitter.hasAttribute && submitter.hasAttribute('formnovalidate')) {
+                return;
+            }
+
             const requiredFields = form.querySelectorAll('[required]');
             let isValid = true;
             
