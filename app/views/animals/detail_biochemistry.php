@@ -23,6 +23,24 @@
         <form id="animalInfoForm" onsubmit="saveAnimalInfo(event)">
             <div class="info-grid">
                 <div class="info-item">
+                    <label>Jméno:</label>
+                    <?php if (Auth::isAdmin()): ?>
+                        <span class="view-mode"><?= htmlspecialchars($animal['name'] ?: '-') ?></span>
+                        <input type="text" name="name" class="form-control edit-mode" value="<?= htmlspecialchars($animal['name'] ?? '') ?>" style="display: none;">
+                    <?php else: ?>
+                        <span><?= htmlspecialchars($animal['name'] ?: '-') ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="info-item">
+                    <label>ID zvířete:</label>
+                    <?php if (Auth::isAdmin()): ?>
+                        <span class="view-mode"><?= htmlspecialchars($animal['identifier'] ?: '-') ?></span>
+                        <input type="text" name="identifier" class="form-control edit-mode" value="<?= htmlspecialchars($animal['identifier'] ?? '') ?>" style="display: none;">
+                    <?php else: ?>
+                        <span><?= htmlspecialchars($animal['identifier'] ?: '-') ?></span>
+                    <?php endif; ?>
+                </div>
+                <div class="info-item">
                     <label>Druh: *</label>
                     <span class="view-mode"><?= htmlspecialchars($animal['species']) ?></span>
                     <input type="text" name="species" class="form-control edit-mode" value="<?= htmlspecialchars($animal['species']) ?>" required style="display: none;">

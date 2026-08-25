@@ -471,6 +471,32 @@ class AnimalController {
         try {
             $updateData = [];
 
+            // Jméno a ID (identifikátor) smí měnit pouze admin.
+            if (Auth::isAdmin()) {
+                if (array_key_exists('name', $input)) {
+                    $name = trim((string)$input['name']);
+                    $updateData['name'] = $name !== '' ? $name : null;
+                }
+                if (array_key_exists('identifier', $input)) {
+                    $newIdentifier = trim((string)$input['identifier']);
+                    $newIdentifier = $newIdentifier !== '' ? $newIdentifier : null;
+
+                    // ID musí zůstat jedinečné – zkontrolovat kolizi s jiným zvířetem.
+                    if ($newIdentifier !== null) {
+                        $dup = $animalModel->query(
+                            "SELECT id FROM animals WHERE identifier = ? AND id <> ? LIMIT 1",
+                            [$newIdentifier, $animalId]
+                        );
+                        if (!empty($dup)) {
+                            http_response_code(400);
+                            echo json_encode(['success' => false, 'error' => 'Toto ID zvířete už používá jiné zvíře.']);
+                            return;
+                        }
+                    }
+                    $updateData['identifier'] = $newIdentifier;
+                }
+            }
+
             // Only update fields that are present in the request
             if (isset($input['species'])) {
                 $updateData['species'] = $input['species'];
