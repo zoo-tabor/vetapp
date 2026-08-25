@@ -110,7 +110,8 @@
                                 <th class="sortable" onclick="sortDeceasedTable(2)">ID zvířete <span class="sort-icon">⇅</span></th>
                                 <th class="sortable" onclick="sortDeceasedTable(3)">Druh <span class="sort-icon">⇅</span></th>
                                 <th class="sortable" onclick="sortDeceasedTable(4)">Datum narození <span class="sort-icon">⇅</span></th>
-                                <th class="sortable" onclick="sortDeceasedTable(5)">Pohlaví <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortDeceasedTable(5)">Datum úmrtí <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortDeceasedTable(6)">Pohlaví <span class="sort-icon">⇅</span></th>
                                 <th>Akce</th>
                             </tr>
                         </thead>
@@ -141,6 +142,9 @@
                                     <td><?= htmlspecialchars($animal['species']) ?></td>
                                     <td>
                                         <?= $animal['birth_date'] ? date('d.m.Y', strtotime($animal['birth_date'])) : '-' ?>
+                                    </td>
+                                    <td>
+                                        <?= !empty($animal['death_date']) ? date('d.m.Y', strtotime($animal['death_date'])) : '-' ?>
                                     </td>
                                     <td>
                                         <?php
@@ -616,8 +620,8 @@ function sortDeceasedTable(columnIndex) {
         let aValue = a.cells[columnIndex].textContent.trim();
         let bValue = b.cells[columnIndex].textContent.trim();
 
-        // Handle dates (format: dd.mm.yyyy)
-        if (columnIndex === 4) { // Birth date column
+        // Handle dates (format: dd.mm.yyyy) — sloupce Datum narození (4) i Datum úmrtí (5)
+        if (columnIndex === 4 || columnIndex === 5) {
             const parseDate = (str) => {
                 if (str === '-') return new Date(0);
                 const parts = str.split('.');

@@ -168,6 +168,9 @@
             <?php if (!empty($data['animal']['birth_date'])): ?>
                 <p><strong>Datum narození:</strong> <?= date('d.m.Y', strtotime($data['animal']['birth_date'])) ?></p>
             <?php endif; ?>
+            <?php if (!empty($data['animal']['death_date'])): ?>
+                <p><strong>Datum úmrtí:</strong> <?= date('d.m.Y', strtotime($data['animal']['death_date'])) ?></p>
+            <?php endif; ?>
             <?php if (!empty($data['enclosure'])): ?>
                 <p><strong>Výběh:</strong> <?= htmlspecialchars($data['enclosure']['name']) ?></p>
             <?php endif; ?>

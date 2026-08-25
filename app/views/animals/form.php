@@ -58,7 +58,18 @@
                     class="form-control"
                 >
             </div>
-            
+
+            <div class="form-group">
+                <label for="death_date">Datum úmrtí</label>
+                <input
+                    type="date"
+                    id="death_date"
+                    name="death_date"
+                    class="form-control"
+                >
+                <small class="form-text">Vyplňte jen u již uhynulého zvířete – zvíře se rovnou založí jako uhynulé.</small>
+            </div>
+
             <div class="form-group">
                 <label for="gender">Pohlaví</label>
                 <select id="gender" name="gender" class="form-control">

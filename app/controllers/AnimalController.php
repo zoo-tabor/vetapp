@@ -245,6 +245,9 @@ class AnimalController {
                 $birthDate = $_POST['birth_date'] ?? null;
                 $birthDate = ($birthDate === '') ? null : $birthDate;
 
+                $deathDate = $_POST['death_date'] ?? null;
+                $deathDate = ($deathDate === '') ? null : $deathDate;
+
                 $notes = $_POST['notes'] ?? null;
                 $notes = ($notes === '') ? null : $notes;
 
@@ -257,14 +260,16 @@ class AnimalController {
                     $animalCategoryId = $this->getCategoryIdByName($workplaceId, $animalCategoryName);
                 }
 
+                // Pokud je zadáno datum úmrtí, zvíře zakládáme rovnou jako uhynulé.
                 $data = [
                     'workplace_id' => $workplaceId,
                     'name' => $_POST['name'] ?? null,
                     'species' => $_POST['species'] ?? null,
                     'identifier' => $_POST['identifier'] ?? null,
                     'birth_date' => $birthDate,
+                    'death_date' => $deathDate,
                     'gender' => $_POST['gender'] ?? 'unknown',
-                    'current_status' => 'active',
+                    'current_status' => $deathDate ? 'deceased' : 'active',
                     'current_enclosure_id' => $enclosureId,
                     'animal_category_id' => $animalCategoryId,
                     'notes' => $notes
@@ -479,6 +484,9 @@ class AnimalController {
             if (isset($input['birth_date'])) {
                 $updateData['birth_date'] = $input['birth_date'] ?: null;
             }
+            if (array_key_exists('death_date', $input)) {
+                $updateData['death_date'] = $input['death_date'] ?: null;
+            }
             if (isset($input['current_enclosure_id'])) {
                 $updateData['current_enclosure_id'] = $input['current_enclosure_id'] ?: null;
             }
@@ -487,6 +495,13 @@ class AnimalController {
             }
             if (isset($input['current_status'])) {
                 $updateData['current_status'] = $input['current_status'];
+
+                // Datum úmrtí dává smysl jen u uhynulého zvířete. U ostatních
+                // stavů ho vynulujeme, aby data zůstala konzistentní (i kdyby
+                // formulář poslal starou hodnotu ze skrytého pole).
+                if ($input['current_status'] !== 'deceased') {
+                    $updateData['death_date'] = null;
+                }
 
                 // If status is transferred, change workplace_id
                 if ($input['current_status'] === 'transferred') {

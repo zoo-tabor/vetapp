@@ -48,12 +48,23 @@
                     </span>
                     <input type="date" name="birth_date" class="form-control edit-mode" value="<?= $animal['birth_date'] ?? '' ?>" style="display: none;">
                 </div>
+                <?php if (!empty($animal['death_date'])): ?>
                 <div class="info-item view-mode">
-                    <label>Věk:</label>
+                    <label>Datum úmrtí:</label>
+                    <span><?= date('d.m.Y', strtotime($animal['death_date'])) ?></span>
+                </div>
+                <?php endif; ?>
+                <div class="info-item edit-mode" id="deathDateGroup" style="display: none;">
+                    <label>Datum úmrtí:</label>
+                    <input type="date" name="death_date" class="form-control" value="<?= $animal['death_date'] ?? '' ?>">
+                </div>
+                <div class="info-item view-mode">
+                    <label><?= !empty($animal['death_date']) ? 'Věk (v době úmrtí):' : 'Věk:' ?></label>
                     <span>
                         <?php
                         if ($animal['birth_date']) {
-                            $age = date_diff(date_create($animal['birth_date']), date_create('now'))->y;
+                            $ageEnd = !empty($animal['death_date']) ? date_create($animal['death_date']) : date_create('now');
+                            $age = date_diff(date_create($animal['birth_date']), $ageEnd)->y;
                             echo $age . ' let';
                         } else {
                             echo '-';
@@ -371,6 +382,12 @@ function toggleTransferLocation() {
         } else {
             transferGroup.style.display = 'none';
         }
+    }
+
+    // Datum úmrtí ukázat jen u stavu „Uhynulý".
+    const deathDateGroup = document.getElementById('deathDateGroup');
+    if (deathDateGroup) {
+        deathDateGroup.style.display = (statusSelect && statusSelect.value === 'deceased') ? '' : 'none';
     }
 }
 

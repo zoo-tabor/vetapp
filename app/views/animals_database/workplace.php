@@ -158,6 +158,12 @@
                                                 <span class="value"><?= date('d.m.Y', strtotime($animal['birth_date'])) ?></span>
                                             </div>
                                         <?php endif; ?>
+                                        <?php if (!empty($animal['death_date'])): ?>
+                                            <div class="animal-info-row">
+                                                <span class="label">Datum úmrtí:</span>
+                                                <span class="value"><?= date('d.m.Y', strtotime($animal['death_date'])) ?></span>
+                                            </div>
+                                        <?php endif; ?>
                                         <div class="animal-info-row">
                                             <span class="label">Pohlaví:</span>
                                             <span class="value">

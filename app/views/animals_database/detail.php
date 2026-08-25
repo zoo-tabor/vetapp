@@ -45,6 +45,14 @@
                     <?= $animal['birth_date'] ? date('d.m.Y', strtotime($animal['birth_date'])) : '-' ?>
                 </span>
             </div>
+            <?php if (!empty($animal['death_date'])): ?>
+            <div class="info-item">
+                <span class="label">Datum úmrtí:</span>
+                <span class="value">
+                    <?= date('d.m.Y', strtotime($animal['death_date'])) ?>
+                </span>
+            </div>
+            <?php endif; ?>
             <div class="info-item">
                 <span class="label">Pohlaví:</span>
                 <span class="value">
