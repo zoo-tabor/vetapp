@@ -194,6 +194,91 @@
                 <?php endforeach; ?>
             </div>
         <?php endif; ?>
+
+        <!-- Transferred / Removed Animals Section -->
+        <?php if (!empty($otherAnimalsBySpecies)): ?>
+            <div class="other-section">
+                <div class="other-section-header">
+                    <h2>Přesunutá a vyřazená zvířata</h2>
+                </div>
+
+                <?php foreach ($otherAnimalsBySpecies as $species => $animals): ?>
+                    <div class="species-group other">
+                        <div class="species-header other">
+                            <h2><?= htmlspecialchars($species) ?></h2>
+                            <span class="species-count other"><?= count($animals) ?> zvířat</span>
+                        </div>
+
+                        <div class="animals-grid">
+                            <?php foreach ($animals as $animal): ?>
+                                <?php $isTransferred = $animal['current_status'] === 'transferred'; ?>
+                                <a href="/animals/detail/<?= $animal['id'] ?>" class="animal-card other"
+                                   data-search="<?= strtolower(htmlspecialchars($animal['name'] . ' ' . $animal['identifier'] . ' ' . $animal['species'] . ' ' . ($animal['transfer_location'] ?? ''))) ?>">
+                                    <div class="animal-card-header">
+                                        <h3 class="animal-name">
+                                            <?= htmlspecialchars($animal['name'] ?: 'Bez jména') ?>
+                                        </h3>
+                                        <span class="animal-id">
+                                            <?= htmlspecialchars($animal['identifier'] ?: '-') ?>
+                                        </span>
+                                    </div>
+                                    <div class="animal-card-body">
+                                        <div class="animal-info-row">
+                                            <span class="label">Stav:</span>
+                                            <span class="value">
+                                                <?php if ($isTransferred): ?>
+                                                    → Přesunuto<?= !empty($animal['transfer_location']) ? ' (' . htmlspecialchars($animal['transfer_location']) . ')' : '' ?>
+                                                <?php else: ?>
+                                                    ✗ Vyřazeno
+                                                <?php endif; ?>
+                                            </span>
+                                        </div>
+                                        <div class="animal-info-row">
+                                            <span class="label">Druh:</span>
+                                            <span class="value"><?= htmlspecialchars($animal['species']) ?></span>
+                                        </div>
+                                        <?php if ($animal['birth_date']): ?>
+                                            <div class="animal-info-row">
+                                                <span class="label">Datum narození:</span>
+                                                <span class="value"><?= date('d.m.Y', strtotime($animal['birth_date'])) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <?php if (!empty($animal['death_date'])): ?>
+                                            <div class="animal-info-row">
+                                                <span class="label">Datum úmrtí:</span>
+                                                <span class="value"><?= date('d.m.Y', strtotime($animal['death_date'])) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                        <div class="animal-info-row">
+                                            <span class="label">Pohlaví:</span>
+                                            <span class="value">
+                                                <?php
+                                                $genderLabels = [
+                                                    'male' => '♂ Samec',
+                                                    'female' => '♀ Samice',
+                                                    'unknown' => '? Neznámé'
+                                                ];
+                                                echo $genderLabels[$animal['gender']] ?? '-';
+                                                ?>
+                                            </span>
+                                        </div>
+                                        <?php if ($animal['notes']): ?>
+                                            <div class="animal-info-row animal-notes">
+                                                <span class="label">Poznámky:</span>
+                                                <span class="value"><?= htmlspecialchars($animal['notes']) ?></span>
+                                            </div>
+                                        <?php endif; ?>
+                                    </div>
+                                    <div class="animal-card-footer">
+                                        <span class="view-detail">Zobrazit detail →</span>
+                                    </div>
+                                </a>
+                            <?php endforeach; ?>
+                        </div>
+                    </div>
+                <?php endforeach; ?>
+            </div>
+        <?php endif; ?>
     </div>
 
     <!-- My Animals Tab Content -->
@@ -558,6 +643,44 @@
 
 .animal-card.deceased:hover {
     box-shadow: 0 4px 16px rgba(149, 165, 166, 0.3);
+}
+
+/* Transferred / Removed Animals Section */
+.other-section {
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 3px solid #d4ac0d;
+}
+
+.other-section-header {
+    margin-bottom: 30px;
+}
+
+.other-section-header h2 {
+    color: #b7950b;
+    font-size: 28px;
+    font-weight: 700;
+}
+
+.species-header.other {
+    border-bottom: 3px solid #d4ac0d;
+}
+
+.species-header.other h2 {
+    color: #b7950b;
+}
+
+.species-count.other {
+    background: #d4ac0d;
+}
+
+.animal-card.other {
+    border-left: 4px solid #d4ac0d;
+    opacity: 0.92;
+}
+
+.animal-card.other:hover {
+    box-shadow: 0 4px 16px rgba(212, 172, 13, 0.3);
 }
 
 .animals-grid {

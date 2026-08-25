@@ -96,6 +96,90 @@
             <p>Celkem: <strong id="totalCount"><?= count($animals) ?></strong> zvířat</p>
         </div>
 
+        <!-- Transferred / Removed Animals Section -->
+        <?php if (!empty($otherAnimals)): ?>
+            <div class="other-section">
+                <h2>Přesunutá a vyřazená zvířata</h2>
+
+                <div class="table-responsive">
+                    <table class="animals-table other-table" id="otherAnimalsTable">
+                        <thead>
+                            <tr>
+                                <th class="sortable" onclick="sortOtherTable(0)">Pracoviště <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortOtherTable(1)">Jméno <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortOtherTable(2)">ID zvířete <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortOtherTable(3)">Druh <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortOtherTable(4)">Stav <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortOtherTable(5)">Datum narození <span class="sort-icon">⇅</span></th>
+                                <th class="sortable" onclick="sortOtherTable(6)">Pohlaví <span class="sort-icon">⇅</span></th>
+                                <th>Akce</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <?php
+                            $workplaceBadges = [
+                                'ZOO Tábor' => 'badge-zoo-tabor',
+                                'Babice' => 'badge-babice',
+                                'Lipence' => 'badge-lipence'
+                            ];
+
+                            foreach ($otherAnimals as $animal):
+                                $badgeClass = $workplaceBadges[$animal['workplace_name']] ?? 'badge-workplace';
+                                $isTransferred = $animal['current_status'] === 'transferred';
+                            ?>
+                                <tr data-workplace-id="<?= $animal['workplace_id'] ?>"
+                                    data-search="<?= strtolower(htmlspecialchars($animal['name'] . ' ' . $animal['identifier'] . ' ' . $animal['species'] . ' ' . $animal['workplace_name'] . ' ' . ($animal['transfer_location'] ?? ''))) ?>"
+                                    class="other-row">
+                                    <td>
+                                        <span class="badge <?= $badgeClass ?>"><?= htmlspecialchars($animal['workplace_name']) ?></span>
+                                    </td>
+                                    <td class="animal-name">
+                                        <?= htmlspecialchars($animal['name'] ?: '-') ?>
+                                    </td>
+                                    <td class="animal-id">
+                                        <?= htmlspecialchars($animal['identifier'] ?: '-') ?>
+                                    </td>
+                                    <td><?= htmlspecialchars($animal['species']) ?></td>
+                                    <td>
+                                        <?php if ($isTransferred): ?>
+                                            <span class="badge badge-transferred">→ Přesunuto</span>
+                                            <?php if (!empty($animal['transfer_location'])): ?>
+                                                <br><small>Kam: <?= htmlspecialchars($animal['transfer_location']) ?></small>
+                                            <?php endif; ?>
+                                        <?php else: ?>
+                                            <span class="badge badge-removed">✗ Vyřazeno</span>
+                                        <?php endif; ?>
+                                    </td>
+                                    <td>
+                                        <?= $animal['birth_date'] ? date('d.m.Y', strtotime($animal['birth_date'])) : '-' ?>
+                                    </td>
+                                    <td>
+                                        <?php
+                                        $genderLabels = [
+                                            'male' => '♂ Samec',
+                                            'female' => '♀ Samice',
+                                            'unknown' => '? Neznámé'
+                                        ];
+                                        echo $genderLabels[$animal['gender']] ?? '-';
+                                        ?>
+                                    </td>
+                                    <td>
+                                        <a href="/animals/detail/<?= $animal['id'] ?>" class="btn btn-sm btn-secondary">
+                                            Detail
+                                        </a>
+                                    </td>
+                                </tr>
+                            <?php endforeach; ?>
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="table-footer">
+                    <p>Celkem: <strong id="otherTotalCount"><?= count($otherAnimals) ?></strong> přesunutých / vyřazených zvířat</p>
+                </div>
+            </div>
+        <?php endif; ?>
+
         <!-- Deceased Animals Section -->
         <?php if (!empty($deceasedAnimals)): ?>
             <div class="deceased-section">
@@ -367,6 +451,47 @@
     background-color: #ecf0f1 !important;
 }
 
+/* Přesunutá / vyřazená zvířata */
+.other-section {
+    margin-top: 60px;
+    padding-top: 40px;
+    border-top: 3px solid #b7950b;
+}
+
+.other-section h2 {
+    color: #b7950b;
+    font-size: 28px;
+    font-weight: 700;
+    margin-bottom: 20px;
+}
+
+.other-table thead,
+.other-table th {
+    background-color: #d4ac0d !important;
+}
+
+.other-table th.sortable:hover {
+    background-color: #b7950b !important;
+}
+
+.other-row {
+    opacity: 0.9;
+}
+
+.other-row:hover {
+    background-color: #fef9e7 !important;
+}
+
+.badge-transferred {
+    background-color: #d6eaf8;
+    color: #1f618d;
+}
+
+.badge-removed {
+    background-color: #fadbd8;
+    color: #922b21;
+}
+
 .btn {
     padding: 8px 16px;
     border-radius: 4px;
@@ -582,6 +707,47 @@ document.addEventListener('DOMContentLoaded', function() {
         workplaceFilter.addEventListener('change', filterDeceasedTable);
         searchInput.addEventListener('input', filterDeceasedTable);
     }
+
+    // Also filter transferred / removed animals table
+    const otherTable = document.getElementById('otherAnimalsTable');
+    if (otherTable) {
+        const otherTbody = otherTable.querySelector('tbody');
+        const otherTotalCount = document.getElementById('otherTotalCount');
+
+        function filterOtherTable() {
+            const workplaceId = workplaceFilter.value;
+            const searchTerm = searchInput.value.toLowerCase();
+            let visibleCount = 0;
+
+            const rows = otherTbody.querySelectorAll('tr');
+            rows.forEach(row => {
+                const rowWorkplaceId = row.getAttribute('data-workplace-id');
+                const searchData = row.getAttribute('data-search');
+
+                let show = true;
+
+                if (workplaceId && rowWorkplaceId !== workplaceId) {
+                    show = false;
+                }
+
+                if (searchTerm && !searchData.includes(searchTerm)) {
+                    show = false;
+                }
+
+                if (show) {
+                    row.style.display = '';
+                    visibleCount++;
+                } else {
+                    row.style.display = 'none';
+                }
+            });
+
+            otherTotalCount.textContent = visibleCount;
+        }
+
+        workplaceFilter.addEventListener('change', filterOtherTable);
+        searchInput.addEventListener('input', filterOtherTable);
+    }
 });
 
 // Sort function for deceased animals table
@@ -638,6 +804,56 @@ function sortDeceasedTable(columnIndex) {
     });
 
     // Reorder table
+    rows.forEach(row => tbody.appendChild(row));
+}
+
+// Sort function for transferred / removed animals table
+let sortDirectionOther = {};
+
+function sortOtherTable(columnIndex) {
+    const table = document.getElementById('otherAnimalsTable');
+    const tbody = table.querySelector('tbody');
+    const rows = Array.from(tbody.querySelectorAll('tr'));
+
+    if (!sortDirectionOther[columnIndex]) {
+        sortDirectionOther[columnIndex] = 'asc';
+    } else {
+        sortDirectionOther[columnIndex] = sortDirectionOther[columnIndex] === 'asc' ? 'desc' : 'asc';
+    }
+
+    const direction = sortDirectionOther[columnIndex];
+
+    const headers = table.querySelectorAll('th.sortable');
+    headers.forEach((header, index) => {
+        if (index === columnIndex) {
+            header.classList.add('sorted');
+            header.querySelector('.sort-icon').textContent = direction === 'asc' ? '↑' : '↓';
+        } else {
+            header.classList.remove('sorted');
+            header.querySelector('.sort-icon').textContent = '⇅';
+        }
+    });
+
+    rows.sort((a, b) => {
+        let aValue = a.cells[columnIndex].textContent.trim();
+        let bValue = b.cells[columnIndex].textContent.trim();
+
+        // Datum narození je zde ve sloupci 5
+        if (columnIndex === 5) {
+            const parseDate = (str) => {
+                if (str === '-') return new Date(0);
+                const parts = str.split('.');
+                return new Date(parts[2], parts[1] - 1, parts[0]);
+            };
+            aValue = parseDate(aValue);
+            bValue = parseDate(bValue);
+            return direction === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+
+        const comparison = aValue.localeCompare(bValue, 'cs', { sensitivity: 'base' });
+        return direction === 'asc' ? comparison : -comparison;
+    });
+
     rows.forEach(row => tbody.appendChild(row));
 }
 </script>

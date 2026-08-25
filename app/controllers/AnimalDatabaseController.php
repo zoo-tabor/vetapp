@@ -60,13 +60,18 @@ class AnimalDatabaseController {
         $stmt->execute($workplaceIds);
         $allAnimals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
-        // Separate active and deceased animals
+        // Rozdělit zvířata podle stavu, ať se v centrální databázi neztratí ani
+        // přesunutá / vyřazená (dřív se zobrazovala jen active + deceased).
         $animals = [];
         $deceasedAnimals = [];
+        $otherAnimals = []; // přesunutá + vyřazená
         foreach ($allAnimals as $animal) {
             if ($animal['current_status'] === 'deceased') {
                 $deceasedAnimals[] = $animal;
-            } else if ($animal['current_status'] === 'active') {
+            } else if ($animal['current_status'] === 'transferred' || $animal['current_status'] === 'removed') {
+                $otherAnimals[] = $animal;
+            } else {
+                // active i případný neznámý stav
                 $animals[] = $animal;
             }
         }
@@ -79,6 +84,7 @@ class AnimalDatabaseController {
             'title' => 'Seznam zvířat - Centrální databáze',
             'animals' => $animals,
             'deceasedAnimals' => $deceasedAnimals,
+            'otherAnimals' => $otherAnimals,
             'workplaces' => $workplaces,
             'canEdit' => Auth::isAdmin()
         ]);
@@ -121,9 +127,10 @@ class AnimalDatabaseController {
         $currentUser = $stmt->fetch(PDO::FETCH_ASSOC);
         $currentUsername = $currentUser['username'] ?? null;
 
-        // Group animals by species (separate active, deceased, and my animals)
+        // Group animals by species (separate active, deceased, přesunutá/vyřazená, and my animals)
         $animalsBySpecies = [];
         $deceasedAnimalsBySpecies = [];
+        $otherAnimalsBySpecies = []; // přesunutá + vyřazená
         $myAnimalsBySpecies = [];
 
         foreach ($animals as $animal) {
@@ -143,6 +150,12 @@ class AnimalDatabaseController {
                     $deceasedAnimalsBySpecies[$species] = [];
                 }
                 $deceasedAnimalsBySpecies[$species][] = $animal;
+            } else if ($animal['current_status'] === 'transferred' || $animal['current_status'] === 'removed') {
+                // Přesunutá / vyřazená zvířata do vlastní sekce (ať se netváří jako aktivní)
+                if (!isset($otherAnimalsBySpecies[$species])) {
+                    $otherAnimalsBySpecies[$species] = [];
+                }
+                $otherAnimalsBySpecies[$species][] = $animal;
             } else {
                 // Group active animals
                 if (!isset($animalsBySpecies[$species])) {
@@ -168,6 +181,7 @@ class AnimalDatabaseController {
             'workplace' => $workplace,
             'animalsBySpecies' => $animalsBySpecies,
             'deceasedAnimalsBySpecies' => $deceasedAnimalsBySpecies,
+            'otherAnimalsBySpecies' => $otherAnimalsBySpecies,
             'myAnimalsBySpecies' => $myAnimalsBySpecies,
             'enclosures' => $enclosures,
             'canEdit' => $userModel->hasPermission(Auth::userId(), $id, 'animals', 'edit')
