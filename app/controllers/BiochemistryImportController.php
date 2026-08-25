@@ -160,34 +160,48 @@ class BiochemistryImportController {
             exit;
         }
 
-        $testType = $_POST['test_type'] ?? '';
+        $hintType = $_POST['test_type'] ?? ''; // sekce odhadnutá z LDT (jen fallback)
         $rawName = trim($_POST['parameter_name_ldt'] ?? '');
-        $target = $_POST['parameter_id'] ?? ''; // číselné id nebo "__new__"
+        $target = $_POST['parameter_id'] ?? ''; // číselné id, "__new_biochemistry__" nebo "__new_hematology__"
         $newUnit = trim($_POST['unit'] ?? '');
 
-        if (!in_array($testType, ['biochemistry', 'hematology'], true) || $rawName === '' || $target === '') {
+        if ($rawName === '' || $target === '') {
             $_SESSION['error'] = 'Vyberte prosim parametr pro sparovani.';
             header('Location: /biochemistry/import/preview');
             exit;
         }
 
         $labParam = new LabParameter();
+        $typeLabels = ['biochemistry' => 'Biochemie', 'hematology' => 'Hematologie'];
 
         try {
-            if ($target === '__new__') {
-                // Založit nový kanonický parametr z názvu v LDT.
-                $param = $labParam->resolveOrCreate($testType, $rawName, $newUnit);
-                $_SESSION['success'] = sprintf('Parametr "%s" byl zalozen jako novy.', $param['name']);
+            if (strpos($target, '__new_') === 0) {
+                // Založit nový kanonický parametr v uživatelem zvolené sekci.
+                $newType = $target === '__new_hematology__' ? 'hematology'
+                         : ($target === '__new_biochemistry__' ? 'biochemistry'
+                         : (in_array($hintType, ['biochemistry', 'hematology'], true) ? $hintType : 'biochemistry'));
+                $param = $labParam->resolveOrCreate($newType, $rawName, $newUnit);
+                $_SESSION['success'] = sprintf(
+                    'Parametr "%s" byl zalozen jako novy (%s).',
+                    $param['name'],
+                    $typeLabels[$param['test_type']] ?? $newType
+                );
             } else {
                 $param = $labParam->find((int)$target);
-                if (!$param || $param['test_type'] !== $testType) {
+                if (!$param) {
                     $_SESSION['error'] = 'Vybrany parametr nebyl nalezen.';
                     header('Location: /biochemistry/import/preview');
                     exit;
                 }
-                // Uložit alias – od teď se stejný název páruje automaticky.
-                $labParam->addAlias($param['id'], $testType, $rawName);
-                $_SESSION['success'] = sprintf('Parametr "%s" byl sparovan s "%s".', $rawName, $param['name']);
+                // Alias uložit pod sekci CÍLOVÉHO parametru – LDT hlavička (hint)
+                // může být špatně, o zařazení rozhoduje vybraný parametr z číselníku.
+                $labParam->addAlias($param['id'], $param['test_type'], $rawName);
+                $_SESSION['success'] = sprintf(
+                    'Parametr "%s" byl sparovan s "%s" (%s).',
+                    $rawName,
+                    $param['name'],
+                    $typeLabels[$param['test_type']] ?? $param['test_type']
+                );
             }
         } catch (Exception $e) {
             error_log('LDT parameter assignment error: ' . $e->getMessage());

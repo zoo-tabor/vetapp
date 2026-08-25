@@ -101,11 +101,26 @@
                 <h2>Rucni sparovani zvirete</h2>
             </div>
             <div class="card-body">
-                <p>LDT zvire se nepodarilo automaticky najit. Vyberte spravne zvire z databaze a nahled se prepocita.</p>
+                <p>LDT zvire se nepodarilo automaticky najit. Zacnete psat jmeno, ID nebo druh, vyberte zvire z nabidky a nahled se prepocita.</p>
+
+                <datalist id="importAnimalsList">
+                    <?php foreach ($animals as $animal): ?>
+                        <?php
+                        $animalLabel = trim(
+                            ($animal['name'] !== '' && $animal['name'] !== null ? $animal['name'] : '(bez jmena)')
+                            . (!empty($animal['identifier']) ? ' (' . $animal['identifier'] . ')' : '')
+                            . (!empty($animal['species']) ? ' - ' . $animal['species'] : '')
+                            . (!empty($animal['workplace_name']) ? ' / ' . $animal['workplace_name'] : '')
+                        );
+                        ?>
+                        <option data-id="<?= (int)$animal['id'] ?>" value="<?= htmlspecialchars($animalLabel) ?>"></option>
+                    <?php endforeach; ?>
+                </datalist>
 
                 <?php foreach ($animalAssignmentGroups as $group): ?>
-                    <form action="/biochemistry/import/assign-animal" method="POST" class="animal-assignment-form">
+                    <form action="/biochemistry/import/assign-animal" method="POST" class="animal-assignment-form" onsubmit="return prepareAnimalAssign(this)">
                         <input type="hidden" name="assignment_key" value="<?= htmlspecialchars($group['key']) ?>">
+                        <input type="hidden" name="animal_id" value="">
 
                         <div class="assignment-summary">
                             <strong><?= htmlspecialchars($group['animal_name_ldt'] ?: 'Bez jmena v LDT') ?></strong>
@@ -122,21 +137,8 @@
                         </div>
 
                         <div class="assignment-controls">
-                            <select name="animal_id" class="form-control" required>
-                                <option value="">-- Vyberte zvire z databaze --</option>
-                                <?php foreach ($animals as $animal): ?>
-                                    <option value="<?= (int)$animal['id'] ?>">
-                                        <?= htmlspecialchars($animal['name']) ?>
-                                        <?php if (!empty($animal['identifier'])): ?>
-                                            (<?= htmlspecialchars($animal['identifier']) ?>)
-                                        <?php endif; ?>
-                                        - <?= htmlspecialchars($animal['species'] ?? '') ?>
-                                        <?php if (!empty($animal['workplace_name'])): ?>
-                                            / <?= htmlspecialchars($animal['workplace_name']) ?>
-                                        <?php endif; ?>
-                                    </option>
-                                <?php endforeach; ?>
-                            </select>
+                            <input type="text" class="form-control animal-search" list="importAnimalsList"
+                                   placeholder="Hledat zvire (jmeno, ID, druh)..." autocomplete="off" required>
                             <button type="submit" class="btn btn-primary">Priradit zvire</button>
                         </div>
                     </form>
@@ -154,7 +156,6 @@
                 <p>Nasledujici parametry z LDT nejsou v ciselniku. Naparujte je na existujici parametr (aby nevznikal duplikat), zalozte je jako novy, nebo je <strong>preskocte</strong> (napr. naklady za kuryra). Volba se ulozi jako alias a priste probehne automaticky.</p>
 
                 <?php foreach ($parameterAssignmentGroups as $group): ?>
-                    <?php $paramOptions = $group['test_type'] === 'biochemistry' ? ($biochemParamList ?? []) : ($hematoParamList ?? []); ?>
                     <form action="/biochemistry/import/assign-parameter" method="POST" class="param-assignment-form">
                         <input type="hidden" name="test_type" value="<?= htmlspecialchars($group['test_type']) ?>">
                         <input type="hidden" name="parameter_name_ldt" value="<?= htmlspecialchars($group['parameter_name_ldt']) ?>">
@@ -162,7 +163,7 @@
 
                         <div class="assignment-summary">
                             <strong><?= htmlspecialchars($group['parameter_name_ldt']) ?></strong>
-                            <span><?= $group['test_type'] === 'biochemistry' ? 'Biochemie' : 'Hematologie' ?></span>
+                            <span title="Sekce odhadnutá z LDT – můžete ji změnou vybraného parametru přepsat">navrženo: <?= $group['test_type'] === 'biochemistry' ? 'Biochemie' : 'Hematologie' ?></span>
                             <?php if (!empty($group['unit'])): ?>
                                 <span>Jednotka: <?= htmlspecialchars($group['unit']) ?></span>
                             <?php endif; ?>
@@ -172,12 +173,22 @@
                         <div class="assignment-controls">
                             <select name="parameter_id" class="form-control" required>
                                 <option value="">-- Vyberte parametr z ciselniku --</option>
-                                <option value="__new__">➕ Zalozit jako novy parametr "<?= htmlspecialchars($group['parameter_name_ldt']) ?>"</option>
-                                <?php foreach ($paramOptions as $opt): ?>
-                                    <option value="<?= (int)$opt['id'] ?>">
-                                        <?= htmlspecialchars($opt['name']) ?><?= !empty($opt['unit']) ? ' (' . htmlspecialchars($opt['unit']) . ')' : '' ?>
-                                    </option>
-                                <?php endforeach; ?>
+                                <option value="__new_biochemistry__">➕ Zalozit jako novy BIOCHEMICKY parametr "<?= htmlspecialchars($group['parameter_name_ldt']) ?>"</option>
+                                <option value="__new_hematology__">➕ Zalozit jako novy HEMATOLOGICKY parametr "<?= htmlspecialchars($group['parameter_name_ldt']) ?>"</option>
+                                <optgroup label="Biochemie">
+                                    <?php foreach (($biochemParamList ?? []) as $opt): ?>
+                                        <option value="<?= (int)$opt['id'] ?>">
+                                            <?= htmlspecialchars($opt['name']) ?><?= !empty($opt['unit']) ? ' (' . htmlspecialchars($opt['unit']) . ')' : '' ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
+                                <optgroup label="Hematologie">
+                                    <?php foreach (($hematoParamList ?? []) as $opt): ?>
+                                        <option value="<?= (int)$opt['id'] ?>">
+                                            <?= htmlspecialchars($opt['name']) ?><?= !empty($opt['unit']) ? ' (' . htmlspecialchars($opt['unit']) . ')' : '' ?>
+                                        </option>
+                                    <?php endforeach; ?>
+                                </optgroup>
                             </select>
                             <button type="submit" class="btn btn-primary">Sparovat</button>
                             <button type="submit" class="btn btn-outline"
@@ -337,4 +348,35 @@
             }
         }
     </style>
+
+    <script>
+        // Našeptávač zvířat: uživatel píše do textového pole s <datalist>,
+        // před odesláním převedeme vybraný text na animal_id.
+        function prepareAnimalAssign(form) {
+            var input = form.querySelector('.animal-search');
+            var hidden = form.querySelector('input[name="animal_id"]');
+            var list = document.getElementById('importAnimalsList');
+            var value = (input.value || '').trim();
+            var matchedId = '';
+
+            if (list) {
+                var opts = list.options;
+                for (var i = 0; i < opts.length; i++) {
+                    if (opts[i].value === value) {
+                        matchedId = opts[i].getAttribute('data-id');
+                        break;
+                    }
+                }
+            }
+
+            if (!matchedId) {
+                alert('Vyberte zvire ze seznamu – zacnete psat a vyberte polozku z nabidky.');
+                input.focus();
+                return false;
+            }
+
+            hidden.value = matchedId;
+            return true;
+        }
+    </script>
 </div>
