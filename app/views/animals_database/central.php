@@ -248,6 +248,11 @@
     padding: 15px;
     text-align: left;
     font-weight: 600;
+    /* Barvu i pozadí nese přímo buňka th (ne jen thead), aby hlavička
+       spolehlivě vykreslila i po přeuspořádání/filtrování a nezůstala
+       nevykreslená u širokého sloupce (ID zvířete). */
+    background-color: #8e44ad;
+    color: #fff;
 }
 
 .animals-table th.sortable {
@@ -340,6 +345,10 @@
 
 .deceased-table thead {
     background: #95a5a6 !important;
+}
+
+.deceased-table th {
+    background-color: #95a5a6 !important;
 }
 
 .deceased-table th.sortable:hover {
