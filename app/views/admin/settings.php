@@ -135,6 +135,7 @@ $__currentApp = $_SESSION['current_app'] ?? 'parasitology';
                     <tbody id="animalsTableBody">
                         <?php foreach ($animals as $animal): ?>
                         <tr data-workplace-id="<?= $animal['workplace_id'] ?>"
+                            data-animal-id="<?= (int)$animal['id'] ?>"
                             data-search="<?= strtolower(htmlspecialchars($animal['name'] . ' ' . $animal['identifier'] . ' ' . $animal['species'])) ?>">
                             <td>
                                 <span class="badge badge-info"><?= htmlspecialchars($animal['workplace_name']) ?></span>
@@ -142,7 +143,7 @@ $__currentApp = $_SESSION['current_app'] ?? 'parasitology';
                             <td><?= htmlspecialchars($animal['name'] ?: '-') ?></td>
                             <td class="animal-id"><?= htmlspecialchars($animal['identifier'] ?: '-') ?></td>
                             <td><?= htmlspecialchars($animal['species']) ?></td>
-                            <td>
+                            <td class="keeper-cell">
                                 <?php if (!empty($animal['keepers'])): ?>
                                     <?php foreach ($animal['keepers'] as $keeper): ?>
                                         <span class="badge badge-success" style="margin: 2px; display: inline-block;">
@@ -267,7 +268,7 @@ $__currentApp = $_SESSION['current_app'] ?? 'parasitology';
                 <select id="assigned_users" name="assigned_users[]" class="form-control" multiple size="10">
                     <?php foreach ($users as $user): ?>
                         <?php if ($user['is_active']): ?>
-                            <option value="<?= (int)$user['id'] ?>">
+                            <option value="<?= (int)$user['id'] ?>" data-label="<?= htmlspecialchars($user['full_name'] ?: $user['username']) ?>">
                                 <?= htmlspecialchars($user['full_name'] ? $user['full_name'] . ' (' . $user['username'] . ')' : $user['username']) ?>
                             </option>
                         <?php endif; ?>
@@ -859,12 +860,39 @@ function closeKeeperModal() {
     document.getElementById('keeperForm').reset();
 }
 
+// Přepíše buňku s ošetřovateli v řádku zvířete (bez reloadu stránky,
+// aby zůstala aktivní záložka i filtry).
+function renderKeeperCell(animalId, selectedOptions) {
+    const row = document.querySelector(`#animalsTableBody tr[data-animal-id="${animalId}"]`);
+    if (!row) return;
+    const cell = row.querySelector('.keeper-cell');
+    if (!cell) return;
+
+    cell.innerHTML = '';
+    if (!selectedOptions.length) {
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-secondary';
+        badge.textContent = 'Nepřiřazeno';
+        cell.appendChild(badge);
+        return;
+    }
+    selectedOptions.forEach(opt => {
+        const badge = document.createElement('span');
+        badge.className = 'badge badge-success';
+        badge.style.margin = '2px';
+        badge.style.display = 'inline-block';
+        badge.textContent = opt.getAttribute('data-label') || opt.textContent.trim();
+        cell.appendChild(badge);
+    });
+}
+
 // Handle keeper assignment form submission
 document.getElementById('keeperForm').addEventListener('submit', function(e) {
     e.preventDefault();
 
     const formData = new FormData(this);
     const animalId = formData.get('animal_id');
+    const selectedOptions = Array.from(document.getElementById('assigned_users').selectedOptions);
 
     fetch(`/admin/animals/${animalId}/keeper`, {
         method: 'POST',
@@ -873,8 +901,10 @@ document.getElementById('keeperForm').addEventListener('submit', function(e) {
     .then(response => response.json())
     .then(data => {
         if (data.success) {
+            // Aktualizovat řádek přímo v tabulce – žádný reload, záložka i
+            // filtry zůstanou zachované.
+            renderKeeperCell(animalId, selectedOptions);
             closeKeeperModal();
-            location.reload();
         } else {
             alert('Chyba: ' + (data.error || 'Neznámá chyba'));
         }
