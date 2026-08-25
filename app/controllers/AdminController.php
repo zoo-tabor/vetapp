@@ -30,11 +30,15 @@ class AdminController {
                 a.identifier,
                 a.species,
                 a.workplace_id,
-                w.name as workplace_name
+                w.name as workplace_name,
+                ac.name as category_name,
+                e.name as enclosure_name
             FROM animals a
             JOIN workplaces w ON a.workplace_id = w.id
+            LEFT JOIN animal_categories ac ON a.animal_category_id = ac.id
+            LEFT JOIN enclosures e ON a.current_enclosure_id = e.id
             WHERE a.current_status = 'active'
-            ORDER BY w.name, a.species, a.name
+            ORDER BY w.name, ac.name, a.species, a.name
         ");
         $animals = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
@@ -497,6 +501,81 @@ class AdminController {
             error_log("AdminController::updateAnimalKeeper error: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['success' => false, 'error' => 'Chyba při aktualizaci přiřazení: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Hromadné přiřazení ošetřovatelů k více vybraným zvířatům.
+     * POST animal_ids[], user_ids[], mode (add|replace).
+     * Vrací aktualizované ošetřovatele pro dotčená zvířata (pro UI bez reloadu).
+     */
+    public function bulkAssignKeepers() {
+        Auth::requireLogin();
+
+        if (!Auth::isAdmin()) {
+            http_response_code(403);
+            echo json_encode(['success' => false, 'error' => 'Nemáte oprávnění']);
+            return;
+        }
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['success' => false, 'error' => 'Pouze POST metoda']);
+            return;
+        }
+
+        $animalIds = $_POST['animal_ids'] ?? [];
+        $userIds   = $_POST['user_ids'] ?? [];
+        $mode      = ($_POST['mode'] ?? 'add') === 'replace' ? 'replace' : 'add';
+
+        if (!is_array($animalIds)) { $animalIds = $animalIds === '' ? [] : [$animalIds]; }
+        if (!is_array($userIds))   { $userIds   = $userIds === '' ? [] : [$userIds]; }
+
+        $animalIds = array_values(array_unique(array_filter(array_map('intval', $animalIds), fn($v) => $v > 0)));
+        $userIds   = array_values(array_unique(array_filter(array_map('intval', $userIds), fn($v) => $v > 0)));
+
+        if (empty($animalIds)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Nevybrali jste žádné zvíře']);
+            return;
+        }
+
+        // U režimu „přidat" musí být vybrán aspoň jeden ošetřovatel.
+        if ($mode === 'add' && empty($userIds)) {
+            http_response_code(400);
+            echo json_encode(['success' => false, 'error' => 'Vyberte alespoň jednoho ošetřovatele']);
+            return;
+        }
+
+        try {
+            $db = \Database::getInstance()->getConnection();
+
+            // Ověřit, že všichni vybraní uživatelé existují a jsou aktivní.
+            if (!empty($userIds)) {
+                $placeholders = implode(',', array_fill(0, count($userIds), '?'));
+                $stmt = $db->prepare("SELECT id FROM users WHERE id IN ($placeholders) AND is_active = 1");
+                $stmt->execute($userIds);
+                $validIds = array_map(fn($r) => (int)$r['id'], $stmt->fetchAll(PDO::FETCH_ASSOC));
+                if (count($validIds) !== count($userIds)) {
+                    http_response_code(400);
+                    echo json_encode(['success' => false, 'error' => 'Některý vybraný uživatel neexistuje nebo není aktivní']);
+                    return;
+                }
+            }
+
+            $animalModel = new Animal();
+            $animalModel->bulkAssignKeepers($animalIds, $userIds, $mode);
+
+            // Vrátit aktualizované přiřazení pro dotčená zvířata (UI bez reloadu).
+            echo json_encode([
+                'success' => true,
+                'count'   => count($animalIds),
+                'keepers' => $animalModel->getKeepersMap($animalIds)
+            ]);
+        } catch (Exception $e) {
+            error_log("AdminController::bulkAssignKeepers error: " . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['success' => false, 'error' => 'Chyba při hromadném přiřazení: ' . $e->getMessage()]);
         }
     }
 }

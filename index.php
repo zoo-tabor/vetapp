@@ -323,6 +323,12 @@ $router->post('/admin/animals/:id/keeper', function($id) {
     $controller->updateAnimalKeeper($id);
 });
 
+$router->post('/admin/animals/keepers/bulk', function() {
+    require_once APP_PATH . '/controllers/AdminController.php';
+    $controller = new AdminController();
+    $controller->bulkAssignKeepers();
+});
+
 // Password setup routes
 $router->get('/setup-password', function() {
     require_once APP_PATH . '/controllers/AuthController.php';

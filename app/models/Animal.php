@@ -104,6 +104,47 @@ class Animal extends Model {
         }
     }
 
+    /**
+     * Hromadné přiřazení ošetřovatelů k více zvířatům najednou.
+     *
+     * $mode = 'add'     → přidá vybrané ošetřovatele (stávající zůstávají)
+     * $mode = 'replace' → nastaví přesně vybrané ošetřovatele (ostatní smaže)
+     *
+     * Vše v jedné transakci (buď se provede celé, nebo nic).
+     */
+    public function bulkAssignKeepers(array $animalIds, array $userIds, $mode = 'add') {
+        $animalIds = array_values(array_unique(array_filter(array_map('intval', $animalIds), fn($v) => $v > 0)));
+        $userIds   = array_values(array_unique(array_filter(array_map('intval', $userIds), fn($v) => $v > 0)));
+        if (empty($animalIds)) {
+            return;
+        }
+
+        $this->db->beginTransaction();
+        try {
+            if ($mode === 'replace') {
+                $placeholders = implode(',', array_fill(0, count($animalIds), '?'));
+                $this->db->prepare("DELETE FROM animal_keepers WHERE animal_id IN ($placeholders)")
+                         ->execute($animalIds);
+            }
+
+            if (!empty($userIds)) {
+                $ins = $this->db->prepare(
+                    "INSERT IGNORE INTO animal_keepers (animal_id, user_id) VALUES (?, ?)"
+                );
+                foreach ($animalIds as $aid) {
+                    foreach ($userIds as $uid) {
+                        $ins->execute([$aid, $uid]);
+                    }
+                }
+            }
+
+            $this->db->commit();
+        } catch (Exception $e) {
+            $this->db->rollBack();
+            throw $e;
+        }
+    }
+
     public function getByWorkplace($workplaceId, $filters = []) {
         $sql = "
             SELECT

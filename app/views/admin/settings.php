@@ -120,14 +120,52 @@ $__currentApp = $_SESSION['current_app'] ?? 'parasitology';
                 </div>
             </div>
 
+            <style>
+                .bulk-assign-bar { background: #eaf2fb; border: 1px solid #b8d4f0; border-radius: 8px; padding: 12px 16px; margin-bottom: 16px; }
+                .bulk-assign-info { font-size: 15px; margin-bottom: 8px; }
+                .bulk-assign-controls { display: flex; gap: 16px; align-items: flex-start; flex-wrap: wrap; }
+                .bulk-assign-controls > select { min-width: 260px; flex: 1; }
+                .bulk-assign-actions { display: flex; flex-direction: column; gap: 8px; }
+                .bulk-mode { font-size: 14px; display: block; }
+                #animalsTableBody .animal-checkbox, #selectAllAnimals { width: 16px; height: 16px; cursor: pointer; }
+            </style>
+
+            <!-- Panel hromadného přiřazení (zobrazí se po označení zvířat) -->
+            <div id="bulkAssignBar" class="bulk-assign-bar" style="display: none;">
+                <div class="bulk-assign-info">
+                    Vybráno: <strong id="bulkSelectedCount">0</strong> zvířat
+                </div>
+                <div class="bulk-assign-controls">
+                    <select id="bulkAssignedUsers" class="form-control" multiple size="6">
+                        <?php foreach ($users as $user): ?>
+                            <?php if ($user['is_active']): ?>
+                                <option value="<?= (int)$user['id'] ?>" data-label="<?= htmlspecialchars($user['full_name'] ?: $user['username']) ?>">
+                                    <?= htmlspecialchars($user['full_name'] ? $user['full_name'] . ' (' . $user['username'] . ')' : $user['username']) ?>
+                                </option>
+                            <?php endif; ?>
+                        <?php endforeach; ?>
+                    </select>
+                    <div class="bulk-assign-actions">
+                        <label class="bulk-mode"><input type="radio" name="bulkMode" value="add" checked> Přidat k stávajícím</label>
+                        <label class="bulk-mode"><input type="radio" name="bulkMode" value="replace"> Nahradit</label>
+                        <button type="button" class="btn btn-primary" id="bulkAssignApply">Přiřadit vybraným</button>
+                        <button type="button" class="btn btn-outline" id="bulkAssignCancel">Zrušit výběr</button>
+                    </div>
+                </div>
+                <small class="form-text">Držte <strong>Ctrl</strong>/<strong>Cmd</strong> pro výběr více ošetřovatelů. „Přidat" ponechá stávající, „Nahradit" přepíše celé přiřazení u vybraných zvířat.</small>
+            </div>
+
             <div class="table-responsive">
                 <table class="table">
                     <thead>
                         <tr>
+                            <th style="width: 36px;"><input type="checkbox" id="selectAllAnimals" title="Vybrat vše (viditelné)"></th>
                             <th>Pracoviště</th>
                             <th>Jméno zvířete</th>
                             <th>ID zvířete</th>
                             <th>Druh</th>
+                            <th>Kategorie</th>
+                            <th>Výběh</th>
                             <th>Přiřazený ošetřovatel</th>
                             <th>Akce</th>
                         </tr>
@@ -136,13 +174,16 @@ $__currentApp = $_SESSION['current_app'] ?? 'parasitology';
                         <?php foreach ($animals as $animal): ?>
                         <tr data-workplace-id="<?= $animal['workplace_id'] ?>"
                             data-animal-id="<?= (int)$animal['id'] ?>"
-                            data-search="<?= strtolower(htmlspecialchars($animal['name'] . ' ' . $animal['identifier'] . ' ' . $animal['species'])) ?>">
+                            data-search="<?= strtolower(htmlspecialchars($animal['name'] . ' ' . $animal['identifier'] . ' ' . $animal['species'] . ' ' . ($animal['category_name'] ?? '') . ' ' . ($animal['enclosure_name'] ?? ''))) ?>">
+                            <td><input type="checkbox" class="animal-checkbox" value="<?= (int)$animal['id'] ?>"></td>
                             <td>
                                 <span class="badge badge-info"><?= htmlspecialchars($animal['workplace_name']) ?></span>
                             </td>
                             <td><?= htmlspecialchars($animal['name'] ?: '-') ?></td>
                             <td class="animal-id"><?= htmlspecialchars($animal['identifier'] ?: '-') ?></td>
                             <td><?= htmlspecialchars($animal['species']) ?></td>
+                            <td><?= htmlspecialchars($animal['category_name'] ?: '-') ?></td>
+                            <td><?= htmlspecialchars($animal['enclosure_name'] ?: '-') ?></td>
                             <td class="keeper-cell">
                                 <?php if (!empty($animal['keepers'])): ?>
                                     <?php foreach ($animal['keepers'] as $keeper): ?>
@@ -861,27 +902,27 @@ function closeKeeperModal() {
 }
 
 // Přepíše buňku s ošetřovateli v řádku zvířete (bez reloadu stránky,
-// aby zůstala aktivní záložka i filtry).
-function renderKeeperCell(animalId, selectedOptions) {
+// aby zůstala aktivní záložka i filtry). labels = pole jmen ošetřovatelů.
+function setKeeperCellBadges(animalId, labels) {
     const row = document.querySelector(`#animalsTableBody tr[data-animal-id="${animalId}"]`);
     if (!row) return;
     const cell = row.querySelector('.keeper-cell');
     if (!cell) return;
 
     cell.innerHTML = '';
-    if (!selectedOptions.length) {
+    if (!labels.length) {
         const badge = document.createElement('span');
         badge.className = 'badge badge-secondary';
         badge.textContent = 'Nepřiřazeno';
         cell.appendChild(badge);
         return;
     }
-    selectedOptions.forEach(opt => {
+    labels.forEach(label => {
         const badge = document.createElement('span');
         badge.className = 'badge badge-success';
         badge.style.margin = '2px';
         badge.style.display = 'inline-block';
-        badge.textContent = opt.getAttribute('data-label') || opt.textContent.trim();
+        badge.textContent = label;
         cell.appendChild(badge);
     });
 }
@@ -903,7 +944,7 @@ document.getElementById('keeperForm').addEventListener('submit', function(e) {
         if (data.success) {
             // Aktualizovat řádek přímo v tabulce – žádný reload, záložka i
             // filtry zůstanou zachované.
-            renderKeeperCell(animalId, selectedOptions);
+            setKeeperCellBadges(animalId, selectedOptions.map(o => o.getAttribute('data-label') || o.textContent.trim()));
             closeKeeperModal();
         } else {
             alert('Chyba: ' + (data.error || 'Neznámá chyba'));
@@ -915,40 +956,119 @@ document.getElementById('keeperForm').addEventListener('submit', function(e) {
     });
 });
 
-// Animals table filtering
+// Animals table filtering + hromadný výběr a přiřazení
 document.addEventListener('DOMContentLoaded', function() {
     const workplaceFilter = document.getElementById('workplaceFilter');
     const searchAnimalInput = document.getElementById('searchAnimalInput');
     const animalsTableBody = document.getElementById('animalsTableBody');
+    if (!animalsTableBody) return;
 
-    if (workplaceFilter && searchAnimalInput && animalsTableBody) {
-        function filterAnimalsTable() {
-            const workplaceId = workplaceFilter.value;
-            const searchTerm = searchAnimalInput.value.toLowerCase();
+    const selectAll = document.getElementById('selectAllAnimals');
+    const bulkBar = document.getElementById('bulkAssignBar');
+    const bulkCount = document.getElementById('bulkSelectedCount');
+    const bulkUsers = document.getElementById('bulkAssignedUsers');
+    const bulkApply = document.getElementById('bulkAssignApply');
+    const bulkCancel = document.getElementById('bulkAssignCancel');
 
-            const rows = animalsTableBody.querySelectorAll('tr');
-            rows.forEach(row => {
-                const rowWorkplaceId = row.getAttribute('data-workplace-id');
-                const searchData = row.getAttribute('data-search');
+    const allCheckboxes = () => Array.from(animalsTableBody.querySelectorAll('.animal-checkbox'));
+    const visibleCheckboxes = () => allCheckboxes().filter(cb => cb.closest('tr').style.display !== 'none');
+    const checkedCheckboxes = () => allCheckboxes().filter(cb => cb.checked);
 
-                let show = true;
-
-                // Filter by workplace
-                if (workplaceId && rowWorkplaceId !== workplaceId) {
-                    show = false;
-                }
-
-                // Filter by search term
-                if (searchTerm && !searchData.includes(searchTerm)) {
-                    show = false;
-                }
-
-                row.style.display = show ? '' : 'none';
-            });
+    function updateBulkState() {
+        const checked = checkedCheckboxes();
+        if (bulkCount) bulkCount.textContent = checked.length;
+        if (bulkBar) bulkBar.style.display = checked.length ? '' : 'none';
+        if (selectAll) {
+            const vis = visibleCheckboxes();
+            const visChecked = vis.filter(cb => cb.checked).length;
+            selectAll.checked = vis.length > 0 && visChecked === vis.length;
+            selectAll.indeterminate = visChecked > 0 && visChecked < vis.length;
         }
-
-        workplaceFilter.addEventListener('change', filterAnimalsTable);
-        searchAnimalInput.addEventListener('input', filterAnimalsTable);
     }
+
+    function filterAnimalsTable() {
+        const workplaceId = workplaceFilter ? workplaceFilter.value : '';
+        const searchTerm = searchAnimalInput ? searchAnimalInput.value.toLowerCase() : '';
+        animalsTableBody.querySelectorAll('tr').forEach(row => {
+            const rowWorkplaceId = row.getAttribute('data-workplace-id');
+            const searchData = row.getAttribute('data-search') || '';
+            let show = true;
+            if (workplaceId && rowWorkplaceId !== workplaceId) show = false;
+            if (searchTerm && !searchData.includes(searchTerm)) show = false;
+            row.style.display = show ? '' : 'none';
+        });
+        updateBulkState();
+    }
+
+    if (workplaceFilter) workplaceFilter.addEventListener('change', filterAnimalsTable);
+    if (searchAnimalInput) searchAnimalInput.addEventListener('input', filterAnimalsTable);
+
+    animalsTableBody.addEventListener('change', function(e) {
+        if (e.target.classList.contains('animal-checkbox')) updateBulkState();
+    });
+
+    if (selectAll) {
+        selectAll.addEventListener('change', function() {
+            visibleCheckboxes().forEach(cb => { cb.checked = selectAll.checked; });
+            updateBulkState();
+        });
+    }
+
+    if (bulkCancel) {
+        bulkCancel.addEventListener('click', function() {
+            allCheckboxes().forEach(cb => { cb.checked = false; });
+            updateBulkState();
+        });
+    }
+
+    if (bulkApply) {
+        bulkApply.addEventListener('click', function() {
+            const animalIds = checkedCheckboxes().map(cb => cb.value);
+            if (!animalIds.length) { alert('Nevybrali jste žádné zvíře.'); return; }
+
+            const userIds = Array.from(bulkUsers.selectedOptions).map(o => o.value);
+            const mode = (document.querySelector('input[name="bulkMode"]:checked') || {}).value || 'add';
+
+            if (mode === 'add' && !userIds.length) { alert('Vyberte alespoň jednoho ošetřovatele.'); return; }
+            if (mode === 'replace' && !userIds.length &&
+                !confirm('„Nahradit" bez vybraného ošetřovatele odebere u vybraných zvířat všechny ošetřovatele. Pokračovat?')) {
+                return;
+            }
+
+            const body = new URLSearchParams();
+            animalIds.forEach(id => body.append('animal_ids[]', id));
+            userIds.forEach(id => body.append('user_ids[]', id));
+            body.append('mode', mode);
+
+            const orig = bulkApply.textContent;
+            bulkApply.disabled = true;
+            bulkApply.textContent = 'Ukládám…';
+
+            fetch('/admin/animals/keepers/bulk', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+                body: body.toString()
+            })
+            .then(r => r.json())
+            .then(data => {
+                if (data.success) {
+                    const keepers = data.keepers || {};
+                    animalIds.forEach(id => {
+                        const list = keepers[id] || [];
+                        setKeeperCellBadges(id, list.map(k => k.full_name || k.username));
+                    });
+                    allCheckboxes().forEach(cb => { cb.checked = false; });
+                    bulkUsers.selectedIndex = -1;
+                    updateBulkState();
+                } else {
+                    alert('Chyba: ' + (data.error || 'Neznámá chyba'));
+                }
+            })
+            .catch(err => alert('Chyba při komunikaci se serverem: ' + err.message))
+            .finally(() => { bulkApply.disabled = false; bulkApply.textContent = orig; });
+        });
+    }
+
+    updateBulkState();
 });
 </script>
