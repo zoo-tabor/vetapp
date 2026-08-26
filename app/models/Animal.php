@@ -156,11 +156,12 @@ class Animal extends Model {
             LEFT JOIN enclosures e ON a.current_enclosure_id = e.id
             LEFT JOIN (
                 SELECT
-                    animal_id,
-                    examination_date,
-                    finding_status,
-                    ROW_NUMBER() OVER (PARTITION BY animal_id ORDER BY examination_date DESC) as rn
-                FROM examinations
+                    ea.animal_id,
+                    e.examination_date,
+                    e.finding_status,
+                    ROW_NUMBER() OVER (PARTITION BY ea.animal_id ORDER BY e.examination_date DESC) as rn
+                FROM examinations e
+                JOIN examination_animals ea ON ea.examination_id = e.id
             ) latest_exam ON a.id = latest_exam.animal_id AND latest_exam.rn = 1
             WHERE a.workplace_id = ?
         ";
@@ -214,10 +215,13 @@ class Animal extends Model {
     }
     
     public function getExaminations($animalId, $limit = null) {
+        // Historie zvířete se čte přes examination_animals, aby zahrnula i
+        // skupinová vyšetření (kde e.animal_id je NULL).
         $sql = "
             SELECT
                 e.*,
                 en.name as enclosure_name,
+                pg.name as group_name,
                 u.full_name as created_by_name,
                 d.id as deworming_id,
                 d.deworming_date,
@@ -225,11 +229,13 @@ class Animal extends Model {
                 d.dosage,
                 d.administration_route,
                 d.reason as deworming_reason
-            FROM examinations e
+            FROM examination_animals ea
+            JOIN examinations e ON e.id = ea.examination_id
             LEFT JOIN enclosures en ON e.enclosure_id = en.id
+            LEFT JOIN parasitology_groups pg ON e.group_id = pg.id
             LEFT JOIN users u ON e.created_by = u.id
             LEFT JOIN dewormings d ON d.related_examination_id = e.id
-            WHERE e.animal_id = ?
+            WHERE ea.animal_id = ?
             ORDER BY e.examination_date DESC
         ";
 
@@ -239,22 +245,26 @@ class Animal extends Model {
 
         return $this->query($sql, [$animalId]);
     }
-    
+
     public function getDewormings($animalId, $limit = null) {
+        // Přes deworming_animals kvůli skupinovým aplikacím (d.animal_id NULL).
         $sql = "
-            SELECT 
+            SELECT
                 d.*,
+                pg.name as group_name,
                 u.full_name as created_by_name
-            FROM dewormings d
+            FROM deworming_animals da
+            JOIN dewormings d ON d.id = da.deworming_id
+            LEFT JOIN parasitology_groups pg ON d.group_id = pg.id
             LEFT JOIN users u ON d.created_by = u.id
-            WHERE d.animal_id = ?
+            WHERE da.animal_id = ?
             ORDER BY d.deworming_date DESC
         ";
-        
+
         if ($limit) {
             $sql .= " LIMIT $limit";
         }
-        
+
         return $this->query($sql, [$animalId]);
     }
     
@@ -349,9 +359,11 @@ class Animal extends Model {
             $animalIds = array_column($animals, 'animal_id');
             $placeholders = str_repeat('?,', count($animalIds) - 1) . '?';
 
+            // Přes examination_animals: skupinové vyšetření se objeví v historii
+            // každého člena skupiny (e.animal_id je u něj NULL).
             $examSql = "
                 SELECT
-                    e.animal_id,
+                    ea.animal_id,
                     e.id,
                     e.examination_date,
                     e.finding_status,
@@ -360,6 +372,8 @@ class Animal extends Model {
                     e.institution,
                     e.parasite_found,
                     e.intensity,
+                    e.group_id,
+                    pg.name as group_name,
                     en.name as location,
                     d.id as deworming_id,
                     d.deworming_date,
@@ -373,14 +387,16 @@ class Animal extends Model {
                         CASE WHEN ep.notes IS NOT NULL THEN CONCAT(' - ', ep.notes) ELSE '' END)
                         SEPARATOR '; '
                     ) as parasites_found
-                FROM examinations e
+                FROM examination_animals ea
+                JOIN examinations e ON e.id = ea.examination_id
                 LEFT JOIN enclosures en ON e.enclosure_id = en.id
+                LEFT JOIN parasitology_groups pg ON e.group_id = pg.id
                 LEFT JOIN examination_parasites ep ON e.id = ep.examination_id
                 LEFT JOIN parasites p ON ep.parasite_id = p.id
                 LEFT JOIN dewormings d ON d.related_examination_id = e.id
-                WHERE e.animal_id IN ($placeholders)
-                GROUP BY e.id, e.animal_id
-                ORDER BY e.animal_id, e.examination_date DESC
+                WHERE ea.animal_id IN ($placeholders)
+                GROUP BY e.id, ea.animal_id
+                ORDER BY ea.animal_id, e.examination_date DESC
             ";
 
             $allExaminations = $this->query($examSql, $animalIds);

@@ -23,6 +23,7 @@ class ExaminationController {
             $notes = trim($_POST['notes'] ?? '');
             $animalIds = $_POST['animal_ids'] ?? [];
             $enclosureIds = $_POST['enclosure_ids'] ?? [];
+            $groupIds = $_POST['group_ids'] ?? [];
             $examinations = $_POST['examinations'] ?? [];
 
             // Validate required fields
@@ -44,13 +45,15 @@ class ExaminationController {
             }
 
             // Validate at least one target selected
-            if (empty($animalIds) && empty($enclosureIds)) {
+            if (empty($animalIds) && empty($enclosureIds) && empty($groupIds)) {
                 http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'Musíte vybrat alespoň jedno zvíře nebo výběh']);
+                echo json_encode(['success' => false, 'error' => 'Musíte vybrat alespoň jedno zvíře, výběh nebo skupinu']);
                 return;
             }
 
             $examinationModel = new Examination();
+            require_once __DIR__ . '/../models/ParasitologyGroup.php';
+            $groupModel = new ParasitologyGroup();
 
             // SEC-06: every target animal/enclosure must belong to the authorized workplace.
             $db = Database::getInstance()->getConnection();
@@ -140,6 +143,43 @@ class ExaminationController {
                                 'created_by' => Auth::userId()
                             ];
                             $examinationModel->createExaminationForEnclosure($data);
+                        }
+                    }
+                }
+
+                // Skupinová vyšetření – jeden záznam na skupinu + snímek členů.
+                if (!empty($groupIds)) {
+                    foreach ($groupIds as $groupId) {
+                        // Autorizace: skupina musí patřit do tohoto pracoviště.
+                        $group = $groupModel->findInWorkplace($groupId, $workplaceId);
+                        if (!$group) {
+                            http_response_code(403);
+                            echo json_encode(['success' => false, 'error' => 'Některá skupina nepatří do tohoto pracoviště']);
+                            return;
+                        }
+                        $memberIds = $groupModel->getMemberAnimalIds($groupId);
+                        foreach ($examinations as $exam) {
+                            $sampleType = $exam['sample_type'] ?? '';
+                            $intensity = $exam['intensity'] ?? '';
+                            $parasiteFound = trim($exam['parasite_found'] ?? '');
+
+                            if (empty($sampleType) || empty($intensity)) {
+                                continue;
+                            }
+
+                            $findingStatus = ($intensity === 'neg.' || $intensity === '0') ? 'negative' : 'positive';
+
+                            $data = [
+                                'examination_date' => $examinationDate,
+                                'sample_type' => $sampleType,
+                                'institution' => $institution,
+                                'parasite_found' => $parasiteFound ?: null,
+                                'finding_status' => $findingStatus,
+                                'intensity' => $intensity,
+                                'notes' => $notes ?: null,
+                                'created_by' => Auth::userId()
+                            ];
+                            $examinationModel->createGroupExamination($groupId, $workplaceId, $memberIds, $data);
                         }
                     }
                 }
@@ -362,7 +402,8 @@ class ExaminationController {
             // Create placeholders for IN clause
             $placeholders = implode(',', array_fill(0, count($animalIdsArray), '?'));
 
-            // Get all examinations for the specified animals
+            // Get all examinations for the specified animals (přes junction, aby
+            // se objevila i skupinová vyšetření, kde e.animal_id je NULL).
             $stmt = $db->prepare("
                 SELECT DISTINCT
                     e.id,
@@ -370,9 +411,10 @@ class ExaminationController {
                     e.institution,
                     e.sample_type,
                     e.finding_status,
-                    e.animal_id
-                FROM examinations e
-                WHERE e.animal_id IN ($placeholders)
+                    ea.animal_id
+                FROM examination_animals ea
+                JOIN examinations e ON e.id = ea.examination_id
+                WHERE ea.animal_id IN ($placeholders)
                 ORDER BY e.examination_date DESC
             ");
 

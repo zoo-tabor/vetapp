@@ -30,6 +30,11 @@ class AnimalController {
         $animalModel = new Animal();
         $animals = $animalModel->getExaminationHistory($workplaceId, $filters);
 
+        // Parazitologické skupiny pro cíl "skupina" v modalech vyšetření/odčervení.
+        require_once __DIR__ . '/../models/ParasitologyGroup.php';
+        $groupModel = new ParasitologyGroup();
+        $groups = $groupModel->getByWorkplace($workplaceId);
+
         $canEdit = $userModel->hasPermission(Auth::userId(), $workplaceId, 'animals', 'edit');
 
         View::render('animals/list', [
@@ -38,6 +43,7 @@ class AnimalController {
             'workplace' => $workplace,
             'animals' => $animals,
             'enclosures' => $enclosures,
+            'groups' => $groups,
             'filters' => $filters,
             'canEdit' => $canEdit
         ]);

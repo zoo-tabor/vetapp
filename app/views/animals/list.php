@@ -820,6 +820,9 @@ th.sticky-col-4 {
                                             negativní<?= $intensity && $intensity !== 'neg.' ? ' ' . htmlspecialchars($intensity) : '' ?>
                                         <?php endif; ?>
                                     </div>
+                                    <?php if (!empty($exam['group_name'])): ?>
+                                        <div class="exam-details" style="color:#2c3e50;font-size:11px;" title="Skupinový vzorek">🧫 <?= htmlspecialchars($exam['group_name']) ?></div>
+                                    <?php endif; ?>
                                     <?php if (!empty($exam['deworming_id'])): ?>
                                         <div class="exam-details" style="margin-top: 4px; padding: 4px; background-color: rgba(52, 152, 219, 0.1); border-left: 3px solid #3498db;">
                                             <strong>Aplikace antiparazitika <?= date('d.m.Y', strtotime($exam['deworming_date'])) ?>:</strong><br>
@@ -1314,6 +1317,7 @@ function openAnimalModal() {
                 <div class="exam-target-tabs">
                     <button type="button" class="tab-btn active" onclick="switchExamTarget('animals')">Zvířata</button>
                     <button type="button" class="tab-btn" onclick="switchExamTarget('enclosures')">Výběhy</button>
+                    <button type="button" class="tab-btn" onclick="switchExamTarget('groups')">Skupiny</button>
                 </div>
             </div>
 
@@ -1341,6 +1345,27 @@ function openAnimalModal() {
                         </label>
                     <?php endforeach; ?>
                 </div>
+            </div>
+
+            <div id="groupsTarget" class="target-selection" style="display: none;">
+                <label>Vyberte skupiny: *</label>
+                <?php if (empty($groups)): ?>
+                    <p class="text-muted" style="margin: 8px 0;">
+                        Zatím nejsou žádné skupiny.
+                        <a href="/workplace/<?= $workplace['id'] ?>/parasitology-groups">Vytvořit skupinu</a>
+                    </p>
+                <?php else: ?>
+                    <input type="text" id="examGroupSearch" class="form-control" placeholder="Hledat skupinu..." onkeyup="filterExamGroups()">
+                    <div class="checkbox-list" id="examGroupsList">
+                        <?php foreach ($groups as $group): ?>
+                            <label class="checkbox-item" data-name="<?= htmlspecialchars(strtolower($group['name'])) ?>">
+                                <input type="checkbox" name="group_ids[]" value="<?= (int)$group['id'] ?>">
+                                <span><?= htmlspecialchars($group['name']) ?> <small class="text-muted">(<?= (int)$group['member_count'] ?> zvířat)</small></span>
+                            </label>
+                        <?php endforeach; ?>
+                    </div>
+                    <small class="text-muted">Vyšetření se uloží jako jeden skupinový záznam a zobrazí se u všech členů skupiny.</small>
+                <?php endif; ?>
             </div>
 
             <div class="form-group">
@@ -1381,19 +1406,25 @@ function openAnimalModal() {
 
 </div> <!-- End table-wrapper -->
 <script>
-// Tab switching for examination targets
+// Tab switching for examination targets (Zvířata / Výběhy / Skupiny)
 function switchExamTarget(target) {
-    const tabs = document.querySelectorAll('.tab-btn');
-    tabs.forEach(tab => tab.classList.remove('active'));
-    event.target.classList.add('active');
-
-    if (target === 'animals') {
-        document.getElementById('animalsTarget').style.display = 'block';
-        document.getElementById('enclosuresTarget').style.display = 'none';
-    } else {
-        document.getElementById('animalsTarget').style.display = 'none';
-        document.getElementById('enclosuresTarget').style.display = 'block';
+    document.querySelectorAll('#examinationModal .exam-target-tabs .tab-btn')
+        .forEach(tab => tab.classList.remove('active'));
+    if (window.event && window.event.target) {
+        window.event.target.classList.add('active');
     }
+    document.getElementById('animalsTarget').style.display = target === 'animals' ? 'block' : 'none';
+    document.getElementById('enclosuresTarget').style.display = target === 'enclosures' ? 'block' : 'none';
+    document.getElementById('groupsTarget').style.display = target === 'groups' ? 'block' : 'none';
+}
+
+// Filter groups by search (examination modal)
+function filterExamGroups() {
+    const searchTerm = document.getElementById('examGroupSearch').value.toLowerCase();
+    document.querySelectorAll('#examGroupsList .checkbox-item').forEach(item => {
+        const name = item.dataset.name || '';
+        item.style.display = name.includes(searchTerm) ? 'block' : 'none';
+    });
 }
 
 // Filter animals by search
@@ -1866,10 +1897,11 @@ document.addEventListener('DOMContentLoaded', function() {
 
             const formData = new FormData(this);
 
-            // Check if at least one animal is selected
-            const checkboxes = document.querySelectorAll('#dewormingAnimalsList input[type="checkbox"]:checked');
-            if (checkboxes.length === 0) {
-                alert('Vyberte alespoň jedno zvíře');
+            // Check if at least one animal or group is selected
+            const animalChecked = document.querySelectorAll('#dewormingAnimalsList input[type="checkbox"]:checked');
+            const groupChecked = document.querySelectorAll('#dewormingGroupsList input[type="checkbox"]:checked');
+            if (animalChecked.length === 0 && groupChecked.length === 0) {
+                alert('Vyberte alespoň jedno zvíře nebo skupinu');
                 return;
             }
 
@@ -1948,7 +1980,7 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
 
             <div class="form-group">
-                <label>Vyberte zvířata: *</label>
+                <label>Vyberte zvířata nebo skupiny: *</label>
                 <input type="text" id="dewormingAnimalSearch" class="form-control" placeholder="Hledat zvíře..." onkeyup="filterDewormingAnimals()">
                 <div class="checkbox-list" id="dewormingAnimalsList">
                     <?php foreach ($animals as $animal): ?>
@@ -1959,6 +1991,21 @@ document.addEventListener('DOMContentLoaded', function() {
                     <?php endforeach; ?>
                 </div>
             </div>
+
+            <?php if (!empty($groups)): ?>
+            <div class="form-group">
+                <label>Skupiny (aplikace pro celou skupinu):</label>
+                <div class="checkbox-list" id="dewormingGroupsList">
+                    <?php foreach ($groups as $group): ?>
+                        <label class="checkbox-item">
+                            <input type="checkbox" name="group_ids[]" value="<?= (int)$group['id'] ?>">
+                            <span><?= htmlspecialchars($group['name']) ?> <small class="text-muted">(<?= (int)$group['member_count'] ?> zvířat)</small></span>
+                        </label>
+                    <?php endforeach; ?>
+                </div>
+                <small class="text-muted">Aplikace se uloží jako jeden skupinový záznam a zobrazí se u všech členů skupiny.</small>
+            </div>
+            <?php endif; ?>
 
             <div class="form-group">
                 <label for="related_examination_id">Související vyšetření:</label>

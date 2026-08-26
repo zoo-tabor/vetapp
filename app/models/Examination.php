@@ -75,6 +75,11 @@ class Examination extends Model {
         return $this->query($sql, [$workplaceId, $days]);
     }
 
+    /**
+     * Individuální vyšetření (jedno zvíře). Vedle záznamu zapíše i řádek do
+     * examination_animals, aby se historie četla jednotně přes junction.
+     * Vrací ID nového vyšetření.
+     */
     public function createExamination($data) {
         // Get animal's current enclosure and workplace
         $enclosureId = null;
@@ -94,6 +99,7 @@ class Examination extends Model {
                 animal_id,
                 workplace_id,
                 enclosure_id,
+                group_id,
                 examination_date,
                 sample_type,
                 institution,
@@ -103,10 +109,10 @@ class Examination extends Model {
                 notes,
                 created_by
             )
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)
         ";
 
-        return $this->execute($sql, [
+        $this->execute($sql, [
             $data['animal_id'],
             $workplaceId,
             $enclosureId,
@@ -119,6 +125,64 @@ class Examination extends Model {
             $data['notes'] ?? null,
             $data['created_by']
         ]);
+
+        $id = $this->db->lastInsertId();
+        if (!empty($data['animal_id'])) {
+            $this->execute(
+                "INSERT IGNORE INTO examination_animals (examination_id, animal_id) VALUES (?, ?)",
+                [$id, $data['animal_id']]
+            );
+        }
+        return $id;
+    }
+
+    /**
+     * Skupinové vyšetření – jeden záznam navázaný na skupinu (animal_id NULL,
+     * group_id vyplněno) + řádky examination_animals pro všechny členy (snímek
+     * členů k datu vyšetření). Vrací ID nového vyšetření.
+     */
+    public function createGroupExamination($groupId, $workplaceId, array $memberAnimalIds, $data) {
+        $sql = "
+            INSERT INTO examinations (
+                animal_id,
+                workplace_id,
+                enclosure_id,
+                group_id,
+                examination_date,
+                sample_type,
+                institution,
+                parasite_found,
+                finding_status,
+                intensity,
+                notes,
+                created_by
+            )
+            VALUES (NULL, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ";
+
+        $this->execute($sql, [
+            (int)$workplaceId,
+            (int)$groupId,
+            $data['examination_date'],
+            $data['sample_type'],
+            $data['institution'] ?? null,
+            $data['parasite_found'] ?? null,
+            $data['finding_status'],
+            $data['intensity'] ?? null,
+            $data['notes'] ?? null,
+            $data['created_by']
+        ]);
+
+        $id = $this->db->lastInsertId();
+        if (!empty($memberAnimalIds)) {
+            $ins = $this->db->prepare(
+                "INSERT IGNORE INTO examination_animals (examination_id, animal_id) VALUES (?, ?)"
+            );
+            foreach ($memberAnimalIds as $aid) {
+                $ins->execute([$id, (int)$aid]);
+            }
+        }
+        return $id;
     }
 
     public function createExaminationForEnclosure($data) {

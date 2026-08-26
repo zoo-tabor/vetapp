@@ -123,8 +123,9 @@ class ApiController {
                     a.name as animal_name,
                     a.species,
                     e.parasite_found as parasite_name
-                FROM examinations e
-                JOIN animals a ON e.animal_id = a.id
+                FROM examination_animals ea
+                JOIN examinations e ON e.id = ea.examination_id
+                JOIN animals a ON a.id = ea.animal_id
                 WHERE e.workplace_id = ?
                   AND e.parasite_found = ?
                 ORDER BY e.examination_date DESC
@@ -171,8 +172,9 @@ class ApiController {
                     d.notes,
                     a.name as animal_name,
                     a.species
-                FROM dewormings d
-                JOIN animals a ON d.animal_id = a.id
+                FROM deworming_animals da
+                JOIN dewormings d ON d.id = da.deworming_id
+                JOIN animals a ON a.id = da.animal_id
                 WHERE d.workplace_id = ?
                   AND d.medication = ?
                 ORDER BY d.deworming_date DESC

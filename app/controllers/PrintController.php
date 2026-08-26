@@ -36,11 +36,14 @@ class PrintController {
             foreach ($ids as $animalId) {
                 $animal = $animalModel->getDetail($animalId);
                 if ($animal && $animal['workplace_id'] == $workplaceId) {
-                    // Get all examinations, then group by date+institution in PHP
+                    // Get all examinations (přes junction – i skupinové), pak seskupit v PHP
                     $allExaminations = $animalModel->query("
-                        SELECT * FROM examinations
-                        WHERE animal_id = ?
-                        ORDER BY examination_date DESC, institution, id DESC
+                        SELECT e.*, pg.name AS group_name
+                        FROM examination_animals ea
+                        JOIN examinations e ON e.id = ea.examination_id
+                        LEFT JOIN parasitology_groups pg ON e.group_id = pg.id
+                        WHERE ea.animal_id = ?
+                        ORDER BY e.examination_date DESC, e.institution, e.id DESC
                     ", [$animalId]);
 
                     // Group examinations by date + institution
@@ -63,9 +66,12 @@ class PrintController {
                     }
 
                     $dewormings = $animalModel->query("
-                        SELECT * FROM dewormings
-                        WHERE animal_id = ?
-                        ORDER BY deworming_date DESC, id DESC
+                        SELECT d.*, pg.name AS group_name
+                        FROM deworming_animals da
+                        JOIN dewormings d ON d.id = da.deworming_id
+                        LEFT JOIN parasitology_groups pg ON d.group_id = pg.id
+                        WHERE da.animal_id = ?
+                        ORDER BY d.deworming_date DESC, d.id DESC
                         LIMIT ?
                     ", [$animalId, $printCount]);
 
@@ -92,11 +98,14 @@ class PrintController {
                 ", [$enclosureId])[0] ?? null;
 
                 foreach ($animals as $animal) {
-                    // Get all examinations, then group by date+institution in PHP
+                    // Get all examinations (přes junction – i skupinové), pak seskupit v PHP
                     $allExaminations = $animalModel->query("
-                        SELECT * FROM examinations
-                        WHERE animal_id = ?
-                        ORDER BY examination_date DESC, institution, id DESC
+                        SELECT e.*, pg.name AS group_name
+                        FROM examination_animals ea
+                        JOIN examinations e ON e.id = ea.examination_id
+                        LEFT JOIN parasitology_groups pg ON e.group_id = pg.id
+                        WHERE ea.animal_id = ?
+                        ORDER BY e.examination_date DESC, e.institution, e.id DESC
                     ", [$animal['id']]);
 
                     // Group examinations by date + institution
@@ -119,9 +128,12 @@ class PrintController {
                     }
 
                     $dewormings = $animalModel->query("
-                        SELECT * FROM dewormings
-                        WHERE animal_id = ?
-                        ORDER BY deworming_date DESC, id DESC
+                        SELECT d.*, pg.name AS group_name
+                        FROM deworming_animals da
+                        JOIN dewormings d ON d.id = da.deworming_id
+                        LEFT JOIN parasitology_groups pg ON d.group_id = pg.id
+                        WHERE da.animal_id = ?
+                        ORDER BY d.deworming_date DESC, d.id DESC
                         LIMIT ?
                     ", [$animal['id'], $printCount]);
 

@@ -217,14 +217,18 @@ class AnimalDatabaseController {
             return;
         }
 
-        // Get parasitology data (examinations)
+        // Get parasitology data (examinations) – přes junction, aby zahrnula i
+        // skupinová vyšetření (e.animal_id je u nich NULL).
         $stmtExam = $db->prepare("
             SELECT
                 e.*,
-                w.name as workplace_name
-            FROM examinations e
+                w.name as workplace_name,
+                pg.name as group_name
+            FROM examination_animals ea
+            JOIN examinations e ON e.id = ea.examination_id
             LEFT JOIN workplaces w ON e.workplace_id = w.id
-            WHERE e.animal_id = ?
+            LEFT JOIN parasitology_groups pg ON e.group_id = pg.id
+            WHERE ea.animal_id = ?
             ORDER BY e.examination_date DESC
             LIMIT 5
         ");
