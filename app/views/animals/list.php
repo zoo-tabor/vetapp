@@ -672,6 +672,9 @@ th.sticky-col-4 {
             ➕ Aplikace antiparazitika
         </button>
         <?php endif; ?>
+        <a href="/workplace/<?= $workplace['id'] ?>/parasitology-groups" class="btn btn-outline">
+            🧫 Parazitologické skupiny
+        </a>
         <button type="button" class="btn btn-outline" onclick="openPrintModal()" style="margin-left: auto;">
             🖨️ Tisk historie
         </button>

@@ -389,6 +389,43 @@ $router->get('/parasitology/workplace/:id', function($id) {
     exit;
 });
 
+// Parasitology group routes (editovatelné skupiny zvířat pro skupinové vzorky)
+$router->get('/workplace/:workplace_id/parasitology-groups', function($workplaceId) {
+    require_once APP_PATH . '/controllers/ParasitologyGroupController.php';
+    $controller = new ParasitologyGroupController();
+    $controller->page($workplaceId);
+});
+
+$router->post('/workplace/:workplace_id/parasitology-groups/create', function($workplaceId) {
+    require_once APP_PATH . '/controllers/ParasitologyGroupController.php';
+    $controller = new ParasitologyGroupController();
+    $controller->create($workplaceId);
+});
+
+$router->post('/workplace/:workplace_id/parasitology-groups/:group_id/rename', function($workplaceId, $groupId) {
+    require_once APP_PATH . '/controllers/ParasitologyGroupController.php';
+    $controller = new ParasitologyGroupController();
+    $controller->rename($workplaceId, $groupId);
+});
+
+$router->post('/workplace/:workplace_id/parasitology-groups/:group_id/delete', function($workplaceId, $groupId) {
+    require_once APP_PATH . '/controllers/ParasitologyGroupController.php';
+    $controller = new ParasitologyGroupController();
+    $controller->delete($workplaceId, $groupId);
+});
+
+$router->post('/workplace/:workplace_id/parasitology-groups/:group_id/members/add', function($workplaceId, $groupId) {
+    require_once APP_PATH . '/controllers/ParasitologyGroupController.php';
+    $controller = new ParasitologyGroupController();
+    $controller->addMembers($workplaceId, $groupId);
+});
+
+$router->post('/workplace/:workplace_id/parasitology-groups/:group_id/members/remove', function($workplaceId, $groupId) {
+    require_once APP_PATH . '/controllers/ParasitologyGroupController.php';
+    $controller = new ParasitologyGroupController();
+    $controller->removeMember($workplaceId, $groupId);
+});
+
 // Biochemistry routes
 $router->get('/biochemistry/workplace/:id', function($id) {
     require_once APP_PATH . '/controllers/BiochemistryController.php';
