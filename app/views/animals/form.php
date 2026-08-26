@@ -2,9 +2,8 @@
 
 <div class="page-header">
     <div class="breadcrumb">
-        <a href="/">Pracoviště</a> / 
-        <a href="/workplace/<?= $workplace['id'] ?>"><?= htmlspecialchars($workplace['name']) ?></a> / 
-        <a href="/workplace/<?= $workplace['id'] ?>/animals">Zvířata</a> / 
+        <a href="/">Pracoviště</a> /
+        <a href="/workplace/<?= $workplace['id'] ?>/animals"><?= htmlspecialchars($workplace['name']) ?></a> /
         Přidat zvíře
     </div>
     <h1>Přidat nové zvíře</h1>

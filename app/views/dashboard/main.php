@@ -27,7 +27,7 @@
             foreach ($workplaces as $workplace):
                 $emoji = $workplaceEmojis[$workplace['name']] ?? '🏢';
             ?>
-                <a href="/workplace/<?= $workplace['id'] ?>" class="workplace-card">
+                <a href="/workplace/<?= $workplace['id'] ?>/animals" class="workplace-card">
                     <div class="card-icon"><?= $emoji ?></div>
                     <h3><?= htmlspecialchars($workplace['name']) ?></h3>
                     <div class="workplace-meta">

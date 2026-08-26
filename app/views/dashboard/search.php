@@ -1,7 +1,7 @@
 <div class="page-header">
     <div class="breadcrumb">
         <a href="/">Pracoviště</a> /
-        <a href="/workplace/<?= $workplace['id'] ?>">
+        <a href="/workplace/<?= $workplace['id'] ?>/animals">
             <?= htmlspecialchars($workplace['name']) ?>
         </a> /
         <span>Vyhledávání</span>
@@ -81,8 +81,8 @@
     </div>
 
     <div class="form-actions">
-        <a href="/workplace/<?= $workplace['id'] ?>" class="btn btn-outline">
-            ← Zpět na pracoviště
+        <a href="/workplace/<?= $workplace['id'] ?>/animals" class="btn btn-outline">
+            ← Zpět na zvířata
         </a>
     </div>
 </div>

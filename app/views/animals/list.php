@@ -613,7 +613,7 @@ th.sticky-col-4 {
         <div class="header-left">
             <div class="breadcrumb">
                 <a href="/">Pracoviště</a> /
-                <a href="/workplace/<?= $workplace['id'] ?>"><?= htmlspecialchars($workplace['name']) ?></a> /
+                <a href="/workplace/<?= $workplace['id'] ?>/animals"><?= htmlspecialchars($workplace['name']) ?></a> /
                 Přehled zvířat
             </div>
             <h1 class="page-title">Přehled zvířat</h1>

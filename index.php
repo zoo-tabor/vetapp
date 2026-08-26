@@ -136,10 +136,17 @@ $router->get('/', function() {
     $controller->index();
 });
 
+// Mezistránka pracoviště byla zrušena – kliknutí na pracoviště vede rovnou
+// na seznam zvířat (pracovní stránka parazitologie). Redirect zachová staré
+// odkazy/záložky. Oprávnění řeší cílová akce (AnimalController::list).
 $router->get('/workplace/:id', function($id) {
-    require_once APP_PATH . '/controllers/DashboardController.php';
-    $controller = new DashboardController();
-    $controller->workplace($id);
+    if (!is_numeric($id)) {
+        http_response_code(404);
+        require_once APP_PATH . '/views/errors/404.php';
+        exit;
+    }
+    header('Location: /workplace/' . (int)$id . '/animals');
+    exit;
 });
 
 // Animal routes
@@ -371,10 +378,15 @@ $router->get('/parasitology', function() {
 });
 
 $router->get('/parasitology/workplace/:id', function($id) {
+    // Zrušená mezistránka – redirect na seznam zvířat (viz /workplace/:id výše).
     $_SESSION['current_app'] = 'parasitology';
-    require_once APP_PATH . '/controllers/DashboardController.php';
-    $controller = new DashboardController();
-    $controller->workplace($id);
+    if (!is_numeric($id)) {
+        http_response_code(404);
+        require_once APP_PATH . '/views/errors/404.php';
+        exit;
+    }
+    header('Location: /workplace/' . (int)$id . '/animals');
+    exit;
 });
 
 // Biochemistry routes

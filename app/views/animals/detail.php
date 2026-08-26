@@ -11,8 +11,7 @@ $fromAnimals = isset($_GET['from']) && $_GET['from'] === 'animals';
             <?= htmlspecialchars($animal['name'] ?? $animal['identifier']) ?>
         <?php else: ?>
             <a href="/">Pracoviště</a> /
-            <a href="/workplace/<?= $animal['workplace_id'] ?>"><?= htmlspecialchars($animal['workplace_name']) ?></a> /
-            <a href="/workplace/<?= $animal['workplace_id'] ?>/animals">Zvířata</a> /
+            <a href="/workplace/<?= $animal['workplace_id'] ?>/animals"><?= htmlspecialchars($animal['workplace_name']) ?></a> /
             <?= htmlspecialchars($animal['name'] ?? $animal['identifier']) ?>
         <?php endif; ?>
     </div>
