@@ -675,6 +675,11 @@ th.sticky-col-4 {
         <a href="/workplace/<?= $workplace['id'] ?>/parasitology-groups" class="btn btn-outline">
             🧫 Parazitologické skupiny
         </a>
+        <?php if ($canEdit): ?>
+        <a href="/workplace/<?= $workplace['id'] ?>/parasitology-import" class="btn btn-outline">
+            📥 Import parazitologie
+        </a>
+        <?php endif; ?>
         <button type="button" class="btn btn-outline" onclick="openPrintModal()" style="margin-left: auto;">
             🖨️ Tisk historie
         </button>

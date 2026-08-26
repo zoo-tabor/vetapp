@@ -426,6 +426,31 @@ $router->post('/workplace/:workplace_id/parasitology-groups/:group_id/members/re
     $controller->removeMember($workplaceId, $groupId);
 });
 
+// Parasitology import routes (.xlsx ze SVU) – upload -> nahled/parovani -> provedeni
+$router->get('/workplace/:workplace_id/parasitology-import', function($workplaceId) {
+    require_once APP_PATH . '/controllers/ParasitologyImportController.php';
+    $controller = new ParasitologyImportController();
+    $controller->index($workplaceId);
+});
+
+$router->post('/workplace/:workplace_id/parasitology-import/upload', function($workplaceId) {
+    require_once APP_PATH . '/controllers/ParasitologyImportController.php';
+    $controller = new ParasitologyImportController();
+    $controller->upload($workplaceId);
+});
+
+$router->get('/workplace/:workplace_id/parasitology-import/preview', function($workplaceId) {
+    require_once APP_PATH . '/controllers/ParasitologyImportController.php';
+    $controller = new ParasitologyImportController();
+    $controller->preview($workplaceId);
+});
+
+$router->post('/workplace/:workplace_id/parasitology-import/execute', function($workplaceId) {
+    require_once APP_PATH . '/controllers/ParasitologyImportController.php';
+    $controller = new ParasitologyImportController();
+    $controller->execute($workplaceId);
+});
+
 // Biochemistry routes
 $router->get('/biochemistry/workplace/:id', function($id) {
     require_once APP_PATH . '/controllers/BiochemistryController.php';
