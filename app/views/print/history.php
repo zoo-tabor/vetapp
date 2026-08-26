@@ -228,7 +228,12 @@
                                 <?php
                                 $types = [];
                                 foreach ($group['exams'] as $e) {
-                                    $types[] = htmlspecialchars($e['sample_type']);
+                                    // Nepovinné označení vzorku (vz. 1/2) prefixem – jen když je vyplněné.
+                                    $t = htmlspecialchars($e['sample_type']);
+                                    if (!empty($e['sample_label'])) {
+                                        $t = htmlspecialchars($e['sample_label']) . ' – ' . $t;
+                                    }
+                                    $types[] = $t;
                                 }
                                 echo implode('<br>', $types);
                                 ?>

@@ -373,6 +373,7 @@ class Animal extends Model {
                     e.parasite_found,
                     e.intensity,
                     e.group_id,
+                    e.sample_label,
                     pg.name as group_name,
                     en.name as location,
                     d.id as deworming_id,

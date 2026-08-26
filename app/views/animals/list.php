@@ -825,8 +825,11 @@ th.sticky-col-4 {
                                             negativní<?= $intensity && $intensity !== 'neg.' ? ' ' . htmlspecialchars($intensity) : '' ?>
                                         <?php endif; ?>
                                     </div>
-                                    <?php if (!empty($exam['group_name'])): ?>
-                                        <div class="exam-details" style="color:#2c3e50;font-size:11px;" title="Skupinový vzorek">🧫 <?= htmlspecialchars($exam['group_name']) ?></div>
+                                    <?php if (!empty($exam['group_name']) || !empty($exam['sample_label'])): ?>
+                                        <div class="exam-details" style="color:#2c3e50;font-size:11px;" title="<?= !empty($exam['group_name']) ? 'Skupinový vzorek' : 'Označení vzorku' ?>">
+                                            <?php if (!empty($exam['group_name'])): ?>🧫 <?= htmlspecialchars($exam['group_name']) ?><?php endif; ?>
+                                            <?php if (!empty($exam['sample_label'])): ?><?= !empty($exam['group_name']) ? ' · ' : '' ?><?= htmlspecialchars($exam['sample_label']) ?><?php endif; ?>
+                                        </div>
                                     <?php endif; ?>
                                     <?php if (!empty($exam['deworming_id'])): ?>
                                         <div class="exam-details" style="margin-top: 4px; padding: 4px; background-color: rgba(52, 152, 219, 0.1); border-left: 3px solid #3498db;">

@@ -106,10 +106,11 @@ class Examination extends Model {
                 parasite_found,
                 finding_status,
                 intensity,
+                sample_label,
                 notes,
                 created_by
             )
-            VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ";
 
         $this->execute($sql, [
@@ -122,6 +123,7 @@ class Examination extends Model {
             $data['parasite_found'] ?? null,
             $data['finding_status'],
             $data['intensity'] ?? null,
+            $data['sample_label'] ?? null,
             $data['notes'] ?? null,
             $data['created_by']
         ]);
@@ -154,10 +156,11 @@ class Examination extends Model {
                 parasite_found,
                 finding_status,
                 intensity,
+                sample_label,
                 notes,
                 created_by
             )
-            VALUES (NULL, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+            VALUES (NULL, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
         ";
 
         $this->execute($sql, [
@@ -169,6 +172,7 @@ class Examination extends Model {
             $data['parasite_found'] ?? null,
             $data['finding_status'],
             $data['intensity'] ?? null,
+            $data['sample_label'] ?? null,
             $data['notes'] ?? null,
             $data['created_by']
         ]);

@@ -202,6 +202,9 @@ class ParasitologyImportController {
             if (!empty($sample['zoo_no'])) $notesBase .= ', vz. ' . $sample['zoo_no'];
             if (!empty($sample['material'])) $notesBase .= ', ' . $sample['material'];
 
+            // Nepovinné označení vzorku (např. "vz. 1") z popisu – jinak NULL.
+            $sampleLabel = $this->extractSampleLabel($sample['description'] ?? '');
+
             foreach ($sample['results'] as $r) {
                 $finding = trim($r['finding'] ?? '');
                 if ($finding === '') continue;
@@ -226,6 +229,7 @@ class ParasitologyImportController {
                     'parasite_found'   => $parasite,
                     'finding_status'   => $findingStatus,
                     'intensity'        => $intensity,
+                    'sample_label'     => $sampleLabel,
                     'notes'            => $notesBase,
                     'created_by'       => Auth::userId(),
                 ];
@@ -306,6 +310,14 @@ class ParasitologyImportController {
 
     private function groupLabel($g) {
         return '👪 ' . $g['name'] . ' · skupina (' . (int)($g['member_count'] ?? 0) . ')';
+    }
+
+    /** Vytáhne "vz. N" z popisu vzorku (velké výběhy s více vzorky); jinak NULL. */
+    private function extractSampleLabel($description) {
+        if (preg_match('/\bvz\.?\s*(\d+)/iu', (string)$description, $m)) {
+            return 'vz. ' . $m[1];
+        }
+        return null;
     }
 
     private function mapSampleType($method, $note) {
