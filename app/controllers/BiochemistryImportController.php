@@ -256,6 +256,37 @@ class BiochemistryImportController {
         exit;
     }
 
+    /**
+     * Ruční přeskočení / obnovení jednoho řádku náhledu (např. duplicitní
+     * glukóza nebo cokoli navíc). Volba se uloží do session, takže přežije
+     * i další akce v náhledu (párování zvířat/parametrů).
+     */
+    public function toggleSkip() {
+        Auth::requireLogin();
+        Auth::requireAdmin();
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            header('Location: /biochemistry/import/preview');
+            exit;
+        }
+
+        if (!isset($_SESSION['import_preview'])) {
+            $_SESSION['error'] = 'Zadna data k importu.';
+            header('Location: /biochemistry/import');
+            exit;
+        }
+
+        $idx  = (int)($_POST['row_index'] ?? -1);
+        $skip = ($_POST['skip'] ?? '') === '1';
+
+        if ($idx >= 0 && isset($_SESSION['import_preview'][$idx])) {
+            $_SESSION['import_preview'][$idx]['user_skip'] = $skip;
+        }
+
+        header('Location: /biochemistry/import/preview');
+        exit;
+    }
+
     public function execute() {
         Auth::requireLogin();
         Auth::requireAdmin();
@@ -606,7 +637,9 @@ class BiochemistryImportController {
             $rawParam = trim($row['parameter_name_ldt']);
             $row['parameter_id'] = null;
             $row['parameter_unmatched'] = false;
-            $row['skip'] = false;
+            // Ruční přeskočení řádku z náhledu (uložené v session) má přednost –
+            // slouží k vynechání např. duplicitní glukózy nebo čehokoli navíc.
+            $row['skip'] = !empty($row['user_skip']);
 
             if ($rawParam === '') {
                 $errors[] = 'Chybi nazev parametru.';
@@ -731,6 +764,9 @@ class BiochemistryImportController {
         $groups = [];
 
         foreach ($validatedData as $row) {
+            if (!empty($row['skip'])) {
+                continue; // přeskočené řádky nevyžadují párování
+            }
             $hasAnimalError = false;
             foreach ($row['errors'] ?? [] as $error) {
                 if (strpos($error, 'Zvire z LDT') !== false || strpos($error, 'vice zvirat') !== false) {
@@ -770,6 +806,9 @@ class BiochemistryImportController {
         $groups = [];
 
         foreach ($validatedData as $row) {
+            if (!empty($row['skip'])) {
+                continue; // přeskočené řádky nevyžadují párování parametru
+            }
             if (empty($row['parameter_unmatched'])) {
                 continue;
             }

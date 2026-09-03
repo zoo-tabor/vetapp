@@ -224,10 +224,11 @@
                             <th>Jednotka</th>
                             <th>Ref. rozmezi</th>
                             <th>Zpravy</th>
+                            <th>Preskocit</th>
                         </tr>
                     </thead>
                     <tbody>
-                        <?php foreach ($data as $row): ?>
+                        <?php foreach ($data as $idx => $row): ?>
                             <tr class="<?= !empty($row['skip']) ? 'row-skip' : (!empty($row['errors']) ? 'row-error' : (!empty($row['warnings']) ? 'row-warning' : 'row-success')) ?>">
                                 <td><?= $row['row_number'] ?></td>
                                 <td>
@@ -281,6 +282,17 @@
                                             <?php endforeach; ?>
                                         </ul>
                                     <?php endif; ?>
+                                </td>
+                                <td style="text-align:center;">
+                                    <?php $isUserSkip = !empty($row['user_skip']); ?>
+                                    <form action="/biochemistry/import/toggle-skip" method="POST" style="display:inline; margin:0;">
+                                        <input type="hidden" name="row_index" value="<?= (int)$idx ?>">
+                                        <input type="hidden" name="skip" value="<?= $isUserSkip ? '0' : '1' ?>">
+                                        <label style="cursor:pointer; white-space:nowrap;" title="<?= $isUserSkip ? 'Znovu zaradit do importu' : 'Vynechat tento radek z importu' ?>">
+                                            <input type="checkbox" onchange="this.form.submit()" <?= $isUserSkip ? 'checked' : '' ?>>
+                                            přeskočit
+                                        </label>
+                                    </form>
                                 </td>
                             </tr>
                         <?php endforeach; ?>

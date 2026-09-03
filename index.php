@@ -603,6 +603,12 @@ $router->post('/biochemistry/import/ignore-parameter', function() {
     $controller->ignoreParameter();
 });
 
+$router->post('/biochemistry/import/toggle-skip', function() {
+    require_once APP_PATH . '/controllers/BiochemistryImportController.php';
+    $controller = new BiochemistryImportController();
+    $controller->toggleSkip();
+});
+
 $router->post('/biochemistry/import/execute', function() {
     require_once APP_PATH . '/controllers/BiochemistryImportController.php';
     $controller = new BiochemistryImportController();
