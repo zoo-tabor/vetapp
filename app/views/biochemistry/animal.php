@@ -100,7 +100,15 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($test['results'] as $result): ?>
+                                <?php
+                                // Indexy kvality vzorku (lipemický/hemolytický) řadíme nahoru.
+                                $__qRes = []; $__oRes = [];
+                                foreach ($test['results'] as $__res) {
+                                    if (isSampleQualityParam($__res['parameter_name'] ?? '')) { $__qRes[] = $__res; }
+                                    else { $__oRes[] = $__res; }
+                                }
+                                foreach (array_merge($__qRes, $__oRes) as $result):
+                                ?>
                                     <tr class="result-row"
                                         data-parameter="<?= htmlspecialchars($result['parameter_name']) ?>"
                                         data-value="<?= $result['value'] ?>"
@@ -177,7 +185,15 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                <?php foreach ($test['results'] as $result): ?>
+                                <?php
+                                // Indexy kvality vzorku (lipemický/hemolytický) řadíme nahoru.
+                                $__qRes = []; $__oRes = [];
+                                foreach ($test['results'] as $__res) {
+                                    if (isSampleQualityParam($__res['parameter_name'] ?? '')) { $__qRes[] = $__res; }
+                                    else { $__oRes[] = $__res; }
+                                }
+                                foreach (array_merge($__qRes, $__oRes) as $result):
+                                ?>
                                     <tr class="result-row"
                                         data-parameter="<?= htmlspecialchars($result['parameter_name']) ?>"
                                         data-value="<?= $result['value'] ?>"

@@ -98,11 +98,7 @@
                     $qualityParams = [];
                     $normalBiochem = [];
                     foreach ($biochemParams as $pName => $pInfo) {
-                        $pn = function_exists('mb_strtolower') ? mb_strtolower($pName, 'UTF-8') : strtolower($pName);
-                        $isQuality = (strpos($pn, 'lipaem') !== false || strpos($pn, 'lipem') !== false
-                                   || strpos($pn, 'haemolys') !== false || strpos($pn, 'hemolys') !== false
-                                   || strpos($pn, 'hemol') !== false);
-                        if ($isQuality) { $qualityParams[$pName] = $pInfo; }
+                        if (isSampleQualityParam($pName)) { $qualityParams[$pName] = $pInfo; }
                         else { $normalBiochem[$pName] = $pInfo; }
                     }
 

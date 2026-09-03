@@ -329,6 +329,48 @@ function internalPath($value, $default = '/') {
 }
 
 /**
+ * Názvy parametrů označených jako "index kvality vzorku" (migrace 026).
+ * Guarded – funguje i před spuštěním migrace (sloupec ještě nemusí existovat),
+ * kdy vrátí prázdno a použije se jen fallback dle názvu. Cache v rámci requestu.
+ */
+function sampleQualityParamNames() {
+    static $cache = null;
+    if ($cache !== null) {
+        return $cache;
+    }
+    try {
+        require_once __DIR__ . '/../core/Database.php';
+        $db = Database::getInstance()->getConnection();
+        $rows = $db->query("SELECT name FROM lab_parameters WHERE is_quality_index = 1")
+                   ->fetchAll(PDO::FETCH_COLUMN);
+        $cache = array_map(function ($n) {
+            return function_exists('mb_strtolower') ? mb_strtolower($n, 'UTF-8') : strtolower($n);
+        }, $rows);
+    } catch (Exception $e) {
+        $cache = [];
+    }
+    return $cache;
+}
+
+/**
+ * Je daný název parametru index kvality vzorku (lipemický/hemolytický)?
+ * Rozhoduje primárně příznak is_quality_index z číselníku; fallback dle názvu
+ * pokrývá stav před migrací i případné přejmenování.
+ */
+function isSampleQualityParam($name) {
+    $n = function_exists('mb_strtolower') ? mb_strtolower((string)$name, 'UTF-8') : strtolower((string)$name);
+    if ($n === '') {
+        return false;
+    }
+    if (in_array($n, sampleQualityParamNames(), true)) {
+        return true;
+    }
+    return (strpos($n, 'lipaem') !== false || strpos($n, 'lipem') !== false
+         || strpos($n, 'aemolys') !== false || strpos($n, 'emolys') !== false
+         || strpos($n, 'emolyt') !== false);
+}
+
+/**
  * Single permission gate helper (admin bypass + per-workplace section check).
  * Returns bool; controllers decide how to respond (HTML vs JSON).
  */

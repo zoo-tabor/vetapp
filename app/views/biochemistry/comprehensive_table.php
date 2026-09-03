@@ -84,7 +84,29 @@
                                 return $param['type'] === 'biochemistry';
                             });
 
-                            foreach ($biochemParams as $paramName => $paramInfo):
+                            // Indexy kvality vzorku patří nahoru (samostatná pod-skupina);
+                            // zůstávají ale technicky v biochemii kvůli vyhodnocení a ref. mezím.
+                            $qualityParams = [];
+                            $normalBiochem = [];
+                            foreach ($biochemParams as $qpName => $qpInfo) {
+                                if (isSampleQualityParam($qpName)) { $qualityParams[$qpName] = $qpInfo; }
+                                else { $normalBiochem[$qpName] = $qpInfo; }
+                            }
+                            $orderedBiochem = [];
+                            if (!empty($qualityParams)) {
+                                $orderedBiochem['__quality__'] = ['__section__' => 'Kvalita vzorku'];
+                                foreach ($qualityParams as $k => $v) { $orderedBiochem[$k] = $v; }
+                                $orderedBiochem['__analytes__'] = ['__section__' => 'Analyty'];
+                            }
+                            foreach ($normalBiochem as $k => $v) { $orderedBiochem[$k] = $v; }
+
+                            foreach ($orderedBiochem as $paramName => $paramInfo):
+                                if (isset($paramInfo['__section__'])):
+                            ?>
+                                <tr class="subsection-row"><td colspan="100" style="background:#eef2f7;font-weight:600;padding:6px 10px;"><?= htmlspecialchars($paramInfo['__section__']) ?></td></tr>
+                            <?php
+                                    continue;
+                                endif;
                             ?>
                                 <tr class="result-row" data-parameter="<?= htmlspecialchars($paramName) ?>" data-test-type="biochemistry">
                                     <td class="sticky-col reference-range-cell" data-param="<?= htmlspecialchars($paramName) ?>" data-test-type="biochemistry">
