@@ -321,6 +321,7 @@ class BiochemistryImportController {
         }
 
         $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+        $content = $this->normalizeLdtEncoding($content);
         $fields = $this->parseLdtFields($content);
 
         if (empty($fields)) {
@@ -328,6 +329,36 @@ class BiochemistryImportController {
         }
 
         return $this->mapLdtFieldsToImportRows($fields);
+    }
+
+    /**
+     * Sjednotí kódování obsahu LDT na UTF-8.
+     *
+     * LABOKLIN posílá LDT v RŮZNÝCH kódováních: část souborů je UTF-8, část
+     * v DOS CP852 (Latin-2). Když se ne-UTF-8 obsah čte jako holé bajty, uloží
+     * se do utf8mb4 DB poškozený (např. "Draslík" -> "Drasl?k"), což pak zakládá
+     * rozbité aliasy parametrů. Proto: validní UTF-8 necháme být, jinak
+     * převedeme z CP852.
+     */
+    private function normalizeLdtEncoding($content) {
+        if ($content === '' || mb_check_encoding($content, 'UTF-8')) {
+            return $content;
+        }
+        if (function_exists('iconv')) {
+            $converted = @iconv('CP852', 'UTF-8//TRANSLIT', $content);
+            if ($converted !== false && $converted !== '') {
+                return $converted;
+            }
+        }
+        if (function_exists('mb_convert_encoding')) {
+            // Nouzový fallback (mbstring nemusí CP852 podporovat – zkusíme aspoň
+            // CP1250; když nesedí, radši vrátíme původní obsah než horší mix).
+            $converted = @mb_convert_encoding($content, 'UTF-8', 'CP1250');
+            if ($converted !== false && $converted !== '' && mb_check_encoding($converted, 'UTF-8')) {
+                return $converted;
+            }
+        }
+        return $content;
     }
 
     private function parseLdtFields($content) {
