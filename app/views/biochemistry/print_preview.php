@@ -44,6 +44,7 @@
 <!-- Print Preview Area -->
 <div class="print-preview-area">
     <div class="print-page" id="printPage">
+        <div class="print-animal-title" contenteditable="true" spellcheck="false" title="Klikněte a upravte (jméno + ID)"><?= htmlspecialchars(trim(strtoupper($animal['name'] ?? '') . (!empty($animal['identifier']) ? ' (' . $animal['identifier'] . ')' : ''))) ?></div>
         <?php
         // Merge all tests for unified table
         $allTests = [];
@@ -403,6 +404,22 @@ body {
     transform-origin: top center;
 }
 
+/* Editovatelný titulní řádek: jméno zvířete + ID */
+.print-animal-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #000;
+    margin: 0 0 3mm 0;
+    padding: 2px 6px;
+    border: 1px dashed #bbb;   /* náznak editovatelnosti (jen na obrazovce) */
+    border-radius: 4px;
+    outline: none;
+}
+.print-animal-title:focus {
+    border-color: #3498db;
+    background: #f4f9fd;
+}
+
 /* Print table - spreadsheet style */
 .print-table {
     border-collapse: collapse;
@@ -550,6 +567,13 @@ body {
         padding: 2mm !important;
         width: 100% !important;
         min-width: auto !important;
+    }
+
+    .print-animal-title {
+        border: none !important;
+        padding: 0 !important;
+        margin: 0 0 2mm 0 !important;
+        font-size: 14px !important;
     }
 
     .print-table th,
