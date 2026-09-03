@@ -88,16 +88,43 @@
             </thead>
             <tbody>
                 <?php if ($tableType === 'biochemistry' || $tableType === 'both'): ?>
-                    <!-- Biochemistry Section Header -->
-                    <tr class="section-header">
-                        <td colspan="<?= 3 + count($allTests) * 2 ?>"><strong>Biochemie</strong></td>
-                    </tr>
                     <?php
                     $biochemParams = array_filter($allParameters, function($param) {
                         return $param['type'] === 'biochemistry';
                     });
 
-                    foreach ($biochemParams as $paramName => $paramInfo):
+                    // Indexy kvality vzorku (lipemický + hemolytický) patří vždy nahoru,
+                    // ještě před sekci "Biochemie" – vypovídají o kvalitě vzorku.
+                    $qualityParams = [];
+                    $normalBiochem = [];
+                    foreach ($biochemParams as $pName => $pInfo) {
+                        $pn = function_exists('mb_strtolower') ? mb_strtolower($pName, 'UTF-8') : strtolower($pName);
+                        $isQuality = (strpos($pn, 'lipaem') !== false || strpos($pn, 'lipem') !== false
+                                   || strpos($pn, 'haemolys') !== false || strpos($pn, 'hemolys') !== false
+                                   || strpos($pn, 'hemol') !== false);
+                        if ($isQuality) { $qualityParams[$pName] = $pInfo; }
+                        else { $normalBiochem[$pName] = $pInfo; }
+                    }
+
+                    // Poskládat pořadí řádků včetně hlaviček sekcí (marker __section__).
+                    $orderedBiochem = [];
+                    if (!empty($qualityParams)) {
+                        $orderedBiochem['__quality__'] = ['__section__' => 'Kvalita vzorku'];
+                        foreach ($qualityParams as $k => $v) { $orderedBiochem[$k] = $v; }
+                    }
+                    $orderedBiochem['__biochem__'] = ['__section__' => 'Biochemie'];
+                    foreach ($normalBiochem as $k => $v) { $orderedBiochem[$k] = $v; }
+
+                    foreach ($orderedBiochem as $paramName => $paramInfo):
+                        if (isset($paramInfo['__section__'])):
+                    ?>
+                        <tr class="section-header">
+                            <td colspan="<?= 3 + count($allTests) * 2 ?>"><strong><?= htmlspecialchars($paramInfo['__section__']) ?></strong></td>
+                        </tr>
+                    <?php
+                            continue;
+                        endif;
+
                         $refRange = $referenceRanges['biochemistry'][$paramName] ?? null;
                         $refText = '';
                         if ($refRange && $refRange['min_value'] !== null && $refRange['max_value'] !== null) {
