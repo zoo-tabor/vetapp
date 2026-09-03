@@ -596,25 +596,33 @@ async function updateReferenceRanges() {
         const rangeCell = row.querySelector('.reference-range');
         const evalCell = row.querySelector('.evaluation');
 
-        if (range && range.min_value !== null && range.max_value !== null) {
-            rangeCell.textContent = `${range.min_value} - ${range.max_value} ${range.unit}`;
-
-            // Calculate percentage evaluation based on reference range
+        const hasMin = range && range.min_value !== null && range.min_value !== '';
+        const hasMax = range && range.max_value !== null && range.max_value !== '';
+        if (hasMin || hasMax) {
             const min = parseFloat(range.min_value);
             const max = parseFloat(range.max_value);
+
+            // Text rozmezí – podporuje i otevřenou mez (> min / < max)
+            if (hasMin && hasMax) {
+                rangeCell.textContent = `${range.min_value} - ${range.max_value} ${range.unit}`;
+            } else if (hasMin) {
+                rangeCell.textContent = `> ${range.min_value} ${range.unit}`;
+            } else {
+                rangeCell.textContent = `< ${range.max_value} ${range.unit}`;
+            }
 
             // Determine status
             let status = 'normal';
             let displayText = 'OK';
 
-            if (value < min) {
+            if (hasMin && value < min) {
                 status = 'low';
-                const percentage = ((min - value) / min * 100).toFixed(2);
-                displayText = `↓ ${percentage}%`;
-            } else if (value > max) {
+                const pct = min !== 0 ? ((min - value) / Math.abs(min) * 100).toFixed(2) : null;
+                displayText = pct !== null ? `↓ ${pct}%` : '↓';
+            } else if (hasMax && value > max) {
                 status = 'high';
-                const percentage = ((value - max) / max * 100).toFixed(2);
-                displayText = `↑ ${percentage}%`;
+                const pct = max !== 0 ? ((value - max) / Math.abs(max) * 100).toFixed(2) : null;
+                displayText = pct !== null ? `↑ ${pct}%` : '↑';
             }
 
             evalCell.textContent = displayText;
@@ -745,23 +753,32 @@ async function updateSingleRow(row) {
     const rangeCell = row.querySelector('.reference-range');
     const evalCell = row.querySelector('.evaluation');
 
-    if (range && range.min_value !== null && range.max_value !== null) {
-        rangeCell.textContent = `${range.min_value} - ${range.max_value} ${range.unit}`;
-
+    const hasMin = range && range.min_value !== null && range.min_value !== '';
+    const hasMax = range && range.max_value !== null && range.max_value !== '';
+    if (hasMin || hasMax) {
         const min = parseFloat(range.min_value);
         const max = parseFloat(range.max_value);
+
+        // Text rozmezí – podporuje i otevřenou mez (> min / < max)
+        if (hasMin && hasMax) {
+            rangeCell.textContent = `${range.min_value} - ${range.max_value} ${range.unit}`;
+        } else if (hasMin) {
+            rangeCell.textContent = `> ${range.min_value} ${range.unit}`;
+        } else {
+            rangeCell.textContent = `< ${range.max_value} ${range.unit}`;
+        }
 
         let status = 'normal';
         let displayText = 'OK';
 
-        if (value < min) {
+        if (hasMin && value < min) {
             status = 'low';
-            const percentage = ((min - value) / min * 100).toFixed(2);
-            displayText = `↓ ${percentage}%`;
-        } else if (value > max) {
+            const pct = min !== 0 ? ((min - value) / Math.abs(min) * 100).toFixed(2) : null;
+            displayText = pct !== null ? `↓ ${pct}%` : '↓';
+        } else if (hasMax && value > max) {
             status = 'high';
-            const percentage = ((value - max) / max * 100).toFixed(2);
-            displayText = `↑ ${percentage}%`;
+            const pct = max !== 0 ? ((value - max) / Math.abs(max) * 100).toFixed(2) : null;
+            displayText = pct !== null ? `↑ ${pct}%` : '↑';
         }
 
         evalCell.textContent = displayText;

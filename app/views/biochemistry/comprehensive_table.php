@@ -849,25 +849,27 @@ async function loadEvaluations() {
             // Find corresponding evaluation cell
             const evalCell = row.querySelector(`.evaluation[data-for="${testKey}"]`);
 
-            if (range && range.min_value !== null && range.max_value !== null) {
+            const hasMin = range && range.min_value !== null && range.min_value !== '';
+            const hasMax = range && range.max_value !== null && range.max_value !== '';
+            if (hasMin || hasMax) {
                 const min = parseFloat(range.min_value);
                 const max = parseFloat(range.max_value);
 
                 let status = 'normal';
                 let displayText = 'OK';
 
-                if (value < min) {
+                if (hasMin && value < min) {
                     if (min !== 0) {
                         status = 'low';
-                        displayText = `↓ ${((min - value) / min * 100).toFixed(2)}%`;
+                        displayText = `↓ ${((min - value) / Math.abs(min) * 100).toFixed(2)}%`;
                     } else {
                         status = 'high';
                         displayText = 'MIMO MEZ';
                     }
-                } else if (value > max) {
+                } else if (hasMax && value > max) {
                     status = 'high';
                     if (max !== 0) {
-                        displayText = `↑ ${((value - max) / max * 100).toFixed(2)}%`;
+                        displayText = `↑ ${((value - max) / Math.abs(max) * 100).toFixed(2)}%`;
                     } else {
                         displayText = 'MIMO MEZ';
                     }
@@ -979,25 +981,27 @@ async function loadEvaluationsForSection(section, testType) {
             // Find corresponding evaluation cell
             const evalCell = row.querySelector(`.evaluation[data-for="${testKey}"]`);
 
-            if (range && range.min_value !== null && range.max_value !== null) {
+            const hasMin = range && range.min_value !== null && range.min_value !== '';
+            const hasMax = range && range.max_value !== null && range.max_value !== '';
+            if (hasMin || hasMax) {
                 const min = parseFloat(range.min_value);
                 const max = parseFloat(range.max_value);
 
                 let status = 'normal';
                 let displayText = 'OK';
 
-                if (value < min) {
+                if (hasMin && value < min) {
                     if (min !== 0) {
                         status = 'low';
-                        displayText = `↓ ${((min - value) / min * 100).toFixed(2)}%`;
+                        displayText = `↓ ${((min - value) / Math.abs(min) * 100).toFixed(2)}%`;
                     } else {
                         status = 'high';
                         displayText = 'MIMO MEZ';
                     }
-                } else if (value > max) {
+                } else if (hasMax && value > max) {
                     status = 'high';
                     if (max !== 0) {
-                        displayText = `↑ ${((value - max) / max * 100).toFixed(2)}%`;
+                        displayText = `↑ ${((value - max) / Math.abs(max) * 100).toFixed(2)}%`;
                     } else {
                         displayText = 'MIMO MEZ';
                     }
@@ -1338,21 +1342,23 @@ async function updateSingleCellEvaluation(cell) {
     const row = cell.closest('tr');
     const evalCell = row.querySelector(`.evaluation[data-for="${testKey}"]`);
 
-    if (range && range.min_value !== null && range.max_value !== null) {
+    const hasMin = range && range.min_value !== null && range.min_value !== '';
+    const hasMax = range && range.max_value !== null && range.max_value !== '';
+    if (hasMin || hasMax) {
         const min = parseFloat(range.min_value);
         const max = parseFloat(range.max_value);
 
         let status = 'normal';
         let displayText = 'OK';
 
-        if (value < min) {
+        if (hasMin && value < min) {
             status = 'low';
-            const percentage = ((min - value) / min * 100).toFixed(2);
-            displayText = `↓ ${percentage}%`;
-        } else if (value > max) {
+            const pct = min !== 0 ? ((min - value) / Math.abs(min) * 100).toFixed(2) : null;
+            displayText = pct !== null ? `↓ ${pct}%` : '↓';
+        } else if (hasMax && value > max) {
             status = 'high';
-            const percentage = ((value - max) / max * 100).toFixed(2);
-            displayText = `↑ ${percentage}%`;
+            const pct = max !== 0 ? ((value - max) / Math.abs(max) * 100).toFixed(2) : null;
+            displayText = pct !== null ? `↑ ${pct}%` : '↑';
         }
 
         evalCell.textContent = displayText;

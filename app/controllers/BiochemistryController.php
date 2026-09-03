@@ -756,8 +756,12 @@ class BiochemistryController {
             $labParam = new LabParameter();
             $count = 0;
             foreach ($params as $paramName => $paramData) {
-                $min = !empty($paramData['min']) ? $paramData['min'] : null;
-                $max = !empty($paramData['max']) ? $paramData['max'] : null;
+                // Pozor: "0" je platná hodnota – nesmí se zahodit přes empty().
+                // Prázdné pole (i pro otevřenou mez, např. ">0.7") = NULL.
+                $rawMin = isset($paramData['min']) ? trim(str_replace(',', '.', $paramData['min'])) : '';
+                $rawMax = isset($paramData['max']) ? trim(str_replace(',', '.', $paramData['max'])) : '';
+                $min = ($rawMin !== '' && is_numeric($rawMin)) ? $rawMin : null;
+                $max = ($rawMax !== '' && is_numeric($rawMax)) ? $rawMax : null;
                 $unit = $paramData['unit'] ?? '';
 
                 // Only save if at least min or max is provided
