@@ -949,23 +949,30 @@ function fitPrintTables() {
         // u ~70 řádků je výsledek o desítky px vyšší, než vychází z th * z, a blok
         // by o kousek přetekl na další list. Doměříme skutečnou velikost (fit
         // obaluje zoomovanou tabulku, takže má její reálné rozměry) a dorovnáme.
+        // Meze bereme o pixel mensi, at je rezerva na zaokrouhleni pri tisku.
+        const limitW = s.availW - 1;
+        const limitH = s.availH - 1;
         if (mode !== 'custom') {
             for (let i = 0; i < 6; i++) {
-                const rw = fit.offsetWidth;
-                const rh = fit.offsetHeight;
-                if (!rw || !rh) break;
+                // getBoundingClientRect je desetinny; offsetWidth zaokrouhluje
+                // nahoru, takze by se loop honil za neexistujicim pretecenim.
+                const r = fit.getBoundingClientRect();
+                if (!r.width || !r.height) break;
                 const over = Math.max(
-                    rw / s.availW,
-                    mode === 'page' ? (rh + titleH) / s.availH : 0
+                    r.width / limitW,
+                    mode === 'page' ? (r.height + titleH) / limitH : 0
                 );
                 if (over <= 1) break;
-                z = Math.max(0.1, z / over * 0.998);
+                z = Math.max(0.1, z / over * 0.999);
                 table.style.zoom = z;
             }
         }
         lastZoom = z;
 
-        totalPages += Math.max(1, Math.ceil((fit.offsetHeight + titleH) / s.availH - 0.01));
+        totalPages += Math.max(
+            1,
+            Math.ceil((fit.getBoundingClientRect().height + titleH) / s.availH - 0.01)
+        );
         setPageNumber(page, idx);
     });
 
