@@ -358,16 +358,24 @@ function sampleQualityParamNames() {
  * pokrývá stav před migrací i případné přejmenování.
  */
 function isSampleQualityParam($name) {
-    $n = function_exists('mb_strtolower') ? mb_strtolower((string)$name, 'UTF-8') : strtolower((string)$name);
+    // Strhnout diakritiku + malá písmena, aby sedly i české názvy jako
+    // "Lipémie" / "Hemolýza" (jinak by é/ý rozbily ASCII vzory níže).
+    $n = strtr((string)$name, [
+        'á'=>'a','č'=>'c','ď'=>'d','é'=>'e','ě'=>'e','í'=>'i','ň'=>'n','ó'=>'o','ř'=>'r','š'=>'s',
+        'ť'=>'t','ú'=>'u','ů'=>'u','ý'=>'y','ž'=>'z',
+        'Á'=>'a','Č'=>'c','Ď'=>'d','É'=>'e','Ě'=>'e','Í'=>'i','Ň'=>'n','Ó'=>'o','Ř'=>'r','Š'=>'s',
+        'Ť'=>'t','Ú'=>'u','Ů'=>'u','Ý'=>'y','Ž'=>'z',
+    ]);
+    $n = function_exists('mb_strtolower') ? mb_strtolower($n, 'UTF-8') : strtolower($n);
     if ($n === '') {
         return false;
     }
     if (in_array($n, sampleQualityParamNames(), true)) {
         return true;
     }
-    return (strpos($n, 'lipaem') !== false || strpos($n, 'lipem') !== false
-         || strpos($n, 'aemolys') !== false || strpos($n, 'emolys') !== false
-         || strpos($n, 'emolyt') !== false);
+    // Lipémie/Lipaemia index + Hemolýza/Haemolysis index (vč. anglických variant).
+    return (strpos($n, 'lipem') !== false || strpos($n, 'lipaem') !== false
+         || strpos($n, 'hemol') !== false || strpos($n, 'aemol') !== false);
 }
 
 /**
