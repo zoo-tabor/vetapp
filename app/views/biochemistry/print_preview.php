@@ -88,23 +88,8 @@
     <div class="print-page">
         <div class="print-animal-title" contenteditable="true" spellcheck="false" title="Klikněte a upravte (jméno + ID)"><?= htmlspecialchars(trim(strtoupper($animal['name'] ?? '') . (!empty($animal['identifier']) ? ' (' . $animal['identifier'] . ')' : ''))) ?><?php if (count($blocks) > 1): ?> <span class="print-part">— část <?= $__blockIdx + 1 ?>/<?= count($blocks) ?></span><?php endif; ?></div>
 
+        <div class="print-fit">
         <table class="print-table">
-            <?php
-            // Poměrné šířky sloupců, aby se tabulka VŽDY vešla na šířku stránky
-            // (table-layout: fixed). Levé sloupce pevně, datumy si dělí zbytek.
-            $__nd = max(1, count($allTests));
-            $__pair = (100 - 12 - 8 - 5) / $__nd; // zbytek na jeden odběr (hodnota+vyhodnocení)
-            $__wVal = round($__pair * 0.56, 3);
-            $__wEval = round($__pair - $__wVal, 3);
-            ?>
-            <colgroup>
-                <col style="width:12%">
-                <col style="width:8%">
-                <col style="width:5%">
-                <?php foreach ($allTests as $__c): ?>
-                    <col style="width:<?= $__wVal ?>%"><col style="width:<?= $__wEval ?>%">
-                <?php endforeach; ?>
-            </colgroup>
             <!-- Header -->
             <thead>
                 <tr class="main-header">
@@ -359,6 +344,7 @@
                 <?php endif; ?>
             </tbody>
         </table>
+        </div>
     </div>
     <?php endforeach; ?>
 </div>
@@ -494,17 +480,22 @@ body {
 .print-table {
     border-collapse: collapse;
     font-size: 8px;
-    width: 100%;
-    table-layout: fixed; /* sloupce se drží poměrných šířek -> tabulka se vejde na stránku */
+    width: auto;
 }
 
 .print-table th,
 .print-table td {
     border: 1px solid #000;
     padding: 2px 4px;
-    white-space: normal;
-    overflow-wrap: break-word;
-    overflow: hidden;
+    white-space: nowrap;
+}
+
+/* Wrapper, který zmenší (scale) tabulku tak, aby se vešla na šířku stránky. */
+.print-fit {
+    transform-origin: top left;
+}
+.print-fit > table {
+    transform-origin: top left;
 }
 
 /* Main header row */
@@ -753,8 +744,34 @@ function updateFontSize() {
         '.print-table, .print-table td, .print-table th,' +
         '.param-cell, .ref-cell, .unit-cell, .value-cell, .eval-cell {' +
         'font-size: ' + fontSize + 'px !important; }';
+    requestAnimationFrame(fitPrintTables);
 }
 
-// Aplikovat výchozí velikost hned po načtení.
+// Zmenší (scale) každou tabulku tak, aby se vešla na šířku tiskové stránky.
+// Tabulka zůstává v přirozené (čitelné) šířce, jen se proporčně zmenší – text
+// se tak neláme po znacích. Levé sloupce jsou na každé stránce.
+function fitPrintTables() {
+    const TARGET = 1040; // px ~ obsah landscape A4 (cca 275 mm)
+    document.querySelectorAll('.print-fit').forEach(function (fit) {
+        const table = fit.querySelector('table');
+        if (!table) return;
+        fit.style.width = '';
+        fit.style.height = '';
+        fit.style.overflow = '';
+        table.style.transform = 'none';
+        const w = table.offsetWidth;
+        const h = table.offsetHeight;
+        if (!w) return;
+        const scale = Math.min(1, TARGET / w);
+        table.style.transform = 'scale(' + scale + ')';
+        fit.style.width = Math.ceil(w * scale) + 'px';
+        fit.style.height = Math.ceil(h * scale) + 'px';
+        fit.style.overflow = 'hidden';
+    });
+}
+
+// Výchozí velikost + fit po načtení, při změně okna a před tiskem.
 document.addEventListener('DOMContentLoaded', updateFontSize);
+window.addEventListener('resize', function () { requestAnimationFrame(fitPrintTables); });
+window.addEventListener('beforeprint', fitPrintTables);
 </script>
