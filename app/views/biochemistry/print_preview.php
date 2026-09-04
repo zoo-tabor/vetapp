@@ -941,13 +941,31 @@ function fitPrintTables() {
             // "Přizpůsobit stránce": zmenšit i na výšku, jinak z každého bloku
             // vypadne na další list tenký zbytek (tři bloky = šest listů).
             z = Math.min(1, s.availW / tw, (s.availH - titleH) / th);
-            z *= 0.995; // rezerva na zaokrouhlení, ať nevznikne prázdná stránka
         }
         z = Math.max(0.1, z);
         table.style.zoom = z;
+
+        // Zoom přepočítá layout, takže výška každého řádku se zaokrouhlí nahoru –
+        // u ~70 řádků je výsledek o desítky px vyšší, než vychází z th * z, a blok
+        // by o kousek přetekl na další list. Doměříme skutečnou velikost (fit
+        // obaluje zoomovanou tabulku, takže má její reálné rozměry) a dorovnáme.
+        if (mode !== 'custom') {
+            for (let i = 0; i < 6; i++) {
+                const rw = fit.offsetWidth;
+                const rh = fit.offsetHeight;
+                if (!rw || !rh) break;
+                const over = Math.max(
+                    rw / s.availW,
+                    mode === 'page' ? (rh + titleH) / s.availH : 0
+                );
+                if (over <= 1) break;
+                z = Math.max(0.1, z / over * 0.998);
+                table.style.zoom = z;
+            }
+        }
         lastZoom = z;
 
-        totalPages += Math.max(1, Math.ceil((th * z + titleH) / s.availH - 0.01));
+        totalPages += Math.max(1, Math.ceil((fit.offsetHeight + titleH) / s.availH - 0.01));
         setPageNumber(page, idx);
     });
 
