@@ -756,19 +756,16 @@ function fitPrintTables() {
     document.querySelectorAll('.print-fit').forEach(function (fit) {
         const table = fit.querySelector('table');
         if (!table) return;
-        fit.style.width = '';
-        fit.style.height = '';
-        fit.style.overflow = '';
-        table.style.transform = 'none';
+        // Reset a přeměření v přirozené velikosti.
+        fit.style.zoom = '';
         const w = table.offsetWidth;
         const h = table.offsetHeight;
         if (!w || !h) { requestAnimationFrame(fitPrintTables); return; }
-        // Zmenšit tak, aby blok vešel na šířku I výšku stránky (každý blok = 1 strana).
+        // Měřítko tak, aby blok vešel na šířku I výšku stránky (každý blok = 1 strana).
+        // Používáme "zoom" (ne transform) – ten zmenší i layout, takže se to
+        // správně vytiskne i v tiskovém dialogu (jako Měřítko v Google Tabulkách).
         const scale = Math.min(1, TARGET_W / w, TARGET_H / h);
-        table.style.transform = 'scale(' + scale + ')';
-        fit.style.width = Math.ceil(w * scale) + 'px';
-        fit.style.height = Math.ceil(h * scale) + 'px';
-        fit.style.overflow = 'hidden';
+        fit.style.zoom = scale;
     });
 }
 
