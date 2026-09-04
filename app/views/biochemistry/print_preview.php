@@ -751,7 +751,8 @@ function updateFontSize() {
 // Tabulka zůstává v přirozené (čitelné) šířce, jen se proporčně zmenší – text
 // se tak neláme po znacích. Levé sloupce jsou na každé stránce.
 function fitPrintTables() {
-    const TARGET = 1040; // px ~ obsah landscape A4 (cca 275 mm)
+    const TARGET_W = 1040; // px ~ šířka obsahu landscape A4 (cca 275 mm)
+    const TARGET_H = 720;  // px ~ výška obsahu landscape A4 (bez titulku)
     document.querySelectorAll('.print-fit').forEach(function (fit) {
         const table = fit.querySelector('table');
         if (!table) return;
@@ -761,8 +762,9 @@ function fitPrintTables() {
         table.style.transform = 'none';
         const w = table.offsetWidth;
         const h = table.offsetHeight;
-        if (!w) return;
-        const scale = Math.min(1, TARGET / w);
+        if (!w || !h) { requestAnimationFrame(fitPrintTables); return; }
+        // Zmenšit tak, aby blok vešel na šířku I výšku stránky (každý blok = 1 strana).
+        const scale = Math.min(1, TARGET_W / w, TARGET_H / h);
         table.style.transform = 'scale(' + scale + ')';
         fit.style.width = Math.ceil(w * scale) + 'px';
         fit.style.height = Math.ceil(h * scale) + 'px';
@@ -772,6 +774,7 @@ function fitPrintTables() {
 
 // Výchozí velikost + fit po načtení, při změně okna a před tiskem.
 document.addEventListener('DOMContentLoaded', updateFontSize);
+window.addEventListener('load', fitPrintTables);
 window.addEventListener('resize', function () { requestAnimationFrame(fitPrintTables); });
 window.addEventListener('beforeprint', fitPrintTables);
 </script>
