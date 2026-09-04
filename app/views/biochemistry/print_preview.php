@@ -1,3 +1,4 @@
+<?php $perPage = isset($_GET['per_page']) ? max(1, min(40, (int)$_GET['per_page'])) : 10; ?>
 <!-- Print Settings Sidebar -->
 <div class="print-settings-sidebar">
     <h3>Nastavení tisku</h3>
@@ -31,6 +32,16 @@
         </select>
     </div>
 
+    <div class="setting-group">
+        <label>Odběrů na stránku:</label>
+        <select id="perPageSelect" onchange="updatePreview()">
+            <?php foreach ([5, 8, 10, 12, 15, 20] as $pp): ?>
+                <option value="<?= $pp ?>" <?= $perPage === $pp ? 'selected' : '' ?>><?= $pp ?></option>
+            <?php endforeach; ?>
+        </select>
+        <small style="display:block;margin-top:6px;opacity:.7;">Datumy se rozdělí na víc stránek.</small>
+    </div>
+
     <div class="button-group">
         <button onclick="window.print()" class="btn-print">
             🖨️ Tisknout
@@ -43,26 +54,35 @@
 
 <!-- Print Preview Area -->
 <div class="print-preview-area">
-    <div class="print-page" id="printPage">
-        <div class="print-animal-title" contenteditable="true" spellcheck="false" title="Klikněte a upravte (jméno + ID)"><?= htmlspecialchars(trim(strtoupper($animal['name'] ?? '') . (!empty($animal['identifier']) ? ' (' . $animal['identifier'] . ')' : ''))) ?></div>
-        <?php
-        // Merge all tests for unified table
-        $allTests = [];
-        if ($tableType === 'biochemistry' || $tableType === 'both') {
-            foreach ($biochemTests as $test) {
-                $allTests[$test['test_date']] = $test;
+    <?php
+    // Sloučit odběry do jedné časové osy (unikátní datumy).
+    $allTestsFull = [];
+    if ($tableType === 'biochemistry' || $tableType === 'both') {
+        foreach ($biochemTests as $test) {
+            $allTestsFull[$test['test_date']] = $test;
+        }
+    }
+    if ($tableType === 'hematology' || $tableType === 'both') {
+        foreach ($hematoTests as $test) {
+            if (!isset($allTestsFull[$test['test_date']])) {
+                $allTestsFull[$test['test_date']] = $test;
             }
         }
-        if ($tableType === 'hematology' || $tableType === 'both') {
-            foreach ($hematoTests as $test) {
-                if (!isset($allTests[$test['test_date']])) {
-                    $allTests[$test['test_date']] = $test;
-                }
-            }
-        }
-        ksort($allTests);
-        $allTests = array_values($allTests);
-        ?>
+    }
+    ksort($allTestsFull);
+    $allTestsFull = array_values($allTestsFull);
+
+    // Datumové sloupce rozdělíme po blocích na samostatné tiskové stránky, aby se
+    // nic neslučovalo ani neusekávalo. Levé sloupce (parametr/meze/jednotky) se
+    // opakují na každé stránce.
+    $perPage = isset($_GET['per_page']) ? max(1, min(40, (int)$_GET['per_page'])) : 10;
+    $blocks = array_chunk($allTestsFull, $perPage);
+    if (empty($blocks)) { $blocks = [[]]; }
+
+    foreach ($blocks as $__blockIdx => $allTests):
+    ?>
+    <div class="print-page">
+        <div class="print-animal-title" contenteditable="true" spellcheck="false" title="Klikněte a upravte (jméno + ID)"><?= htmlspecialchars(trim(strtoupper($animal['name'] ?? '') . (!empty($animal['identifier']) ? ' (' . $animal['identifier'] . ')' : ''))) ?><?php if (count($blocks) > 1): ?> <span class="print-part">— část <?= $__blockIdx + 1 ?>/<?= count($blocks) ?></span><?php endif; ?></div>
 
         <table class="print-table">
             <!-- Header -->
@@ -320,6 +340,7 @@
             </tbody>
         </table>
     </div>
+    <?php endforeach; ?>
 </div>
 
 <style>
@@ -425,6 +446,12 @@ body {
     width: fit-content;
     min-width: 297mm;
     transform-origin: top center;
+    margin-bottom: 24px; /* oddělení bloků (stránek) v náhledu */
+}
+.print-part {
+    font-weight: 400;
+    font-size: 0.7em;
+    color: #7f8c8d;
 }
 
 /* Editovatelný titulní řádek: jméno zvířete + ID */
@@ -590,6 +617,12 @@ body {
         padding: 2mm !important;
         width: 100% !important;
         min-width: auto !important;
+        page-break-after: always;
+        break-after: page;
+    }
+    .print-page:last-child {
+        page-break-after: auto;
+        break-after: auto;
     }
 
     .print-animal-title {
@@ -679,7 +712,9 @@ const animalId = <?= $animal['id'] ?>;
 function updatePreview() {
     const table = document.getElementById('tableSelect').value;
     const source = document.getElementById('sourceSelect').value;
-    window.location.href = `/biochemistry/animal/${animalId}/print?table=${table}&source=${source}`;
+    const perPageEl = document.getElementById('perPageSelect');
+    const perPage = perPageEl ? perPageEl.value : 10;
+    window.location.href = `/biochemistry/animal/${animalId}/print?table=${table}&source=${source}&per_page=${perPage}`;
 }
 
 function updateFontSize() {
