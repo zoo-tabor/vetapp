@@ -171,7 +171,7 @@ class BiochemistryController {
             $placeholders = str_repeat('?,', count($biochemTestIds) - 1) . '?';
 
             $stmtResults = $db->prepare("
-                SELECT test_id, parameter_name, value, unit
+                SELECT id, test_id, parameter_name, value, unit
                 FROM biochemistry_results
                 WHERE test_id IN ($placeholders)
             ");
@@ -196,7 +196,7 @@ class BiochemistryController {
             $placeholders = str_repeat('?,', count($hematoTestIds) - 1) . '?';
 
             $stmtResults = $db->prepare("
-                SELECT test_id, parameter_name, value, unit
+                SELECT id, test_id, parameter_name, value, unit
                 FROM hematology_results
                 WHERE test_id IN ($placeholders)
             ");
