@@ -57,15 +57,19 @@
     <?php
     // Sloučit odběry do jedné časové osy (unikátní datumy).
     $allTestsFull = [];
+    // Sloupec = datum + laboratoř. Dva odběry stejného data z jiné laboratoře
+    // (např. Laboklin + RegiaVet) tak zůstanou jako dva samostatné sloupce.
     if ($tableType === 'biochemistry' || $tableType === 'both') {
         foreach ($biochemTests as $test) {
-            $allTestsFull[$test['test_date']] = $test;
+            $__k = $test['test_date'] . '|' . ($test['test_location'] ?? '');
+            $allTestsFull[$__k] = $test;
         }
     }
     if ($tableType === 'hematology' || $tableType === 'both') {
         foreach ($hematoTests as $test) {
-            if (!isset($allTestsFull[$test['test_date']])) {
-                $allTestsFull[$test['test_date']] = $test;
+            $__k = $test['test_date'] . '|' . ($test['test_location'] ?? '');
+            if (!isset($allTestsFull[$__k])) {
+                $allTestsFull[$__k] = $test;
             }
         }
     }
@@ -85,6 +89,22 @@
         <div class="print-animal-title" contenteditable="true" spellcheck="false" title="Klikněte a upravte (jméno + ID)"><?= htmlspecialchars(trim(strtoupper($animal['name'] ?? '') . (!empty($animal['identifier']) ? ' (' . $animal['identifier'] . ')' : ''))) ?><?php if (count($blocks) > 1): ?> <span class="print-part">— část <?= $__blockIdx + 1 ?>/<?= count($blocks) ?></span><?php endif; ?></div>
 
         <table class="print-table">
+            <?php
+            // Poměrné šířky sloupců, aby se tabulka VŽDY vešla na šířku stránky
+            // (table-layout: fixed). Levé sloupce pevně, datumy si dělí zbytek.
+            $__nd = max(1, count($allTests));
+            $__pair = (100 - 12 - 8 - 5) / $__nd; // zbytek na jeden odběr (hodnota+vyhodnocení)
+            $__wVal = round($__pair * 0.56, 3);
+            $__wEval = round($__pair - $__wVal, 3);
+            ?>
+            <colgroup>
+                <col style="width:12%">
+                <col style="width:8%">
+                <col style="width:5%">
+                <?php foreach ($allTests as $__c): ?>
+                    <col style="width:<?= $__wVal ?>%"><col style="width:<?= $__wEval ?>%">
+                <?php endforeach; ?>
+            </colgroup>
             <!-- Header -->
             <thead>
                 <tr class="main-header">
@@ -159,7 +179,7 @@
                                 // Find the biochemistry test for this date
                                 $biochemTest = null;
                                 foreach ($biochemTests as $bt) {
-                                    if ($bt['test_date'] === $test['test_date']) {
+                                    if ($bt['test_date'] === $test['test_date'] && ($bt['test_location'] ?? '') === ($test['test_location'] ?? '')) {
                                         $biochemTest = $bt;
                                         break;
                                     }
@@ -263,7 +283,7 @@
                                 // Find the hematology test for this date
                                 $hematoTest = null;
                                 foreach ($hematoTests as $ht) {
-                                    if ($ht['test_date'] === $test['test_date']) {
+                                    if ($ht['test_date'] === $test['test_date'] && ($ht['test_location'] ?? '') === ($test['test_location'] ?? '')) {
                                         $hematoTest = $ht;
                                         break;
                                     }
@@ -475,13 +495,16 @@ body {
     border-collapse: collapse;
     font-size: 8px;
     width: 100%;
+    table-layout: fixed; /* sloupce se drží poměrných šířek -> tabulka se vejde na stránku */
 }
 
 .print-table th,
 .print-table td {
     border: 1px solid #000;
     padding: 2px 4px;
-    white-space: nowrap;
+    white-space: normal;
+    overflow-wrap: break-word;
+    overflow: hidden;
 }
 
 /* Main header row */
