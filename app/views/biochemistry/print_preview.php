@@ -954,9 +954,12 @@ function fitPrintTables() {
         const limitH = s.availH - 1;
         if (mode !== 'custom') {
             for (let i = 0; i < 6; i++) {
-                // getBoundingClientRect je desetinny; offsetWidth zaokrouhluje
-                // nahoru, takze by se loop honil za neexistujicim pretecenim.
-                const r = fit.getBoundingClientRect();
+                // Merime tabulku, ne obalovy .print-fit - ten je blokovy, takze
+                // by mel vzdycky sirku stranky a kontrola sirky by nic nerekla.
+                // getBoundingClientRect vraci uz zoomovanou velikost a je
+                // desetinny (offsetWidth zaokrouhluje nahoru a hlasil by
+                // preteceni i tam, kde zadne neni).
+                const r = table.getBoundingClientRect();
                 if (!r.width || !r.height) break;
                 const over = Math.max(
                     r.width / limitW,
@@ -971,7 +974,7 @@ function fitPrintTables() {
 
         totalPages += Math.max(
             1,
-            Math.ceil((fit.getBoundingClientRect().height + titleH) / s.availH - 0.01)
+            Math.ceil((table.getBoundingClientRect().height + titleH) / s.availH - 0.01)
         );
         setPageNumber(page, idx);
     });
