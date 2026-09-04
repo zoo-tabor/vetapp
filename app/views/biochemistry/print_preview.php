@@ -490,6 +490,10 @@ body {
     white-space: nowrap;
 }
 
+/* Při přetečení tabulky na další stránku opakovat hlavičku a nelámat řádky. */
+.print-table thead { display: table-header-group; }
+.print-table tr { break-inside: avoid; page-break-inside: avoid; }
+
 /* Wrapper, který zmenší (scale) tabulku tak, aby se vešla na šířku stránky. */
 .print-fit {
     transform-origin: top left;
@@ -752,20 +756,17 @@ function updateFontSize() {
 // se tak neláme po znacích. Levé sloupce jsou na každé stránce.
 function fitPrintTables() {
     const TARGET_W = 1040; // px ~ šířka obsahu landscape A4 (cca 275 mm)
-    const TARGET_H = 720;  // px ~ výška obsahu landscape A4 (bez titulku)
     document.querySelectorAll('.print-fit').forEach(function (fit) {
         const table = fit.querySelector('table');
         if (!table) return;
-        // Reset a přeměření v přirozené velikosti.
         fit.style.zoom = '';
+        table.style.zoom = '';
         const w = table.offsetWidth;
-        const h = table.offsetHeight;
-        if (!w || !h) { requestAnimationFrame(fitPrintTables); return; }
-        // Měřítko tak, aby blok vešel na šířku I výšku stránky (každý blok = 1 strana).
-        // Používáme "zoom" (ne transform) – ten zmenší i layout, takže se to
-        // správně vytiskne i v tiskovém dialogu (jako Měřítko v Google Tabulkách).
-        const scale = Math.min(1, TARGET_W / w, TARGET_H / h);
-        fit.style.zoom = scale;
+        if (!w) { requestAnimationFrame(fitPrintTables); return; }
+        // Zmenšit JEN na šířku stránky (zoom = i layout, takže tiskne správně).
+        // Na výšku necháme tabulku přirozeně přetéct na další stránku – hlavička
+        // s datumy (thead) se v tisku opakuje, levé sloupce jsou u každého řádku.
+        table.style.zoom = Math.min(1, TARGET_W / w);
     });
 }
 
