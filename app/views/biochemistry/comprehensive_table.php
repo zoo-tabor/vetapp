@@ -48,7 +48,7 @@
                     <table class="examination-history-table">
                         <thead>
                             <tr>
-                                <th class="sticky-col">Referenční zdroj</th>
+                                <th class="sticky-col">Referenční meze</th>
                                 <th class="sticky-col-2">Parametr</th>
                                 <?php foreach ($biochemTests as $test): ?>
                                     <th colspan="2" class="date-header">
@@ -56,19 +56,28 @@
                                         <?php if (!empty($test['test_location'])): ?>
                                             <br><span class="test-location"><?= htmlspecialchars($test['test_location']) ?></span>
                                         <?php endif; ?>
+                                        <?php
+                                        // Laboratoř přiřazená k tomuto odběru – řídí vyhodnocení
+                                        // celého sloupce; přepnutí platí jen pro zobrazení.
+                                        $__testSource = trim((string)($test['reference_source'] ?? ''));
+                                        ?>
+                                        <br><select class="test-source-select"
+                                                    data-test-key="<?= $test['key'] ?>"
+                                                    onchange="changeTestSource(this)"
+                                                    title="Laboratoř přiřazená k tomuto odběru – změna platí jen pro zobrazení">
+                                            <?php if ($__testSource === ''): ?>
+                                                <option value="" selected>— nezadáno —</option>
+                                            <?php endif; ?>
+                                            <?php foreach ($referenceSources as $source): ?>
+                                                <option value="<?= htmlspecialchars($source) ?>" <?= $source === $__testSource ? 'selected' : '' ?>><?= htmlspecialchars($source) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </th>
                                 <?php endforeach; ?>
                             </tr>
                             <tr>
                                 <th class="sticky-col header-select-cell">
-                                    <select id="biochemReferenceSourceSelect" class="reference-source-select-header" onchange="switchReferenceSource('biochemistry', this.value)">
-                                        <?php
-                                        $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
-                                        foreach ($sources as $source):
-                                        ?>
-                                            <option value="<?= $source ?>" <?= $source === 'Laboklin' ? 'selected' : '' ?>><?= $source ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <span class="ref-source-note">dle laboratoře odběru</span>
                                 </th>
                                 <th class="sticky-col-2"></th>
                                 <?php foreach ($biochemTests as $test): ?>
@@ -122,12 +131,14 @@
                                         $value = $result['value'] ?? null;
                                         $resultId = $result['id'] ?? null;
                                         $unit = $result['unit'] ?? '';
+                                        // Zdroj se musí načíst i tady – hlavička je samostatný cyklus.
+                                        $__testSource = trim((string)($test['reference_source'] ?? ''));
                                         ?>
                                         <td class="value-col editable-cell"
                                             data-test-key="<?= $test['key'] ?>"
                                             data-value="<?= $value ?>"
                                             data-species="<?= htmlspecialchars($animal['species']) ?>"
-                                            data-source="Laboklin"
+                                            data-source="<?= htmlspecialchars($__testSource) ?>"
                                             data-test-type="biochemistry"
                                             data-result-id="<?= $resultId ?>"
                                             data-parameter="<?= htmlspecialchars($paramName) ?>"
@@ -167,7 +178,7 @@
                     <table class="examination-history-table">
                         <thead>
                             <tr>
-                                <th class="sticky-col">Referenční zdroj</th>
+                                <th class="sticky-col">Referenční meze</th>
                                 <th class="sticky-col-2">Parametr</th>
                                 <?php foreach ($hematoTests as $test): ?>
                                     <th colspan="2" class="date-header">
@@ -175,19 +186,28 @@
                                         <?php if (!empty($test['test_location'])): ?>
                                             <br><span class="test-location"><?= htmlspecialchars($test['test_location']) ?></span>
                                         <?php endif; ?>
+                                        <?php
+                                        // Laboratoř přiřazená k tomuto odběru – řídí vyhodnocení
+                                        // celého sloupce; přepnutí platí jen pro zobrazení.
+                                        $__testSource = trim((string)($test['reference_source'] ?? ''));
+                                        ?>
+                                        <br><select class="test-source-select"
+                                                    data-test-key="<?= $test['key'] ?>"
+                                                    onchange="changeTestSource(this)"
+                                                    title="Laboratoř přiřazená k tomuto odběru – změna platí jen pro zobrazení">
+                                            <?php if ($__testSource === ''): ?>
+                                                <option value="" selected>— nezadáno —</option>
+                                            <?php endif; ?>
+                                            <?php foreach ($referenceSources as $source): ?>
+                                                <option value="<?= htmlspecialchars($source) ?>" <?= $source === $__testSource ? 'selected' : '' ?>><?= htmlspecialchars($source) ?></option>
+                                            <?php endforeach; ?>
+                                        </select>
                                     </th>
                                 <?php endforeach; ?>
                             </tr>
                             <tr>
                                 <th class="sticky-col header-select-cell">
-                                    <select id="hematoReferenceSourceSelect" class="reference-source-select-header" onchange="switchReferenceSource('hematology', this.value)">
-                                        <?php
-                                        $sources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
-                                        foreach ($sources as $source):
-                                        ?>
-                                            <option value="<?= $source ?>" <?= $source === 'Laboklin' ? 'selected' : '' ?>><?= $source ?></option>
-                                        <?php endforeach; ?>
-                                    </select>
+                                    <span class="ref-source-note">dle laboratoře odběru</span>
                                 </th>
                                 <th class="sticky-col-2"></th>
                                 <?php foreach ($hematoTests as $test): ?>
@@ -219,12 +239,14 @@
                                         $value = $result['value'] ?? null;
                                         $resultId = $result['id'] ?? null;
                                         $unit = $result['unit'] ?? '';
+                                        // Zdroj se musí načíst i tady – hlavička je samostatný cyklus.
+                                        $__testSource = trim((string)($test['reference_source'] ?? ''));
                                         ?>
                                         <td class="value-col editable-cell"
                                             data-test-key="<?= $test['key'] ?>"
                                             data-value="<?= $value ?>"
                                             data-species="<?= htmlspecialchars($animal['species']) ?>"
-                                            data-source="Laboklin"
+                                            data-source="<?= htmlspecialchars($__testSource) ?>"
                                             data-test-type="hematology"
                                             data-result-id="<?= $resultId ?>"
                                             data-parameter="<?= htmlspecialchars($paramName) ?>"
@@ -497,36 +519,46 @@ th.sticky-col-2 {
     font-size: 13px;
 }
 
-/* Header select dropdown */
+/* Hlavička sloupce s mezemi */
 .header-select-cell {
     padding: 6px 8px !important;
 }
 
-.reference-source-select-header {
-    width: 100%;
-    padding: 6px 8px;
+.ref-source-note {
+    font-size: 11px;
+    font-weight: 500;
+    font-style: italic;
+    opacity: 0.85;
+}
+
+/* Výběr laboratoře v hlavičce konkrétního odběru (sloupce) */
+.test-source-select {
+    margin-top: 4px;
+    max-width: 100%;
+    padding: 2px 4px;
     border: none;
-    border-radius: 4px;
-    font-size: 13px;
+    border-radius: 3px;
+    font-size: 11px;
     font-weight: 600;
     background: white;
     color: #2c3e50;
     cursor: pointer;
-    transition: all 0.2s;
 }
 
-.reference-source-select-header option {
-    color: #2c3e50;
-    background: white;
+.test-source-select:focus {
+    outline: 2px solid #e6b0aa;
 }
 
-.reference-source-select-header:hover {
-    background: #f8f8f8;
+/* Meze se mezi laboratořemi liší -> vypisují se po zdrojích */
+.ref-line {
+    font-size: 11px;
+    line-height: 1.35;
+    white-space: nowrap;
 }
 
-.reference-source-select-header:focus {
-    outline: none;
-    background: #f8f8f8;
+.ref-line-source {
+    font-weight: 600;
+    color: #7f8c8d;
 }
 
 .reference-range-cell {
@@ -829,281 +861,182 @@ th.sticky-col-2 {
 </style>
 
 <script>
-// Cache for reference ranges
+// Cache referenčních mezí – klíč zahrnuje zdroj, protože každý odběr (sloupec)
+// se vyhodnocuje podle laboratoře, která k němu byla přiřazena při zadávání.
 let referenceRangesCache = {};
 
-async function loadEvaluations() {
-    const rows = document.querySelectorAll('.result-row');
+async function fetchReferenceRange(testType, parameter, species, source) {
+    if (!source) return null;
 
-    for (const row of rows) {
-        const parameter = row.dataset.parameter;
-        const valueCells = row.querySelectorAll('.value-col[data-value]');
+    const cacheKey = `${testType}-${parameter}-${species}-${source}`;
+    if (cacheKey in referenceRangesCache) {
+        return referenceRangesCache[cacheKey];
+    }
 
-        for (const valueCell of valueCells) {
-            const value = parseFloat(valueCell.dataset.value);
-            if (isNaN(value)) continue;
-
-            const species = valueCell.dataset.species;
-            const source = valueCell.dataset.source;
-            const testType = valueCell.dataset.testType;
-            const testKey = valueCell.dataset.testKey;
-
-            const cacheKey = `${testType}-${parameter}-${species}-${source}`;
-
-            let range;
-            if (referenceRangesCache[cacheKey]) {
-                range = referenceRangesCache[cacheKey];
-            } else {
-                try {
-                    const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${source}`);
-                    if (response.ok) {
-                        range = await response.json();
-                        referenceRangesCache[cacheKey] = range;
-                    } else {
-                        range = null;
-                    }
-                } catch (error) {
-                    console.error('Error fetching reference range:', error);
-                    range = null;
-                }
-            }
-
-            // Find corresponding evaluation cell
-            const evalCell = row.querySelector(`.evaluation[data-for="${testKey}"]`);
-
-            const hasMin = range && range.min_value !== null && range.min_value !== '';
-            const hasMax = range && range.max_value !== null && range.max_value !== '';
-            if (hasMin || hasMax) {
-                const min = parseFloat(range.min_value);
-                const max = parseFloat(range.max_value);
-
-                let status = 'normal';
-                let displayText = 'OK';
-
-                if (hasMin && value < min) {
-                    if (min !== 0) {
-                        status = 'low';
-                        displayText = `↓ ${((min - value) / Math.abs(min) * 100).toFixed(2)}%`;
-                    } else {
-                        status = 'high';
-                        displayText = 'MIMO MEZ';
-                    }
-                } else if (hasMax && value > max) {
-                    status = 'high';
-                    if (max !== 0) {
-                        displayText = `↑ ${((value - max) / Math.abs(max) * 100).toFixed(2)}%`;
-                    } else {
-                        displayText = 'MIMO MEZ';
-                    }
-                }
-
-                evalCell.textContent = displayText;
-                evalCell.className = 'eval-col evaluation ' + status + (displayText === 'MIMO MEZ' ? ' mimo' : '');
-                applyValueColor(evalCell, status);
-            } else {
-                evalCell.textContent = '-';
-                evalCell.className = 'eval-col evaluation';
-                applyValueColor(evalCell, null);
-            }
+    let range = null;
+    try {
+        const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${encodeURIComponent(source)}`);
+        if (response.ok) {
+            range = await response.json();
         }
+    } catch (error) {
+        console.error('Error fetching reference range:', error);
+    }
+
+    // Cachujeme i "nenalezeno" (null), ať se 404 nedotazuje znovu pro každou buňku.
+    referenceRangesCache[cacheKey] = range;
+    return range;
+}
+
+function formatRangeText(range) {
+    if (!range) return null;
+    const hasMin = range.min_value !== null && range.min_value !== '';
+    const hasMax = range.max_value !== null && range.max_value !== '';
+    if (hasMin && hasMax) return `${range.min_value} - ${range.max_value}`;
+    if (hasMin) return `> ${range.min_value}`;
+    if (hasMax) return `< ${range.max_value}`;
+    return null;
+}
+
+function evaluateAgainstRange(value, range) {
+    const hasMin = range && range.min_value !== null && range.min_value !== '';
+    const hasMax = range && range.max_value !== null && range.max_value !== '';
+    if (!hasMin && !hasMax) {
+        return { status: '', text: '-' };
+    }
+
+    const min = parseFloat(range.min_value);
+    const max = parseFloat(range.max_value);
+
+    if (hasMin && value < min) {
+        // Nulová mez by znamenala dělení nulou -> "MIMO MEZ".
+        return min !== 0
+            ? { status: 'low', text: `↓ ${((min - value) / Math.abs(min) * 100).toFixed(2)}%` }
+            : { status: 'high', text: 'MIMO MEZ' };
+    }
+    if (hasMax && value > max) {
+        return max !== 0
+            ? { status: 'high', text: `↑ ${((value - max) / Math.abs(max) * 100).toFixed(2)}%` }
+            : { status: 'high', text: 'MIMO MEZ' };
+    }
+    return { status: 'normal', text: 'OK' };
+}
+
+// Laboratoře použité ve sloupcích dané sekce (bez duplicit, v pořadí sloupců).
+function sectionSources(section) {
+    const sources = [];
+    section.querySelectorAll('.value-col[data-source]').forEach(cell => {
+        const source = cell.dataset.source;
+        if (source && !sources.includes(source)) sources.push(source);
+    });
+    return sources;
+}
+
+// Sloupec s mezemi: při jedné laboratoři jeden řádek, při více laboratořích
+// vypíšeme meze po zdrojích (nešlo by je jinak poctivě sloučit do jednoho čísla).
+async function refreshReferenceColumn(section) {
+    const testType = section.dataset.sectionType;
+    const species = section.querySelector('[data-species]')?.dataset.species;
+    const sources = sectionSources(section);
+
+    // Popisek sloupce: při jedné laboratoři rovnou její název.
+    const note = section.querySelector('.ref-source-note');
+    if (note) {
+        note.textContent = sources.length === 1 ? sources[0] : 'dle laboratoře odběru';
+    }
+
+    for (const cell of section.querySelectorAll('.reference-range-cell')) {
+        const parameter = cell.dataset.param;
+
+        const parts = [];
+        for (const source of sources) {
+            const text = formatRangeText(await fetchReferenceRange(testType, parameter, species, source));
+            parts.push({ source: source, text: text || '-' });
+        }
+
+        cell.textContent = '';
+        if (parts.length === 0) {
+            cell.textContent = '-';
+            continue;
+        }
+
+        const distinct = new Set(parts.map(p => p.text));
+        if (distinct.size === 1) {
+            cell.textContent = parts[0].text;
+            continue;
+        }
+
+        parts.forEach(part => {
+            const line = document.createElement('div');
+            line.className = 'ref-line';
+            const label = document.createElement('span');
+            label.className = 'ref-line-source';
+            label.textContent = part.source + ':';
+            line.appendChild(label);
+            line.appendChild(document.createTextNode(' ' + part.text));
+            cell.appendChild(line);
+        });
     }
 }
 
-// Switch reference source for all evaluations in a section
-async function switchReferenceSource(testType, newSource) {
-    // Find the section based on test type
-    const section = document.querySelector(`.section[data-section-type="${testType}"]`);
+async function renderCellEvaluation(valueCell) {
+    const row = valueCell.closest('tr');
+    const evalCell = row?.querySelector(`.evaluation[data-for="${valueCell.dataset.testKey}"]`);
+    if (!evalCell) return;
+
+    const value = parseFloat(valueCell.dataset.value);
+    if (isNaN(value)) {
+        evalCell.textContent = '-';
+        evalCell.className = 'eval-col evaluation';
+        applyValueColor(evalCell, null);
+        return;
+    }
+
+    const range = await fetchReferenceRange(
+        valueCell.dataset.testType,
+        valueCell.dataset.parameter,
+        valueCell.dataset.species,
+        valueCell.dataset.source
+    );
+    const result = evaluateAgainstRange(value, range);
+
+    evalCell.textContent = result.text;
+    evalCell.className = ('eval-col evaluation ' + result.status).trim() + (result.text === 'MIMO MEZ' ? ' mimo' : '');
+    applyValueColor(evalCell, result.status || null);
+}
+
+async function refreshEvaluations(scope) {
+    for (const valueCell of (scope || document).querySelectorAll('.value-col[data-value]')) {
+        await renderCellEvaluation(valueCell);
+    }
+}
+
+// Ruční přepnutí laboratoře u jednoho odběru (sloupce) – platí jen pro zobrazení,
+// v databázi zůstává zdroj přiřazený při zadávání.
+async function changeTestSource(select) {
+    const section = select.closest('.section');
     if (!section) return;
 
-    const species = document.querySelector('[data-species]')?.dataset.species;
-    if (!species) return;
-
-    // Update reference range cells
-    const refCells = section.querySelectorAll('.reference-range-cell');
-
-    for (const cell of refCells) {
-        const parameter = cell.dataset.param;
-        const cacheKey = `${testType}-${parameter}-${species}-${newSource}`;
-
-        let range;
-        if (referenceRangesCache[cacheKey]) {
-            range = referenceRangesCache[cacheKey];
-        } else {
-            try {
-                const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${newSource}`);
-                if (response.ok) {
-                    range = await response.json();
-                    referenceRangesCache[cacheKey] = range;
-                } else {
-                    range = null;
-                }
-            } catch (error) {
-                console.error('Error fetching reference range:', error);
-                range = null;
-            }
-        }
-
-        let referenceText = '-';
-        if (range && range.min_value !== null && range.max_value !== null) {
-            referenceText = range.min_value + ' - ' + range.max_value;
-        } else if (range && range.min_value !== null) {
-            referenceText = '> ' + range.min_value;
-        } else if (range && range.max_value !== null) {
-            referenceText = '< ' + range.max_value;
-        }
-
-        cell.textContent = referenceText;
-    }
-
-    // Update all value cells to use the new reference source
-    const valueCells = section.querySelectorAll('.value-col[data-test-type]');
-    valueCells.forEach(cell => {
-        cell.dataset.source = newSource;
+    const testKey = select.dataset.testKey;
+    section.querySelectorAll(`.value-col[data-test-key="${testKey}"]`).forEach(cell => {
+        cell.dataset.source = select.value;
     });
 
-    // Reload evaluations with new source
-    loadEvaluationsForSection(section, testType);
+    await refreshReferenceColumn(section);
+    await refreshEvaluations(section);
 }
 
-async function loadEvaluationsForSection(section, testType) {
-    const rows = section.querySelectorAll('.result-row');
-
-    for (const row of rows) {
-        const parameter = row.dataset.parameter;
-        const valueCells = row.querySelectorAll('.value-col[data-value]');
-
-        for (const valueCell of valueCells) {
-            const value = parseFloat(valueCell.dataset.value);
-            if (isNaN(value)) continue;
-
-            const species = valueCell.dataset.species;
-            const source = valueCell.dataset.source;
-            const testKey = valueCell.dataset.testKey;
-
-            const cacheKey = `${testType}-${parameter}-${species}-${source}`;
-
-            let range;
-            if (referenceRangesCache[cacheKey]) {
-                range = referenceRangesCache[cacheKey];
-            } else {
-                try {
-                    const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${source}`);
-                    if (response.ok) {
-                        range = await response.json();
-                        referenceRangesCache[cacheKey] = range;
-                    } else {
-                        range = null;
-                    }
-                } catch (error) {
-                    console.error('Error fetching reference range:', error);
-                    range = null;
-                }
-            }
-
-            // Find corresponding evaluation cell
-            const evalCell = row.querySelector(`.evaluation[data-for="${testKey}"]`);
-
-            const hasMin = range && range.min_value !== null && range.min_value !== '';
-            const hasMax = range && range.max_value !== null && range.max_value !== '';
-            if (hasMin || hasMax) {
-                const min = parseFloat(range.min_value);
-                const max = parseFloat(range.max_value);
-
-                let status = 'normal';
-                let displayText = 'OK';
-
-                if (hasMin && value < min) {
-                    if (min !== 0) {
-                        status = 'low';
-                        displayText = `↓ ${((min - value) / Math.abs(min) * 100).toFixed(2)}%`;
-                    } else {
-                        status = 'high';
-                        displayText = 'MIMO MEZ';
-                    }
-                } else if (hasMax && value > max) {
-                    status = 'high';
-                    if (max !== 0) {
-                        displayText = `↑ ${((value - max) / Math.abs(max) * 100).toFixed(2)}%`;
-                    } else {
-                        displayText = 'MIMO MEZ';
-                    }
-                }
-
-                evalCell.textContent = displayText;
-                evalCell.className = 'eval-col evaluation ' + status + (displayText === 'MIMO MEZ' ? ' mimo' : '');
-                applyValueColor(evalCell, status);
-            } else {
-                evalCell.textContent = '-';
-                evalCell.className = 'eval-col evaluation';
-                applyValueColor(evalCell, null);
-            }
-        }
-    }
+// Po úpravě hodnoty stačí přepočítat jednu buňku (meze se nemění).
+async function updateSingleCellEvaluation(cell) {
+    await renderCellEvaluation(cell);
 }
 
-// Load evaluations and reference ranges on page load
 document.addEventListener('DOMContentLoaded', function() {
-    loadEvaluations();
-    // Load initial reference ranges for both sections
-    loadInitialReferenceRanges();
+    document.querySelectorAll('.section[data-section-type]').forEach(async section => {
+        await refreshReferenceColumn(section);
+        await refreshEvaluations(section);
+    });
 });
-
-async function loadInitialReferenceRanges() {
-    const species = document.querySelector('[data-species]')?.dataset.species;
-    if (!species) return;
-
-    // Load biochemistry reference ranges
-    const biochemSection = document.querySelector('.section[data-section-type="biochemistry"]');
-    if (biochemSection) {
-        const biochemSource = document.getElementById('biochemReferenceSourceSelect')?.value || 'Laboklin';
-        await loadReferenceRangesForSection(biochemSection, 'biochemistry', biochemSource, species);
-    }
-
-    // Load hematology reference ranges
-    const hematoSection = document.querySelector('.section[data-section-type="hematology"]');
-    if (hematoSection) {
-        const hematoSource = document.getElementById('hematoReferenceSourceSelect')?.value || 'Laboklin';
-        await loadReferenceRangesForSection(hematoSection, 'hematology', hematoSource, species);
-    }
-}
-
-async function loadReferenceRangesForSection(section, testType, source, species) {
-    const refCells = section.querySelectorAll('.reference-range-cell');
-
-    for (const cell of refCells) {
-        const parameter = cell.dataset.param;
-        const cacheKey = `${testType}-${parameter}-${species}-${source}`;
-
-        let range;
-        if (referenceRangesCache[cacheKey]) {
-            range = referenceRangesCache[cacheKey];
-        } else {
-            try {
-                const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${source}`);
-                if (response.ok) {
-                    range = await response.json();
-                    referenceRangesCache[cacheKey] = range;
-                } else {
-                    range = null;
-                }
-            } catch (error) {
-                console.error('Error fetching reference range:', error);
-                range = null;
-            }
-        }
-
-        let referenceText = '-';
-        if (range && range.min_value !== null && range.max_value !== null) {
-            referenceText = range.min_value + ' - ' + range.max_value;
-        } else if (range && range.min_value !== null) {
-            referenceText = '> ' + range.min_value;
-        } else if (range && range.max_value !== null) {
-            referenceText = '< ' + range.max_value;
-        }
-
-        cell.textContent = referenceText;
-    }
-}
 
 // Graph Modal Functions
 function openGraphModal() {
@@ -1327,69 +1260,6 @@ async function saveEdit(event) {
     } catch (error) {
         console.error('Error:', error);
         alert('Chyba při ukládání hodnoty');
-    }
-}
-
-async function updateSingleCellEvaluation(cell) {
-    const parameter = cell.dataset.parameter;
-    const value = parseFloat(cell.dataset.value);
-    const species = cell.dataset.species;
-    const source = cell.dataset.source;
-    const testType = cell.dataset.testType;
-    const testKey = cell.dataset.testKey;
-
-    if (isNaN(value)) return;
-
-    const cacheKey = `${testType}-${parameter}-${species}-${source}`;
-
-    let range;
-    if (referenceRangesCache[cacheKey]) {
-        range = referenceRangesCache[cacheKey];
-    } else {
-        try {
-            const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${source}`);
-            if (response.ok) {
-                range = await response.json();
-                referenceRangesCache[cacheKey] = range;
-            } else {
-                range = null;
-            }
-        } catch (error) {
-            console.error('Error fetching reference range:', error);
-            range = null;
-        }
-    }
-
-    // Find the row containing this cell
-    const row = cell.closest('tr');
-    const evalCell = row.querySelector(`.evaluation[data-for="${testKey}"]`);
-
-    const hasMin = range && range.min_value !== null && range.min_value !== '';
-    const hasMax = range && range.max_value !== null && range.max_value !== '';
-    if (hasMin || hasMax) {
-        const min = parseFloat(range.min_value);
-        const max = parseFloat(range.max_value);
-
-        let status = 'normal';
-        let displayText = 'OK';
-
-        if (hasMin && value < min) {
-            status = 'low';
-            const pct = min !== 0 ? ((min - value) / Math.abs(min) * 100).toFixed(2) : null;
-            displayText = pct !== null ? `↓ ${pct}%` : '↓';
-        } else if (hasMax && value > max) {
-            status = 'high';
-            const pct = max !== 0 ? ((value - max) / Math.abs(max) * 100).toFixed(2) : null;
-            displayText = pct !== null ? `↑ ${pct}%` : '↑';
-        }
-
-        evalCell.textContent = displayText;
-        evalCell.className = 'eval-col evaluation ' + status + (displayText === 'MIMO MEZ' ? ' mimo' : '');
-        applyValueColor(evalCell, status);
-    } else {
-        evalCell.textContent = '-';
-        evalCell.className = 'eval-col evaluation';
-        applyValueColor(evalCell, null);
     }
 }
 

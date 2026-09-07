@@ -215,8 +215,13 @@ class BiochemistryController {
             }
         }
 
-        // Get available reference sources
-        $referenceSources = ['Laboklin', 'Idexx', 'Synlab', 'ZIMS'];
+        // Nabídka laboratoří pro případnou ruční změnu u konkrétního odběru.
+        // Vyhodnocuje se ale primárně dle laboratoře uložené u testu, proto do
+        // seznamu doplníme i zdroje reálně použité u těchto odběrů.
+        $referenceSources = labReferenceSources(array_merge(
+            array_column($biochemTests, 'reference_source'),
+            array_column($hematoTests, 'reference_source')
+        ));
 
         // Kanonický seznam parametrů je jediný zdroj pravdy pro nabídku v modálu.
         $labParam = new LabParameter();
@@ -466,6 +471,12 @@ class BiochemistryController {
             $test['key'] = 'hemato_' . $test['id'];
         }
 
+        // Nabídka laboratoří pro ruční přepnutí u konkrétního sloupce (odběru).
+        $referenceSources = labReferenceSources(array_merge(
+            array_column($biochemTests, 'reference_source'),
+            array_column($hematoTests, 'reference_source')
+        ));
+
         View::render('biochemistry/comprehensive_table', [
             'layout' => 'main',
             'title' => 'Kompletní tabulka - ' . $animal['name'],
@@ -473,7 +484,8 @@ class BiochemistryController {
             'biochemTests' => $biochemTests,
             'hematoTests' => $hematoTests,
             'allParameters' => $allParameters,
-            'testResults' => $testResults
+            'testResults' => $testResults,
+            'referenceSources' => $referenceSources
         ]);
     }
 
@@ -506,7 +518,17 @@ class BiochemistryController {
 
         // Get table type from query params
         $tableType = $_GET['table'] ?? 'both';
-        $referenceSource = $_GET['source'] ?? 'Laboklin';
+
+        // Vyhodnocuje se dle laboratoře uložené u odběru. Přes ?src[<klic testu>]=<laborator>
+        // lze zdroj přepnout u konkrétního odběru (jen pro zobrazení/tisk, do DB se nezapisuje).
+        $sourceOverrides = [];
+        if (isset($_GET['src']) && is_array($_GET['src'])) {
+            foreach ($_GET['src'] as $testKey => $source) {
+                if (is_string($testKey) && is_string($source) && $source !== '') {
+                    $sourceOverrides[$testKey] = $source;
+                }
+            }
+        }
 
         $db = Database::getInstance()->getConnection();
 
@@ -527,6 +549,16 @@ class BiochemistryController {
             $stmtBiochem->execute([$animalId]);
             $biochemTests = $stmtBiochem->fetchAll(PDO::FETCH_ASSOC);
 
+            foreach ($biochemTests as &$__t) {
+                $__t['key'] = 'biochem_' . $__t['id'];
+                // Uloženou laboratoř si necháme, ať jde v UI poznat skutečné přepnutí.
+                $__t['stored_source'] = $__t['reference_source'];
+                if (isset($sourceOverrides[$__t['key']])) {
+                    $__t['reference_source'] = $sourceOverrides[$__t['key']];
+                }
+            }
+            unset($__t);
+
             // Get unique biochemistry parameters (řazeno dle pořadí v číselníku)
             $stmtBiochemParams = $db->prepare("
                 SELECT br.parameter_name, MIN(br.unit) AS unit,
@@ -546,19 +578,17 @@ class BiochemistryController {
                     'type' => 'biochemistry',
                     'unit' => $param['unit']
                 ];
-
-                // Get reference range for this parameter
-                $stmtRef = $db->prepare("
-                    SELECT min_value, max_value
-                    FROM reference_ranges
-                    WHERE test_type = 'biochemistry' AND parameter_name = ? AND species = ? AND source = ?
-                ");
-                $stmtRef->execute([$param['parameter_name'], $animal['species'], $referenceSource]);
-                $refRange = $stmtRef->fetch(PDO::FETCH_ASSOC);
-                if ($refRange) {
-                    $referenceRanges['biochemistry'][$param['parameter_name']] = $refRange;
-                }
             }
+
+            // Meze pro všechny laboratoře použité u zdejších odběrů – každý sloupec
+            // se vyhodnocuje podle své laboratoře, ne podle jednoho zdroje pro vše.
+            $referenceRanges['biochemistry'] = $this->loadReferenceRangesBySource(
+                $db,
+                'biochemistry',
+                $animal['species'],
+                array_column($biochemParams, 'parameter_name'),
+                array_column($biochemTests, 'reference_source')
+            );
 
             foreach ($biochemTests as &$test) {
                 $stmt = $db->prepare("
@@ -592,6 +622,16 @@ class BiochemistryController {
             $stmtHemato->execute([$animalId]);
             $hematoTests = $stmtHemato->fetchAll(PDO::FETCH_ASSOC);
 
+            foreach ($hematoTests as &$__t) {
+                $__t['key'] = 'hemato_' . $__t['id'];
+                // Uloženou laboratoř si necháme, ať jde v UI poznat skutečné přepnutí.
+                $__t['stored_source'] = $__t['reference_source'];
+                if (isset($sourceOverrides[$__t['key']])) {
+                    $__t['reference_source'] = $sourceOverrides[$__t['key']];
+                }
+            }
+            unset($__t);
+
             // Get unique hematology parameters (řazeno dle pořadí v číselníku)
             $stmtHematoParams = $db->prepare("
                 SELECT hr.parameter_name, MIN(hr.unit) AS unit,
@@ -611,19 +651,15 @@ class BiochemistryController {
                     'type' => 'hematology',
                     'unit' => $param['unit']
                 ];
-
-                // Get reference range for this parameter
-                $stmtRef = $db->prepare("
-                    SELECT min_value, max_value
-                    FROM reference_ranges
-                    WHERE test_type = 'hematology' AND parameter_name = ? AND species = ? AND source = ?
-                ");
-                $stmtRef->execute([$param['parameter_name'], $animal['species'], $referenceSource]);
-                $refRange = $stmtRef->fetch(PDO::FETCH_ASSOC);
-                if ($refRange) {
-                    $referenceRanges['hematology'][$param['parameter_name']] = $refRange;
-                }
             }
+
+            $referenceRanges['hematology'] = $this->loadReferenceRangesBySource(
+                $db,
+                'hematology',
+                $animal['species'],
+                array_column($hematoParams, 'parameter_name'),
+                array_column($hematoTests, 'reference_source')
+            );
 
             foreach ($hematoTests as &$test) {
                 $stmt = $db->prepare("
@@ -656,8 +692,51 @@ class BiochemistryController {
             'testResults' => $testResults,
             'referenceRanges' => $referenceRanges,
             'tableType' => $tableType,
-            'referenceSource' => $referenceSource
+            'referenceSources' => labReferenceSources(array_merge(
+                array_column($biochemTests, 'reference_source'),
+                array_column($hematoTests, 'reference_source')
+            ))
         ]);
+    }
+
+    /**
+     * Referenční meze pro sadu parametrů napříč všemi použitými laboratořemi.
+     * Vrací [parametr][laboratoř] => ['min_value' =>, 'max_value' =>], aby šel
+     * každý sloupec (odběr) vyhodnotit podle své vlastní laboratoře.
+     */
+    private function loadReferenceRangesBySource($db, $testType, $species, array $parameters, array $sources) {
+        // NULL reference_source je v datech možný, proto přetypovat před filtrem.
+        $notEmpty = function ($value) {
+            return trim((string)$value) !== '';
+        };
+        $parameters = array_values(array_unique(array_filter($parameters, $notEmpty)));
+        $sources = array_values(array_unique(array_filter(array_map(function ($s) {
+            return trim((string)$s);
+        }, $sources), $notEmpty)));
+        if (empty($parameters) || empty($sources)) {
+            return [];
+        }
+
+        $paramPlaceholders = implode(',', array_fill(0, count($parameters), '?'));
+        $sourcePlaceholders = implode(',', array_fill(0, count($sources), '?'));
+
+        $stmt = $db->prepare("
+            SELECT parameter_name, source, min_value, max_value
+            FROM reference_ranges
+            WHERE test_type = ? AND species = ?
+              AND parameter_name IN ($paramPlaceholders)
+              AND source IN ($sourcePlaceholders)
+        ");
+        $stmt->execute(array_merge([$testType, $species], $parameters, $sources));
+
+        $ranges = [];
+        foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
+            $ranges[$row['parameter_name']][$row['source']] = [
+                'min_value' => $row['min_value'],
+                'max_value' => $row['max_value']
+            ];
+        }
+        return $ranges;
     }
 
     public function referenceRanges() {

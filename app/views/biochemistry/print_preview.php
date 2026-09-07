@@ -12,14 +12,52 @@
         </select>
     </div>
 
+    <?php
+    // Vyhodnocuje se podle laboratoře uložené u odběru; tady lze zdroj přepnout
+    // u konkrétního odběru (jen pro tisk, do databáze se nic nezapisuje).
+    $__sourcePickerGroups = [];
+    if ($tableType === 'biochemistry' || $tableType === 'both') {
+        $__sourcePickerGroups['Biochemie'] = $biochemTests;
+    }
+    if ($tableType === 'hematology' || $tableType === 'both') {
+        $__sourcePickerGroups['Hematologie'] = $hematoTests;
+    }
+    ?>
     <div class="setting-group">
-        <label>Referenční zdroj:</label>
-        <select id="sourceSelect" onchange="updatePreview()">
-            <option value="Laboklin" <?= $referenceSource === 'Laboklin' ? 'selected' : '' ?>>Laboklin</option>
-            <option value="Idexx" <?= $referenceSource === 'Idexx' ? 'selected' : '' ?>>Idexx</option>
-            <option value="Synlab" <?= $referenceSource === 'Synlab' ? 'selected' : '' ?>>Synlab</option>
-            <option value="ZIMS" <?= $referenceSource === 'ZIMS' ? 'selected' : '' ?>>ZIMS</option>
-        </select>
+        <label>Referenční meze (laboratoř):</label>
+        <div class="source-picker-list">
+            <?php $__anySource = false; ?>
+            <?php foreach ($__sourcePickerGroups as $__groupLabel => $__groupTests): ?>
+                <?php if (empty($__groupTests)) continue; ?>
+                <?php $__anySource = true; ?>
+                <div class="source-picker-group"><?= htmlspecialchars($__groupLabel) ?></div>
+                <?php foreach ($__groupTests as $__t): ?>
+                    <?php $__tSource = trim((string)($__t['reference_source'] ?? '')); ?>
+                    <div class="source-picker-row">
+                        <span class="source-picker-date">
+                            <?= date('d.m.Y', strtotime($__t['test_date'])) ?>
+                            <?php if (!empty($__t['test_location'])): ?>
+                                <small><?= htmlspecialchars($__t['test_location']) ?></small>
+                            <?php endif; ?>
+                        </span>
+                        <select class="test-source-select"
+                                data-test-key="<?= htmlspecialchars($__t['key']) ?>"
+                                data-stored-source="<?= htmlspecialchars(trim((string)($__t['stored_source'] ?? ''))) ?>"
+                                onchange="updatePreview()">
+                            <?php if ($__tSource === ''): ?>
+                                <option value="" selected>— nezadáno —</option>
+                            <?php endif; ?>
+                            <?php foreach ($referenceSources as $__src): ?>
+                                <option value="<?= htmlspecialchars($__src) ?>" <?= $__src === $__tSource ? 'selected' : '' ?>><?= htmlspecialchars($__src) ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+                <?php endforeach; ?>
+            <?php endforeach; ?>
+            <?php if (!$__anySource): ?>
+                <div class="source-picker-empty">Žádné odběry k zobrazení.</div>
+            <?php endif; ?>
+        </div>
     </div>
 
     <div class="setting-group">
@@ -126,6 +164,32 @@
     if (empty($blocks)) { $blocks = [[]]; }
 
     foreach ($blocks as $__blockIdx => $allTests):
+        // Ke každému sloupci najdeme odpovídající odběr (datum + místo), ať se
+        // hledání neopakuje u každého řádku a známe laboratoře použité v bloku.
+        $colBiochemTest = [];
+        $colHematoTest = [];
+        foreach ($allTests as $__colIdx => $__col) {
+            foreach ($biochemTests as $__bt) {
+                if ($__bt['test_date'] === $__col['test_date'] && ($__bt['test_location'] ?? '') === ($__col['test_location'] ?? '')) {
+                    $colBiochemTest[$__colIdx] = $__bt;
+                    break;
+                }
+            }
+            foreach ($hematoTests as $__ht) {
+                if ($__ht['test_date'] === $__col['test_date'] && ($__ht['test_location'] ?? '') === ($__col['test_location'] ?? '')) {
+                    $colHematoTest[$__colIdx] = $__ht;
+                    break;
+                }
+            }
+        }
+
+        // Laboratoře použité v tomto bloku – rozhodují, jak se vypíše sloupec s mezemi.
+        $blockBiochemSources = labUsedSources($colBiochemTest);
+        $blockHematoSources = labUsedSources($colHematoTest);
+        $blockAllSources = array_values(array_unique(array_merge(
+            ($tableType === 'biochemistry' || $tableType === 'both') ? $blockBiochemSources : [],
+            ($tableType === 'hematology' || $tableType === 'both') ? $blockHematoSources : []
+        )));
     ?>
     <div class="print-page">
         <div class="print-animal-title" contenteditable="true" spellcheck="false" title="Klikněte a upravte (jméno + ID)"><?= htmlspecialchars(trim(strtoupper($animal['name'] ?? '') . (!empty($animal['identifier']) ? ' (' . $animal['identifier'] . ')' : ''))) ?><?php if (count($blocks) > 1): ?> <span class="print-part">— část <?= $__blockIdx + 1 ?>/<?= count($blocks) ?></span><?php endif; ?></div>
@@ -140,13 +204,23 @@
                 </tr>
                 <tr class="column-header">
                     <th class="param-col"></th>
-                    <th class="ref-col">Referenční meze<br><small>(<?= htmlspecialchars($referenceSource) ?>)</small></th>
+                    <th class="ref-col">Referenční meze<br><small>(<?= count($blockAllSources) === 1 ? htmlspecialchars($blockAllSources[0]) : 'dle laboratoře odběru' ?>)</small></th>
                     <th class="unit-col">Jednotky</th>
                     <?php foreach ($allTests as $colIdx => $test): ?>
+                        <?php
+                        // Laboratoř sloupce (u "obou tabulek" může být pro bioch. a hem. jiná).
+                        $__colSources = array_values(array_unique(array_filter([
+                            ($tableType === 'biochemistry' || $tableType === 'both') ? trim((string)($colBiochemTest[$colIdx]['reference_source'] ?? '')) : '',
+                            ($tableType === 'hematology' || $tableType === 'both') ? trim((string)($colHematoTest[$colIdx]['reference_source'] ?? '')) : ''
+                        ], 'strlen')));
+                        ?>
                         <th class="date-col">
                             <?= date('d.m.Y', strtotime($test['test_date'])) ?>
                             <?php if (!empty($test['test_location'])): ?>
                                 <br><small><?= htmlspecialchars($test['test_location']) ?></small>
+                            <?php endif; ?>
+                            <?php if (!empty($__colSources) && count($blockAllSources) > 1): ?>
+                                <br><small class="col-source"><?= htmlspecialchars(implode(' / ', $__colSources)) ?></small>
                             <?php endif; ?>
                         </th>
                         <th class="eval-col alt-col">vs. referenční<br>meze</th>
@@ -188,29 +262,20 @@
                             continue;
                         endif;
 
-                        $refRange = $referenceRanges['biochemistry'][$paramName] ?? null;
-                        $refText = '';
-                        if ($refRange && $refRange['min_value'] !== null && $refRange['max_value'] !== null) {
-                            $refText = $refRange['min_value'] . ' - ' . $refRange['max_value'];
-                        } elseif ($refRange && $refRange['min_value'] !== null) {
-                            $refText = '> ' . $refRange['min_value'];
-                        } elseif ($refRange && $refRange['max_value'] !== null) {
-                            $refText = '< ' . $refRange['max_value'];
-                        }
+                        $paramRanges = $referenceRanges['biochemistry'][$paramName] ?? [];
+                        $refText = labRefCellHtml($paramRanges, $blockBiochemSources);
                     ?>
                         <tr>
                             <td class="param-cell"><?= htmlspecialchars($paramName) ?></td>
                             <td class="ref-cell"><?= $refText ?></td>
                             <td class="unit-cell"><?= htmlspecialchars($paramInfo['unit']) ?></td>
                             <?php foreach ($allTests as $colIdx => $test):
-                                // Find the biochemistry test for this date
-                                $biochemTest = null;
-                                foreach ($biochemTests as $bt) {
-                                    if ($bt['test_date'] === $test['test_date'] && ($bt['test_location'] ?? '') === ($test['test_location'] ?? '')) {
-                                        $biochemTest = $bt;
-                                        break;
-                                    }
-                                }
+                                $biochemTest = $colBiochemTest[$colIdx] ?? null;
+
+                                // Meze podle laboratoře přiřazené tomuto odběru.
+                                $refRange = $biochemTest
+                                    ? ($paramRanges[trim((string)($biochemTest['reference_source'] ?? ''))] ?? null)
+                                    : null;
 
                                 $result = $biochemTest ? ($testResults[$biochemTest['key']][$paramName] ?? null) : null;
                                 $value = $result['value'] ?? null;
@@ -292,29 +357,20 @@
                     });
 
                     foreach ($hematoParams as $paramName => $paramInfo):
-                        $refRange = $referenceRanges['hematology'][$paramName] ?? null;
-                        $refText = '';
-                        if ($refRange && $refRange['min_value'] !== null && $refRange['max_value'] !== null) {
-                            $refText = $refRange['min_value'] . ' - ' . $refRange['max_value'];
-                        } elseif ($refRange && $refRange['min_value'] !== null) {
-                            $refText = '> ' . $refRange['min_value'];
-                        } elseif ($refRange && $refRange['max_value'] !== null) {
-                            $refText = '< ' . $refRange['max_value'];
-                        }
+                        $paramRanges = $referenceRanges['hematology'][$paramName] ?? [];
+                        $refText = labRefCellHtml($paramRanges, $blockHematoSources);
                     ?>
                         <tr>
                             <td class="param-cell"><?= htmlspecialchars($paramName) ?></td>
                             <td class="ref-cell"><?= $refText ?></td>
                             <td class="unit-cell"><?= htmlspecialchars($paramInfo['unit']) ?></td>
                             <?php foreach ($allTests as $colIdx => $test):
-                                // Find the hematology test for this date
-                                $hematoTest = null;
-                                foreach ($hematoTests as $ht) {
-                                    if ($ht['test_date'] === $test['test_date'] && ($ht['test_location'] ?? '') === ($test['test_location'] ?? '')) {
-                                        $hematoTest = $ht;
-                                        break;
-                                    }
-                                }
+                                $hematoTest = $colHematoTest[$colIdx] ?? null;
+
+                                // Meze podle laboratoře přiřazené tomuto odběru.
+                                $refRange = $hematoTest
+                                    ? ($paramRanges[trim((string)($hematoTest['reference_source'] ?? ''))] ?? null)
+                                    : null;
 
                                 $result = $hematoTest ? ($testResults[$hematoTest['key']][$paramName] ?? null) : null;
                                 $value = $result['value'] ?? null;
@@ -440,6 +496,62 @@ body {
     font-size: 12px;
     background: #34495e;
     color: white;
+}
+
+/* Výběr laboratoře po jednotlivých odběrech (vyhodnocení běží podle ní) */
+.source-picker-list {
+    max-height: 220px;
+    overflow-y: auto;
+    background: #34495e;
+    border-radius: 4px;
+    padding: 6px 8px;
+}
+
+.source-picker-group {
+    font-size: 11px;
+    font-weight: 700;
+    color: #92d050;
+    margin: 6px 0 4px;
+}
+
+.source-picker-group:first-child {
+    margin-top: 0;
+}
+
+.source-picker-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    margin-bottom: 4px;
+}
+
+.source-picker-date {
+    font-size: 11px;
+    color: #ecf0f1;
+    white-space: nowrap;
+}
+
+.source-picker-date small {
+    display: block;
+    color: #bdc3c7;
+    font-size: 10px;
+}
+
+.source-picker-list .test-source-select {
+    width: auto;
+    max-width: 110px;
+    padding: 3px 4px;
+    border: none;
+    border-radius: 3px;
+    font-size: 11px;
+    background: #2c3e50;
+    color: white;
+}
+
+.source-picker-empty {
+    font-size: 11px;
+    color: #bdc3c7;
 }
 
 .button-group {
@@ -669,6 +781,21 @@ body {
     color: #333;
 }
 
+/* Meze se mezi laboratořemi liší -> vypisují se po zdrojích, každý na svůj řádek */
+.ref-cell .ref-line {
+    display: block;
+    white-space: nowrap;
+}
+
+.ref-cell .ref-line-source {
+    font-weight: 700;
+    color: #555;
+}
+
+.column-header .col-source {
+    font-weight: 600;
+}
+
 .unit-cell {
     text-align: center;
     font-size: 7px;
@@ -834,10 +961,22 @@ const SETTINGS_KEY = 'biochemPrintSetup';
 
 function updatePreview() {
     const table = document.getElementById('tableSelect').value;
-    const source = document.getElementById('sourceSelect').value;
     const perPageEl = document.getElementById('perPageSelect');
     const perPage = perPageEl ? perPageEl.value : 10;
-    window.location.href = `/biochemistry/animal/${animalId}/print?table=${table}&source=${source}&per_page=${perPage}`;
+
+    const params = new URLSearchParams();
+    params.set('table', table);
+    params.set('per_page', perPage);
+
+    // V URL veze jen skutečné přepnutí oproti laboratoři uložené u odběru
+    // (do databáze se nic nezapisuje).
+    document.querySelectorAll('.test-source-select[data-test-key]').forEach(select => {
+        if (select.value && select.value !== (select.dataset.storedSource || '')) {
+            params.set(`src[${select.dataset.testKey}]`, select.value);
+        }
+    });
+
+    window.location.href = `/biochemistry/animal/${animalId}/print?${params.toString()}`;
 }
 
 function updateFontSize() {

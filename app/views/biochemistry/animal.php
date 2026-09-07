@@ -41,15 +41,12 @@
         <?php endif; ?>
     </div>
 
-    <!-- Reference Source Selector -->
+    <!-- Vyhodnocení běží podle laboratoře uložené u konkrétního odběru
+         (viz výběr v hlavičce každé karty), ne podle jednoho zdroje pro vše. -->
     <div class="reference-selector">
-        <div style="display: flex; align-items: center; gap: 15px;">
-            <label for="referenceSource">Referenční zdroj:</label>
-            <select id="referenceSource" class="form-control" onchange="updateReferenceRanges()">
-                <?php foreach ($referenceSources as $source): ?>
-                    <option value="<?= $source ?>"><?= $source ?></option>
-                <?php endforeach; ?>
-            </select>
+        <div class="reference-hint">
+            Výsledky se vyhodnocují podle referenčních mezí laboratoře přiřazené u daného odběru.
+            Zdroj lze dočasně přepnout v hlavičce konkrétního odběru.
         </div>
         <a href="/biochemistry/animal/<?= $animal['id'] ?>/comprehensive-table" class="btn btn-outline">
             Zobrazit kompletní tabulku
@@ -77,8 +74,20 @@
                                 | <strong>Záznam vytvořil:</strong> <?= htmlspecialchars($test['created_by_name']) ?>
                             <?php endif; ?>
                         </div>
-                        <div>
-                            <span class="badge badge-source"><?= htmlspecialchars($test['reference_source']) ?></span>
+                        <div class="test-source-picker">
+                            <label>Referenční meze:</label>
+                            <?php $__testSource = trim((string)($test['reference_source'] ?? '')); ?>
+                            <select class="test-source-select" onchange="changeTestSource(this)"
+                                    title="Laboratoř přiřazená k tomuto odběru – změna platí jen pro zobrazení">
+                                <?php if ($__testSource === ''): ?>
+                                    <option value="" selected>— nezadáno —</option>
+                                <?php endif; ?>
+                                <?php foreach ($referenceSources as $source): ?>
+                                    <option value="<?= htmlspecialchars($source) ?>" <?= $source === $__testSource ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($source) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
 
@@ -113,6 +122,7 @@
                                         data-parameter="<?= htmlspecialchars($result['parameter_name']) ?>"
                                         data-value="<?= $result['value'] ?>"
                                         data-species="<?= htmlspecialchars($animal['species']) ?>"
+                                        data-source="<?= htmlspecialchars($__testSource) ?>"
                                         data-test-type="biochemistry"
                                         data-result-id="<?= $result['id'] ?>"
                                         data-test-id="<?= $test['id'] ?>"
@@ -162,8 +172,20 @@
                                 | <strong>Záznam vytvořil:</strong> <?= htmlspecialchars($test['created_by_name']) ?>
                             <?php endif; ?>
                         </div>
-                        <div>
-                            <span class="badge badge-source"><?= htmlspecialchars($test['reference_source']) ?></span>
+                        <div class="test-source-picker">
+                            <label>Referenční meze:</label>
+                            <?php $__testSource = trim((string)($test['reference_source'] ?? '')); ?>
+                            <select class="test-source-select" onchange="changeTestSource(this)"
+                                    title="Laboratoř přiřazená k tomuto odběru – změna platí jen pro zobrazení">
+                                <?php if ($__testSource === ''): ?>
+                                    <option value="" selected>— nezadáno —</option>
+                                <?php endif; ?>
+                                <?php foreach ($referenceSources as $source): ?>
+                                    <option value="<?= htmlspecialchars($source) ?>" <?= $source === $__testSource ? 'selected' : '' ?>>
+                                        <?= htmlspecialchars($source) ?>
+                                    </option>
+                                <?php endforeach; ?>
+                            </select>
                         </div>
                     </div>
 
@@ -198,6 +220,7 @@
                                         data-parameter="<?= htmlspecialchars($result['parameter_name']) ?>"
                                         data-value="<?= $result['value'] ?>"
                                         data-species="<?= htmlspecialchars($animal['species']) ?>"
+                                        data-source="<?= htmlspecialchars($__testSource) ?>"
                                         data-test-type="hematology"
                                         data-result-id="<?= $result['id'] ?>"
                                         data-test-id="<?= $test['id'] ?>"
@@ -328,8 +351,41 @@
     margin: 0;
 }
 
-.reference-selector select {
-    max-width: 250px;
+.reference-hint {
+    color: #5d6d7e;
+    font-size: 14px;
+    line-height: 1.5;
+    max-width: 640px;
+}
+
+/* Výběr laboratoře v hlavičce karty odběru – vzhledově navazuje na dřívější badge. */
+.test-source-picker {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+}
+
+.test-source-picker label {
+    font-size: 13px;
+    font-weight: 600;
+    color: #7f8c8d;
+    margin: 0;
+}
+
+.test-source-select {
+    background: #c0392b;
+    color: white;
+    border: 1px solid #a93226;
+    padding: 5px 10px;
+    border-radius: 4px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+}
+
+.test-source-select:focus {
+    outline: 2px solid #e6b0aa;
 }
 
 .btn-outline {
@@ -384,15 +440,6 @@
     border-radius: 6px;
     margin-bottom: 15px;
     font-size: 14px;
-}
-
-.badge-source {
-    background: #c0392b;
-    color: white;
-    padding: 6px 12px;
-    border-radius: 4px;
-    font-size: 13px;
-    font-weight: 600;
 }
 
 .results-table-wrapper {
@@ -575,80 +622,109 @@
 </style>
 
 <script>
-// Cache for reference ranges to avoid multiple API calls
+// Cache referenčních mezí – klíč zahrnuje i zdroj, protože každý odběr může
+// mít vlastní laboratoř.
 let referenceRangesCache = {};
 
-async function updateReferenceRanges() {
-    const source = document.getElementById('referenceSource').value;
-    const rows = document.querySelectorAll('.result-row');
+async function fetchReferenceRange(testType, parameter, species, source) {
+    if (!source) return null;
 
-    for (const row of rows) {
-        const parameter = row.dataset.parameter;
-        const value = parseFloat(row.dataset.value);
-        const species = row.dataset.species;
-        const testType = row.dataset.testType;
-
-        const cacheKey = `${testType}-${parameter}-${species}-${source}`;
-
-        let range;
-        if (referenceRangesCache[cacheKey]) {
-            range = referenceRangesCache[cacheKey];
-        } else {
-            // Fetch reference range from API
-            try {
-                const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${source}`);
-                if (response.ok) {
-                    range = await response.json();
-                    referenceRangesCache[cacheKey] = range;
-                } else {
-                    range = null;
-                }
-            } catch (error) {
-                console.error('Error fetching reference range:', error);
-                range = null;
-            }
-        }
-
-        const rangeCell = row.querySelector('.reference-range');
-        const evalCell = row.querySelector('.evaluation');
-
-        const hasMin = range && range.min_value !== null && range.min_value !== '';
-        const hasMax = range && range.max_value !== null && range.max_value !== '';
-        if (hasMin || hasMax) {
-            const min = parseFloat(range.min_value);
-            const max = parseFloat(range.max_value);
-
-            // Text rozmezí – podporuje i otevřenou mez (> min / < max)
-            if (hasMin && hasMax) {
-                rangeCell.textContent = `${range.min_value} - ${range.max_value} ${range.unit}`;
-            } else if (hasMin) {
-                rangeCell.textContent = `> ${range.min_value} ${range.unit}`;
-            } else {
-                rangeCell.textContent = `< ${range.max_value} ${range.unit}`;
-            }
-
-            // Determine status
-            let status = 'normal';
-            let displayText = 'OK';
-
-            if (hasMin && value < min) {
-                status = 'low';
-                const pct = min !== 0 ? ((min - value) / Math.abs(min) * 100).toFixed(2) : null;
-                displayText = pct !== null ? `↓ ${pct}%` : '↓';
-            } else if (hasMax && value > max) {
-                status = 'high';
-                const pct = max !== 0 ? ((value - max) / Math.abs(max) * 100).toFixed(2) : null;
-                displayText = pct !== null ? `↑ ${pct}%` : '↑';
-            }
-
-            evalCell.textContent = displayText;
-            evalCell.className = `evaluation ${status}`;
-        } else {
-            rangeCell.textContent = 'Není k dispozici';
-            evalCell.textContent = '-';
-            evalCell.className = 'evaluation';
-        }
+    const cacheKey = `${testType}-${parameter}-${species}-${source}`;
+    if (cacheKey in referenceRangesCache) {
+        return referenceRangesCache[cacheKey];
     }
+
+    let range = null;
+    try {
+        const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${encodeURIComponent(source)}`);
+        if (response.ok) {
+            range = await response.json();
+        }
+    } catch (error) {
+        console.error('Error fetching reference range:', error);
+    }
+
+    // Cachujeme i "nenalezeno" (null), ať se 404 nedotazuje znovu pro každý řádek.
+    referenceRangesCache[cacheKey] = range;
+    return range;
+}
+
+// Vykreslí rozmezí + vyhodnocení do jednoho řádku podle předaných mezí.
+function renderRowEvaluation(row, range) {
+    const value = parseFloat(row.dataset.value);
+    const rangeCell = row.querySelector('.reference-range');
+    const evalCell = row.querySelector('.evaluation');
+
+    const hasMin = range && range.min_value !== null && range.min_value !== '';
+    const hasMax = range && range.max_value !== null && range.max_value !== '';
+
+    if (!hasMin && !hasMax) {
+        rangeCell.textContent = row.dataset.source ? 'Není k dispozici' : 'Zdroj nezadán';
+        evalCell.textContent = '-';
+        evalCell.className = 'evaluation';
+        return;
+    }
+
+    const min = parseFloat(range.min_value);
+    const max = parseFloat(range.max_value);
+
+    // Text rozmezí – podporuje i otevřenou mez (> min / < max)
+    if (hasMin && hasMax) {
+        rangeCell.textContent = `${range.min_value} - ${range.max_value} ${range.unit}`;
+    } else if (hasMin) {
+        rangeCell.textContent = `> ${range.min_value} ${range.unit}`;
+    } else {
+        rangeCell.textContent = `< ${range.max_value} ${range.unit}`;
+    }
+
+    let status = 'normal';
+    let displayText = 'OK';
+
+    if (isNaN(value)) {
+        displayText = '-';
+        status = '';
+    } else if (hasMin && value < min) {
+        status = 'low';
+        const pct = min !== 0 ? ((min - value) / Math.abs(min) * 100).toFixed(2) : null;
+        displayText = pct !== null ? `↓ ${pct}%` : '↓';
+    } else if (hasMax && value > max) {
+        status = 'high';
+        const pct = max !== 0 ? ((value - max) / Math.abs(max) * 100).toFixed(2) : null;
+        displayText = pct !== null ? `↑ ${pct}%` : '↑';
+    }
+
+    evalCell.textContent = displayText;
+    evalCell.className = `evaluation ${status}`.trim();
+}
+
+// Zdroj se bere z řádku (= laboratoř odběru), ne z jednoho výběru pro celou stránku.
+async function updateSingleRow(row) {
+    const range = await fetchReferenceRange(
+        row.dataset.testType,
+        row.dataset.parameter,
+        row.dataset.species,
+        row.dataset.source
+    );
+    renderRowEvaluation(row, range);
+}
+
+async function updateReferenceRanges(scope) {
+    const rows = (scope || document).querySelectorAll('.result-row');
+    for (const row of rows) {
+        await updateSingleRow(row);
+    }
+}
+
+// Ruční přepnutí laboratoře u konkrétního odběru – platí jen pro zobrazení
+// (v databázi zůstává zdroj přiřazený při zadávání).
+function changeTestSource(select) {
+    const card = select.closest('.test-card');
+    if (!card) return;
+
+    card.querySelectorAll('.result-row').forEach(row => {
+        row.dataset.source = select.value;
+    });
+    updateReferenceRanges(card);
 }
 
 // Load reference ranges on page load
@@ -742,67 +818,4 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-async function updateSingleRow(row) {
-    const source = document.getElementById('referenceSource').value;
-    const parameter = row.dataset.parameter;
-    const testType = row.dataset.testType;
-    const species = row.dataset.species;
-    const value = parseFloat(row.dataset.value);
-
-    const cacheKey = `${testType}-${parameter}-${species}-${source}`;
-
-    let range;
-    if (referenceRangesCache[cacheKey]) {
-        range = referenceRangesCache[cacheKey];
-    } else {
-        try {
-            const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${source}`);
-            if (response.ok) {
-                range = await response.json();
-                referenceRangesCache[cacheKey] = range;
-            }
-        } catch (error) {
-            console.error('Error fetching reference range:', error);
-        }
-    }
-
-    const rangeCell = row.querySelector('.reference-range');
-    const evalCell = row.querySelector('.evaluation');
-
-    const hasMin = range && range.min_value !== null && range.min_value !== '';
-    const hasMax = range && range.max_value !== null && range.max_value !== '';
-    if (hasMin || hasMax) {
-        const min = parseFloat(range.min_value);
-        const max = parseFloat(range.max_value);
-
-        // Text rozmezí – podporuje i otevřenou mez (> min / < max)
-        if (hasMin && hasMax) {
-            rangeCell.textContent = `${range.min_value} - ${range.max_value} ${range.unit}`;
-        } else if (hasMin) {
-            rangeCell.textContent = `> ${range.min_value} ${range.unit}`;
-        } else {
-            rangeCell.textContent = `< ${range.max_value} ${range.unit}`;
-        }
-
-        let status = 'normal';
-        let displayText = 'OK';
-
-        if (hasMin && value < min) {
-            status = 'low';
-            const pct = min !== 0 ? ((min - value) / Math.abs(min) * 100).toFixed(2) : null;
-            displayText = pct !== null ? `↓ ${pct}%` : '↓';
-        } else if (hasMax && value > max) {
-            status = 'high';
-            const pct = max !== 0 ? ((value - max) / Math.abs(max) * 100).toFixed(2) : null;
-            displayText = pct !== null ? `↑ ${pct}%` : '↑';
-        }
-
-        evalCell.textContent = displayText;
-        evalCell.className = `evaluation ${status}`;
-    } else {
-        rangeCell.textContent = 'Není k dispozici';
-        evalCell.textContent = '-';
-        evalCell.className = 'evaluation';
-    }
-}
 </script>

@@ -391,3 +391,103 @@ function userCan($workplaceId, $section, $perm = 'view') {
     $userModel = new User();
     return $userModel->hasPermission(Auth::userId(), $workplaceId, $section, $perm);
 }
+
+/**
+ * Seznam laboratoří (referenčních zdrojů) pro nabídky v UI.
+ *
+ * Základ je číselník reference_sources; pokud tabulka ještě neexistuje nebo je
+ * prázdná, použije se výchozí čtveřice. $used doplní zdroje reálně přiřazené
+ * konkrétním odběrům, aby se z nabídky nikdy neztratil zdroj daného testu
+ * (např. laboratoř zavedená ručně mimo číselník).
+ */
+function labReferenceSources(array $used = []) {
+    static $catalog = null;
+    if ($catalog === null) {
+        try {
+            require_once __DIR__ . '/../core/Database.php';
+            $db = Database::getInstance()->getConnection();
+            $catalog = $db->query("SELECT source_name FROM reference_sources ORDER BY source_name ASC")
+                          ->fetchAll(PDO::FETCH_COLUMN);
+        } catch (Exception $e) {
+            $catalog = [];
+        }
+        if (empty($catalog)) {
+            $catalog = ['Idexx', 'Laboklin', 'Synlab', 'ZIMS'];
+        }
+    }
+
+    $all = $catalog;
+    foreach ($used as $source) {
+        $source = trim((string)$source);
+        if ($source !== '' && !in_array($source, $all, true)) {
+            $all[] = $source;
+        }
+    }
+    sort($all, SORT_NATURAL | SORT_FLAG_CASE);
+    return $all;
+}
+
+/**
+ * Laboratoře (referenční zdroje) použité v dané sadě odběrů – bez duplicit,
+ * v pořadí výskytu.
+ */
+function labUsedSources(array $tests) {
+    $sources = [];
+    foreach ($tests as $test) {
+        $source = trim((string)($test['reference_source'] ?? ''));
+        if ($source !== '' && !in_array($source, $sources, true)) {
+            $sources[] = $source;
+        }
+    }
+    return $sources;
+}
+
+/**
+ * Textový zápis jedněch referenčních mezí (podporuje i otevřenou mez).
+ */
+function labRefRangeText($range) {
+    if (!$range) {
+        return '';
+    }
+    $hasMin = isset($range['min_value']) && $range['min_value'] !== null && $range['min_value'] !== '';
+    $hasMax = isset($range['max_value']) && $range['max_value'] !== null && $range['max_value'] !== '';
+    if ($hasMin && $hasMax) {
+        return $range['min_value'] . ' - ' . $range['max_value'];
+    }
+    if ($hasMin) {
+        return '> ' . $range['min_value'];
+    }
+    if ($hasMax) {
+        return '< ' . $range['max_value'];
+    }
+    return '';
+}
+
+/**
+ * HTML buňky "Referenční meze" pro sloupec sdílený více odběry.
+ * Když všechny laboratoře dávají stejné meze, vypíše se jeden řádek; jinak se
+ * meze rozepíší po laboratořích (sloučit je do jednoho čísla by lhalo).
+ * Vrací hotové HTML – volající už neescapuje.
+ */
+function labRefCellHtml(array $rangesBySource, array $sources) {
+    $lines = [];
+    foreach ($sources as $source) {
+        $lines[$source] = labRefRangeText($rangesBySource[$source] ?? null);
+    }
+    if (empty($lines)) {
+        return '';
+    }
+
+    $distinct = array_unique(array_values($lines));
+    if (count($distinct) === 1) {
+        return htmlspecialchars(reset($distinct));
+    }
+
+    $html = '';
+    foreach ($lines as $source => $text) {
+        $html .= '<span class="ref-line"><span class="ref-line-source">'
+              . htmlspecialchars($source) . ':</span> '
+              . htmlspecialchars($text === '' ? '-' : $text) . '</span>';
+    }
+    return $html;
+}
