@@ -797,9 +797,6 @@ body {
     text-align: right;
     font-size: 7px;
     color: #333;
-    /* Výraznější šedá než u .alt-col (#f5f5f5), ať se sloupec s mezemi jasně
-       oddělí od hodnot. Text je #333, takže kontrast na tisku drží. */
-    background-color: #dcdcdc;
 }
 
 /* Meze se mezi laboratořemi liší -> vypisují se po zdrojích, každý na svůj řádek */
@@ -853,9 +850,10 @@ body {
 /* MIMO MEZ vypadá stejně jako procenta: černý text, světle červené pozadí. */
 .eval-cell.mimo { background-color: #ffd6da !important; color: #000 !important; }
 
-/* Alternate column colors for better readability */
+/* Sloupce "vs. referenční meze" – výrazná šedá, ať se jasně oddělí od hodnot.
+   Buňky mimo meze si pozadí přebijí (růžová/modrá výše, mají !important). */
 .alt-col {
-    background-color: #f5f5f5;
+    background-color: #dcdcdc;
 }
 
 /* Print styles */
@@ -961,12 +959,6 @@ body {
     }
 
     .alt-col {
-        background-color: #f5f5f5 !important;
-        -webkit-print-color-adjust: exact !important;
-        print-color-adjust: exact !important;
-    }
-
-    .ref-cell {
         background-color: #dcdcdc !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
