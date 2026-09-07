@@ -491,3 +491,13 @@ function labRefCellHtml(array $rangesBySource, array $sources) {
     }
     return $html;
 }
+
+/**
+ * Šipka odchylky do sloupce s vyhodnocením – dolů modře, nahoru červeně, tučně.
+ * Barvy odpovídají obarvení hodnoty ve vedlejším sloupci.
+ */
+function labEvalArrow($direction) {
+    return $direction === 'down'
+        ? '<span class="eval-arrow down">↓</span>'
+        : '<span class="eval-arrow up">↑</span>';
+}

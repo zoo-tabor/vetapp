@@ -318,7 +318,7 @@
                                             // Nulová mez by znamenala dělení nulou -> "MIMO MEZ" červeně.
                                             if ($min != 0) {
                                                 $percentage = ($min - $numValue) / $min * 100;
-                                                $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
+                                                $evalText = labEvalArrow('down') . ' ' . number_format($percentage, 2, ',', '') . '%';
                                                 $evalClass = 'deviation-low';
                                                 $valueClass = 'deviation-low';
                                             } else {
@@ -329,7 +329,7 @@
                                         } elseif ($numValue > $max) {
                                             if ($max != 0) {
                                                 $percentage = ($numValue - $max) / $max * 100;
-                                                $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
+                                                $evalText = labEvalArrow('up') . ' ' . number_format($percentage, 2, ',', '') . '%';
                                                 $evalClass = 'deviation-high';
                                             } else {
                                                 $evalText = 'MIMO MEZ';
@@ -341,11 +341,11 @@
                                             $evalClass = 'ok';
                                         }
                                     } elseif ($min !== null && $numValue < $min) {
-                                        $evalText = '↓';
+                                        $evalText = labEvalArrow('down');
                                         $evalClass = 'deviation-low';
                                         $valueClass = 'deviation-low';
                                     } elseif ($max !== null && $numValue > $max) {
-                                        $evalText = '↑';
+                                        $evalText = labEvalArrow('up');
                                         $evalClass = 'deviation-high';
                                         $valueClass = 'deviation-high';
                                     } else {
@@ -416,7 +416,7 @@
                                             // Nulová mez by znamenala dělení nulou -> "MIMO MEZ" červeně.
                                             if ($min != 0) {
                                                 $percentage = ($min - $numValue) / $min * 100;
-                                                $evalText = '↓ ' . number_format($percentage, 2, ',', '') . '%';
+                                                $evalText = labEvalArrow('down') . ' ' . number_format($percentage, 2, ',', '') . '%';
                                                 $evalClass = 'deviation-low';
                                                 $valueClass = 'deviation-low';
                                             } else {
@@ -427,7 +427,7 @@
                                         } elseif ($numValue > $max) {
                                             if ($max != 0) {
                                                 $percentage = ($numValue - $max) / $max * 100;
-                                                $evalText = '↑ ' . number_format($percentage, 2, ',', '') . '%';
+                                                $evalText = labEvalArrow('up') . ' ' . number_format($percentage, 2, ',', '') . '%';
                                                 $evalClass = 'deviation-high';
                                             } else {
                                                 $evalText = 'MIMO MEZ';
@@ -439,11 +439,11 @@
                                             $evalClass = 'ok';
                                         }
                                     } elseif ($min !== null && $numValue < $min) {
-                                        $evalText = '↓';
+                                        $evalText = labEvalArrow('down');
                                         $evalClass = 'deviation-low';
                                         $valueClass = 'deviation-low';
                                     } elseif ($max !== null && $numValue > $max) {
-                                        $evalText = '↑';
+                                        $evalText = labEvalArrow('up');
                                         $evalClass = 'deviation-high';
                                         $valueClass = 'deviation-high';
                                     } else {
@@ -852,6 +852,21 @@ body {
     font-size: 7px;
 }
 
+/* Šipka odchylky: dolů modře, nahoru červeně, tučně. Barvy sedí s obarvením
+   hodnoty ve vedlejším sloupci. Vlastní pravidlo na <span> přebije i barvu
+   nastavenou na buňce přes !important (dědičnost prohrává s přímým pravidlem). */
+.eval-cell .eval-arrow {
+    font-weight: bold;
+}
+
+.eval-cell .eval-arrow.up {
+    color: #c0392b;
+}
+
+.eval-cell .eval-arrow.down {
+    color: #2563eb;
+}
+
 /* Evaluation colors with background */
 .eval-cell.ok {
     color: #000;
@@ -981,6 +996,9 @@ body {
         print-color-adjust: exact !important;
     }
 
+    .eval-cell .eval-arrow.up { color: #c0392b !important; }
+    .eval-cell .eval-arrow.down { color: #2563eb !important; }
+
     .eval-cell.alt-col.deviation-high { background-color: #ffd6da !important; }
     .eval-cell.alt-col.deviation-low { background-color: #dbe9ff !important; }
 
@@ -1046,6 +1064,11 @@ let fontSizeTimer = null;
 // Držíme je proto na zlomku nastavené velikosti.
 const REF_MULTI_FONT_RATIO = 0.7;
 
+// "vs. referenční meze" je jen nadpis sloupce. Kdyby rostl s daty, roztáhne
+// sloupec na dvojnásobek toho, co potřebuje "↑ 42,50%" – a to 16x vedle sebe,
+// takže fit zoom pak celou tabulku pořádně zmenší. Držíme ho menší.
+const EVAL_HEADER_FONT_RATIO = 0.55;
+
 function updateFontSize() {
     const fontSize = clampNumber(readNumberInput('fontSizeInput', lastFontSize), 3, 40);
     lastFontSize = fontSize;
@@ -1070,6 +1093,9 @@ function updateFontSize() {
         css += '.print-table td.ref-cell, .print-table th.ref-col {' +
                'font-size: ' + refSize + 'px !important; }';
     }
+
+    css += '.print-table th.eval-col {' +
+           'font-size: ' + Math.max(3, Math.round(fontSize * EVAL_HEADER_FONT_RATIO * 10) / 10) + 'px !important; }';
 
     styleEl.textContent = css;
 
