@@ -156,6 +156,36 @@
     ksort($allTestsFull);
     $allTestsFull = array_values($allTestsFull);
 
+    // Ke každému sloupci najdeme odpovídající odběr (datum + místo) – jednou pro
+    // celý dokument, ne zvlášť pro každou stránku.
+    $colBiochemByKey = [];
+    $colHematoByKey = [];
+    foreach ($allTestsFull as $__col) {
+        $__key = $__col['test_date'] . '|' . ($__col['test_location'] ?? '');
+        foreach ($biochemTests as $__bt) {
+            if ($__bt['test_date'] === $__col['test_date'] && ($__bt['test_location'] ?? '') === ($__col['test_location'] ?? '')) {
+                $colBiochemByKey[$__key] = $__bt;
+                break;
+            }
+        }
+        foreach ($hematoTests as $__ht) {
+            if ($__ht['test_date'] === $__col['test_date'] && ($__ht['test_location'] ?? '') === ($__col['test_location'] ?? '')) {
+                $colHematoByKey[$__key] = $__ht;
+                break;
+            }
+        }
+    }
+
+    // Laboratoře za celý dokument – rozhodují, jak se vypíše sloupec s mezemi.
+    // Musí to být přes všechny stránky, jinak by stránka jen s jednou laboratoří
+    // vypadala jinak než stránka, kde se laboratoře míchají.
+    $docBiochemSources = labUsedSources($colBiochemByKey);
+    $docHematoSources = labUsedSources($colHematoByKey);
+    $docAllSources = array_values(array_unique(array_merge(
+        ($tableType === 'biochemistry' || $tableType === 'both') ? $docBiochemSources : [],
+        ($tableType === 'hematology' || $tableType === 'both') ? $docHematoSources : []
+    )));
+
     // Datumové sloupce rozdělíme po blocích na samostatné tiskové stránky, aby se
     // nic neslučovalo ani neusekávalo. Levé sloupce (parametr/meze/jednotky) se
     // opakují na každé stránce.
@@ -164,32 +194,13 @@
     if (empty($blocks)) { $blocks = [[]]; }
 
     foreach ($blocks as $__blockIdx => $allTests):
-        // Ke každému sloupci najdeme odpovídající odběr (datum + místo), ať se
-        // hledání neopakuje u každého řádku a známe laboratoře použité v bloku.
         $colBiochemTest = [];
         $colHematoTest = [];
         foreach ($allTests as $__colIdx => $__col) {
-            foreach ($biochemTests as $__bt) {
-                if ($__bt['test_date'] === $__col['test_date'] && ($__bt['test_location'] ?? '') === ($__col['test_location'] ?? '')) {
-                    $colBiochemTest[$__colIdx] = $__bt;
-                    break;
-                }
-            }
-            foreach ($hematoTests as $__ht) {
-                if ($__ht['test_date'] === $__col['test_date'] && ($__ht['test_location'] ?? '') === ($__col['test_location'] ?? '')) {
-                    $colHematoTest[$__colIdx] = $__ht;
-                    break;
-                }
-            }
+            $__key = $__col['test_date'] . '|' . ($__col['test_location'] ?? '');
+            if (isset($colBiochemByKey[$__key])) { $colBiochemTest[$__colIdx] = $colBiochemByKey[$__key]; }
+            if (isset($colHematoByKey[$__key])) { $colHematoTest[$__colIdx] = $colHematoByKey[$__key]; }
         }
-
-        // Laboratoře použité v tomto bloku – rozhodují, jak se vypíše sloupec s mezemi.
-        $blockBiochemSources = labUsedSources($colBiochemTest);
-        $blockHematoSources = labUsedSources($colHematoTest);
-        $blockAllSources = array_values(array_unique(array_merge(
-            ($tableType === 'biochemistry' || $tableType === 'both') ? $blockBiochemSources : [],
-            ($tableType === 'hematology' || $tableType === 'both') ? $blockHematoSources : []
-        )));
     ?>
     <div class="print-page">
         <div class="print-animal-title" contenteditable="true" spellcheck="false" title="Klikněte a upravte (jméno + ID)"><?= htmlspecialchars(trim(strtoupper($animal['name'] ?? '') . (!empty($animal['identifier']) ? ' (' . $animal['identifier'] . ')' : ''))) ?><?php if (count($blocks) > 1): ?> <span class="print-part">— část <?= $__blockIdx + 1 ?>/<?= count($blocks) ?></span><?php endif; ?></div>
@@ -204,7 +215,7 @@
                 </tr>
                 <tr class="column-header">
                     <th class="param-col"></th>
-                    <th class="ref-col">Referenční meze<br><small>(<?= count($blockAllSources) === 1 ? htmlspecialchars($blockAllSources[0]) : 'dle laboratoře odběru' ?>)</small></th>
+                    <th class="ref-col">Referenční meze<br><small>(<?= count($docAllSources) === 1 ? htmlspecialchars($docAllSources[0]) : 'dle laboratoře odběru' ?>)</small></th>
                     <th class="unit-col">Jednotky</th>
                     <?php foreach ($allTests as $colIdx => $test): ?>
                         <?php
@@ -219,7 +230,7 @@
                         // uvedená v hlavičce sloupce s mezemi). Když se kryje s místem
                         // odběru, povýšíme rovnou ten řádek – ať tam není dvakrát.
                         $__loc = trim((string)($test['test_location'] ?? ''));
-                        $__showColSource = !empty($__colSources) && count($blockAllSources) > 1;
+                        $__showColSource = !empty($__colSources) && count($docAllSources) > 1;
                         $__locIsSource = $__showColSource && $__loc !== '' && $__colSources === [$__loc];
                         ?>
                         <th class="date-col">
@@ -273,7 +284,7 @@
                         endif;
 
                         $paramRanges = $referenceRanges['biochemistry'][$paramName] ?? [];
-                        $refText = labRefCellHtml($paramRanges, $blockBiochemSources);
+                        $refText = labRefCellHtml($paramRanges, $docBiochemSources);
                     ?>
                         <tr>
                             <td class="param-cell"><?= htmlspecialchars($paramName) ?></td>
@@ -368,7 +379,7 @@
 
                     foreach ($hematoParams as $paramName => $paramInfo):
                         $paramRanges = $referenceRanges['hematology'][$paramName] ?? [];
-                        $refText = labRefCellHtml($paramRanges, $blockHematoSources);
+                        $refText = labRefCellHtml($paramRanges, $docHematoSources);
                     ?>
                         <tr>
                             <td class="param-cell"><?= htmlspecialchars($paramName) ?></td>
