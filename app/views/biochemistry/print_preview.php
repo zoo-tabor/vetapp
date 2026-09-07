@@ -1,4 +1,4 @@
-<?php $perPage = isset($_GET['per_page']) ? max(1, min(40, (int)$_GET['per_page'])) : 10; ?>
+<?php $perPage = isset($_GET['per_page']) ? max(1, min(60, (int)$_GET['per_page'])) : 10; ?>
 <!-- Print Settings Sidebar -->
 <div class="print-settings-sidebar">
     <h3>Nastavení tisku</h3>
@@ -102,22 +102,22 @@
 
     <div class="setting-group">
         <label>Velikost písma:</label>
-        <select id="fontSizeSelect" onchange="updateFontSize()">
-            <option value="7">7px - Extra malé</option>
-            <option value="8" selected>8px - Velmi malé</option>
-            <option value="9">9px - Malé</option>
-            <option value="10">10px - Střední</option>
-        </select>
+        <div class="scale-row">
+            <input type="number" id="fontSizeInput" min="3" max="40" step="0.5" value="8"
+                   oninput="updateFontSize()" onchange="updateFontSize()">
+            <span>px</span>
+        </div>
+        <small class="setting-hint">Libovolné číslo 3–40 (i desetinné, např. 8.5).</small>
     </div>
 
     <div class="setting-group">
         <label>Odběrů na stránku:</label>
-        <select id="perPageSelect" onchange="updatePreview()">
-            <?php foreach ([5, 8, 10, 12, 15, 20] as $pp): ?>
-                <option value="<?= $pp ?>" <?= $perPage === $pp ? 'selected' : '' ?>><?= $pp ?></option>
-            <?php endforeach; ?>
-        </select>
-        <small style="display:block;margin-top:6px;opacity:.7;">Datumy se rozdělí na víc stránek.</small>
+        <div class="scale-row">
+            <input type="number" id="perPageInput" min="1" max="60" step="1" value="<?= $perPage ?>"
+                   onchange="updatePreview()">
+            <span>ks</span>
+        </div>
+        <small class="setting-hint">Libovolné číslo 1–60; datumy se rozdělí na víc stránek.</small>
     </div>
 
     <div class="page-total" id="pageTotal"></div>
@@ -159,7 +159,7 @@
     // Datumové sloupce rozdělíme po blocích na samostatné tiskové stránky, aby se
     // nic neslučovalo ani neusekávalo. Levé sloupce (parametr/meze/jednotky) se
     // opakují na každé stránce.
-    $perPage = isset($_GET['per_page']) ? max(1, min(40, (int)$_GET['per_page'])) : 10;
+    $perPage = isset($_GET['per_page']) ? max(1, min(60, (int)$_GET['per_page'])) : 10;
     $blocks = array_chunk($allTestsFull, $perPage);
     if (empty($blocks)) { $blocks = [[]]; }
 
@@ -650,6 +650,14 @@ body {
     color: #bdc3c7;
 }
 
+.setting-hint {
+    display: block;
+    margin-top: 6px;
+    font-size: 11px;
+    color: #bdc3c7;
+    opacity: .8;
+}
+
 .page-total {
     margin-top: 18px;
     padding-top: 12px;
@@ -959,10 +967,27 @@ const PAPER_MM = { A4: [210, 297], A3: [297, 420] };
 const PX_PER_MM = 96 / 25.4;          // CSS px na milimetr (1in = 96px = 25,4 mm)
 const SETTINGS_KEY = 'biochemPrintSetup';
 
+// Volné číselné pole: prázdné/nesmyslné zůstane na záložní hodnotě, čárka projde
+// jako desetinná tečka (prohlížeč ji u type=number podle locale vrátit může i nemusí).
+function readNumberInput(id, fallback) {
+    const el = document.getElementById(id);
+    if (!el) return fallback;
+    const raw = String(el.value == null ? '' : el.value).trim().replace(',', '.');
+    const value = parseFloat(raw);
+    return isFinite(value) ? value : fallback;
+}
+
+function clampNumber(value, min, max) {
+    return Math.min(max, Math.max(min, value));
+}
+
 function updatePreview() {
     const table = document.getElementById('tableSelect').value;
-    const perPageEl = document.getElementById('perPageSelect');
-    const perPage = perPageEl ? perPageEl.value : 10;
+    const perPage = Math.round(clampNumber(readNumberInput('perPageInput', 10), 1, 60));
+
+    // Vyčištěnou hodnotu vrátíme do pole, ať uživatel vidí, s čím se opravdu tiskne.
+    const perPageEl = document.getElementById('perPageInput');
+    if (perPageEl) perPageEl.value = perPage;
 
     const params = new URLSearchParams();
     params.set('table', table);
@@ -979,20 +1004,30 @@ function updatePreview() {
     window.location.href = `/biochemistry/animal/${animalId}/print?${params.toString()}`;
 }
 
+let lastFontSize = 8;
+let fontSizeTimer = null;
+
 function updateFontSize() {
-    const fontSize = parseInt(document.getElementById('fontSizeSelect').value, 10);
+    const fontSize = clampNumber(readNumberInput('fontSizeInput', lastFontSize), 3, 40);
+    lastFontSize = fontSize;
+
     let styleEl = document.getElementById('fontSizeOverride');
     if (!styleEl) {
         styleEl = document.createElement('style');
         styleEl.id = 'fontSizeOverride';
         document.head.appendChild(styleEl);
     }
-    // Přepíšeme pevné px velikosti v jednotlivých buňkách, jinak by select nic nedělal.
+    // Přepíšeme pevné px velikosti v jednotlivých buňkách, jinak by pole nic nedělalo.
     styleEl.textContent =
         '.print-table, .print-table td, .print-table th,' +
         '.param-cell, .ref-cell, .unit-cell, .value-cell, .eval-cell {' +
         'font-size: ' + fontSize + 'px !important; }';
-    requestAnimationFrame(applyPageSetup);
+
+    // Přepočet měřítka je drahý – při psaní do pole ho necháme doběhnout až po pauze.
+    clearTimeout(fontSizeTimer);
+    fontSizeTimer = setTimeout(function () {
+        requestAnimationFrame(applyPageSetup);
+    }, 200);
 }
 
 // Aktuální nastavení stránky (formát, orientace, okraje) + odvozená tisknutelná plocha.
@@ -1154,7 +1189,7 @@ function saveSetup() {
             margin: document.getElementById('marginSelect').value,
             scaleMode: document.getElementById('scaleModeSelect').value,
             scaleValue: document.getElementById('scaleValue').value,
-            fontSize: document.getElementById('fontSizeSelect').value
+            fontSize: document.getElementById('fontSizeInput').value
         }));
     } catch (e) { /* privátní režim apod. – jen se nic nezapamatuje */ }
 }
@@ -1165,7 +1200,7 @@ function loadSetup() {
     if (!saved) return;
     const map = {
         paper: 'paperSelect', orient: 'orientSelect', margin: 'marginSelect',
-        scaleMode: 'scaleModeSelect', scaleValue: 'scaleValue', fontSize: 'fontSizeSelect'
+        scaleMode: 'scaleModeSelect', scaleValue: 'scaleValue', fontSize: 'fontSizeInput'
     };
     Object.keys(map).forEach(function (k) {
         const el = document.getElementById(map[k]);
