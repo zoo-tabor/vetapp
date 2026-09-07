@@ -507,10 +507,12 @@ th.sticky-col-2 {
     text-align: center;
 }
 
+/* Místo odběru v hlavičce sloupce – hlavička má tmavě červené pozadí, takže
+   drobná šedá byla nečitelná; čte se stejně jako datum nad ním. */
 .test-location {
-    font-size: 10px;
-    font-weight: normal;
-    color: #7f8c8d;
+    font-size: 15px;
+    font-weight: bold;
+    color: #FFFFFF;
     display: block;
 }
 
