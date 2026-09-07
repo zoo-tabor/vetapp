@@ -285,10 +285,13 @@
 
                         $paramRanges = $referenceRanges['biochemistry'][$paramName] ?? [];
                         $refText = labRefCellHtml($paramRanges, $docBiochemSources);
+                        // Meze rozepsané po laboratořích = víc řádků; takové buňky
+                        // nezvětšujeme s nastavenou velikostí písma (viz updateFontSize).
+                        $refMulti = strpos($refText, 'ref-line') !== false;
                     ?>
                         <tr>
                             <td class="param-cell"><?= htmlspecialchars($paramName) ?></td>
-                            <td class="ref-cell"><?= $refText ?></td>
+                            <td class="ref-cell<?= $refMulti ? ' ref-cell-multi' : '' ?>"><?= $refText ?></td>
                             <td class="unit-cell"><?= htmlspecialchars($paramInfo['unit']) ?></td>
                             <?php foreach ($allTests as $colIdx => $test):
                                 $biochemTest = $colBiochemTest[$colIdx] ?? null;
@@ -380,10 +383,13 @@
                     foreach ($hematoParams as $paramName => $paramInfo):
                         $paramRanges = $referenceRanges['hematology'][$paramName] ?? [];
                         $refText = labRefCellHtml($paramRanges, $docHematoSources);
+                        // Meze rozepsané po laboratořích = víc řádků; takové buňky
+                        // nezvětšujeme s nastavenou velikostí písma (viz updateFontSize).
+                        $refMulti = strpos($refText, 'ref-line') !== false;
                     ?>
                         <tr>
                             <td class="param-cell"><?= htmlspecialchars($paramName) ?></td>
-                            <td class="ref-cell"><?= $refText ?></td>
+                            <td class="ref-cell<?= $refMulti ? ' ref-cell-multi' : '' ?>"><?= $refText ?></td>
                             <td class="unit-cell"><?= htmlspecialchars($paramInfo['unit']) ?></td>
                             <?php foreach ($allTests as $colIdx => $test):
                                 $hematoTest = $colHematoTest[$colIdx] ?? null;
@@ -864,7 +870,7 @@ body {
 /* Sloupce "vs. referenční meze" – výrazná šedá, ať se jasně oddělí od hodnot.
    Buňky mimo meze si pozadí přebijí (růžová/modrá výše, mají !important). */
 .alt-col {
-    background-color: #dcdcdc;
+    background-color: #ebebeb;
 }
 
 /* Print styles */
@@ -970,7 +976,7 @@ body {
     }
 
     .alt-col {
-        background-color: #dcdcdc !important;
+        background-color: #ebebeb !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
@@ -1034,6 +1040,12 @@ function updatePreview() {
 let lastFontSize = 8;
 let fontSizeTimer = null;
 
+// Meze rozepsané po laboratořích ("Laboklin: 0.00 - 1650.00" na dvou řádcích) jsou
+// zdaleka nejširší buňka v řádku. Kdyby rostly s nastavenou velikostí, sloupec se
+// roztáhne, fit zoom pak zmenší celou tabulku a výsledky vyjdou menší, ne větší.
+// Držíme je proto na zlomku nastavené velikosti.
+const REF_MULTI_FONT_RATIO = 0.7;
+
 function updateFontSize() {
     const fontSize = clampNumber(readNumberInput('fontSizeInput', lastFontSize), 3, 40);
     lastFontSize = fontSize;
@@ -1044,11 +1056,22 @@ function updateFontSize() {
         styleEl.id = 'fontSizeOverride';
         document.head.appendChild(styleEl);
     }
+
     // Přepíšeme pevné px velikosti v jednotlivých buňkách, jinak by pole nic nedělalo.
-    styleEl.textContent =
+    let css =
         '.print-table, .print-table td, .print-table th,' +
         '.param-cell, .ref-cell, .unit-cell, .value-cell, .eval-cell {' +
         'font-size: ' + fontSize + 'px !important; }';
+
+    // Hlavičku sloupce zmenšujeme spolu s buňkami – jinak by šířku sloupce
+    // určoval nápis "Referenční meze" a zmenšení buněk by nic nepřineslo.
+    if (document.querySelector('.ref-cell-multi')) {
+        const refSize = Math.max(3, Math.round(fontSize * REF_MULTI_FONT_RATIO * 10) / 10);
+        css += '.print-table td.ref-cell, .print-table th.ref-col {' +
+               'font-size: ' + refSize + 'px !important; }';
+    }
+
+    styleEl.textContent = css;
 
     // Přepočet měřítka je drahý – při psaní do pole ho necháme doběhnout až po pauze.
     clearTimeout(fontSizeTimer);
