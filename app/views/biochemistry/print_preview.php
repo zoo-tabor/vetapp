@@ -214,13 +214,23 @@
                             ($tableType === 'hematology' || $tableType === 'both') ? trim((string)($colHematoTest[$colIdx]['reference_source'] ?? '')) : ''
                         ], 'strlen')));
                         ?>
+                        <?php
+                        // Laboratoř vypisujeme jen když se sloupce liší (jinak je
+                        // uvedená v hlavičce sloupce s mezemi). Když se kryje s místem
+                        // odběru, povýšíme rovnou ten řádek – ať tam není dvakrát.
+                        $__loc = trim((string)($test['test_location'] ?? ''));
+                        $__showColSource = !empty($__colSources) && count($blockAllSources) > 1;
+                        $__locIsSource = $__showColSource && $__loc !== '' && $__colSources === [$__loc];
+                        ?>
                         <th class="date-col">
                             <?= date('d.m.Y', strtotime($test['test_date'])) ?>
-                            <?php if (!empty($test['test_location'])): ?>
-                                <br><small><?= htmlspecialchars($test['test_location']) ?></small>
+                            <?php if ($__locIsSource): ?>
+                                <span class="col-source"><?= htmlspecialchars($__loc) ?></span>
+                            <?php elseif ($__loc !== ''): ?>
+                                <br><small><?= htmlspecialchars($__loc) ?></small>
                             <?php endif; ?>
-                            <?php if (!empty($__colSources) && count($blockAllSources) > 1): ?>
-                                <br><small class="col-source"><?= htmlspecialchars(implode(' / ', $__colSources)) ?></small>
+                            <?php if ($__showColSource && !$__locIsSource): ?>
+                                <span class="col-source"><?= htmlspecialchars(implode(' / ', $__colSources)) ?></span>
                             <?php endif; ?>
                         </th>
                         <th class="eval-col alt-col">vs. referenční<br>meze</th>
@@ -800,8 +810,13 @@ body {
     color: #555;
 }
 
+/* Laboratoř sloupce – čte se stejně velká jako datum (ne <small>), na vlastním
+   řádku a v případě potřeby se zalomí do šířky sloupce. */
 .column-header .col-source {
+    display: block;
     font-weight: 600;
+    white-space: normal;
+    overflow-wrap: anywhere;
 }
 
 .unit-cell {
