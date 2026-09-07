@@ -797,6 +797,9 @@ body {
     text-align: right;
     font-size: 7px;
     color: #333;
+    /* Výraznější šedá než u .alt-col (#f5f5f5), ať se sloupec s mezemi jasně
+       oddělí od hodnot. Text je #333, takže kontrast na tisku drží. */
+    background-color: #dcdcdc;
 }
 
 /* Meze se mezi laboratořemi liší -> vypisují se po zdrojích, každý na svůj řádek */
@@ -959,6 +962,12 @@ body {
 
     .alt-col {
         background-color: #f5f5f5 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+    }
+
+    .ref-cell {
+        background-color: #dcdcdc !important;
         -webkit-print-color-adjust: exact !important;
         print-color-adjust: exact !important;
     }
