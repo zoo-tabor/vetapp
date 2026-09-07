@@ -622,31 +622,18 @@
 </style>
 
 <script>
-// Cache referenčních mezí – klíč zahrnuje i zdroj, protože každý odběr může
-// mít vlastní laboratoř.
-let referenceRangesCache = {};
+// Meze pro všechny parametry a všechny nabízené laboratoře posílá rovnou server
+// (dřív se tahaly po jedné přes /api/reference-ranges – desítky sériových requestů).
+// Tvar: referenceRanges[typ testu][parametr][laboratoř] = {min_value, max_value, unit}
+const referenceRanges = <?= json_encode($referenceRanges ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
 
-async function fetchReferenceRange(testType, parameter, species, source) {
+function getReferenceRange(testType, parameter, source) {
     if (!source) return null;
-
-    const cacheKey = `${testType}-${parameter}-${species}-${source}`;
-    if (cacheKey in referenceRangesCache) {
-        return referenceRangesCache[cacheKey];
-    }
-
-    let range = null;
-    try {
-        const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${encodeURIComponent(source)}`);
-        if (response.ok) {
-            range = await response.json();
-        }
-    } catch (error) {
-        console.error('Error fetching reference range:', error);
-    }
-
-    // Cachujeme i "nenalezeno" (null), ať se 404 nedotazuje znovu pro každý řádek.
-    referenceRangesCache[cacheKey] = range;
-    return range;
+    const byParam = referenceRanges[testType];
+    if (!byParam) return null;
+    const bySource = byParam[parameter];
+    if (!bySource) return null;
+    return bySource[source] || null;
 }
 
 // Vykreslí rozmezí + vyhodnocení do jednoho řádku podle předaných mezí.
@@ -698,21 +685,16 @@ function renderRowEvaluation(row, range) {
 }
 
 // Zdroj se bere z řádku (= laboratoř odběru), ne z jednoho výběru pro celou stránku.
-async function updateSingleRow(row) {
-    const range = await fetchReferenceRange(
+function updateSingleRow(row) {
+    renderRowEvaluation(row, getReferenceRange(
         row.dataset.testType,
         row.dataset.parameter,
-        row.dataset.species,
         row.dataset.source
-    );
-    renderRowEvaluation(row, range);
+    ));
 }
 
-async function updateReferenceRanges(scope) {
-    const rows = (scope || document).querySelectorAll('.result-row');
-    for (const row of rows) {
-        await updateSingleRow(row);
-    }
+function updateReferenceRanges(scope) {
+    (scope || document).querySelectorAll('.result-row').forEach(updateSingleRow);
 }
 
 // Ruční přepnutí laboratoře u konkrétního odběru – platí jen pro zobrazení
@@ -788,7 +770,7 @@ async function saveEdit() {
             valueCell.textContent = newValue.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 
             // Refresh reference range and evaluation
-            await updateSingleRow(currentEditRow);
+            updateSingleRow(currentEditRow);
 
             closeEditModal();
         } else {

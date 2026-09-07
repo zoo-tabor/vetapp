@@ -861,31 +861,18 @@ th.sticky-col-2 {
 </style>
 
 <script>
-// Cache referenčních mezí – klíč zahrnuje zdroj, protože každý odběr (sloupec)
-// se vyhodnocuje podle laboratoře, která k němu byla přiřazena při zadávání.
-let referenceRangesCache = {};
+// Meze pro všechny parametry a všechny nabízené laboratoře posílá rovnou server
+// (dřív se tahaly po jedné přes /api/reference-ranges – desítky sériových requestů).
+// Tvar: referenceRanges[typ testu][parametr][laboratoř] = {min_value, max_value, unit}
+const referenceRanges = <?= json_encode($referenceRanges ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
 
-async function fetchReferenceRange(testType, parameter, species, source) {
+function getReferenceRange(testType, parameter, source) {
     if (!source) return null;
-
-    const cacheKey = `${testType}-${parameter}-${species}-${source}`;
-    if (cacheKey in referenceRangesCache) {
-        return referenceRangesCache[cacheKey];
-    }
-
-    let range = null;
-    try {
-        const response = await fetch(`/api/reference-ranges?test_type=${testType}&parameter=${encodeURIComponent(parameter)}&species=${encodeURIComponent(species)}&source=${encodeURIComponent(source)}`);
-        if (response.ok) {
-            range = await response.json();
-        }
-    } catch (error) {
-        console.error('Error fetching reference range:', error);
-    }
-
-    // Cachujeme i "nenalezeno" (null), ať se 404 nedotazuje znovu pro každou buňku.
-    referenceRangesCache[cacheKey] = range;
-    return range;
+    const byParam = referenceRanges[testType];
+    if (!byParam) return null;
+    const bySource = byParam[parameter];
+    if (!bySource) return null;
+    return bySource[source] || null;
 }
 
 function formatRangeText(range) {
@@ -934,9 +921,8 @@ function sectionSources(section) {
 
 // Sloupec s mezemi: při jedné laboratoři jeden řádek, při více laboratořích
 // vypíšeme meze po zdrojích (nešlo by je jinak poctivě sloučit do jednoho čísla).
-async function refreshReferenceColumn(section) {
+function refreshReferenceColumn(section) {
     const testType = section.dataset.sectionType;
-    const species = section.querySelector('[data-species]')?.dataset.species;
     const sources = sectionSources(section);
 
     // Popisek sloupce: při jedné laboratoři rovnou její název.
@@ -948,11 +934,10 @@ async function refreshReferenceColumn(section) {
     for (const cell of section.querySelectorAll('.reference-range-cell')) {
         const parameter = cell.dataset.param;
 
-        const parts = [];
-        for (const source of sources) {
-            const text = formatRangeText(await fetchReferenceRange(testType, parameter, species, source));
-            parts.push({ source: source, text: text || '-' });
-        }
+        const parts = sources.map(source => ({
+            source: source,
+            text: formatRangeText(getReferenceRange(testType, parameter, source)) || '-'
+        }));
 
         cell.textContent = '';
         if (parts.length === 0) {
@@ -979,7 +964,7 @@ async function refreshReferenceColumn(section) {
     }
 }
 
-async function renderCellEvaluation(valueCell) {
+function renderCellEvaluation(valueCell) {
     const row = valueCell.closest('tr');
     const evalCell = row?.querySelector(`.evaluation[data-for="${valueCell.dataset.testKey}"]`);
     if (!evalCell) return;
@@ -992,10 +977,9 @@ async function renderCellEvaluation(valueCell) {
         return;
     }
 
-    const range = await fetchReferenceRange(
+    const range = getReferenceRange(
         valueCell.dataset.testType,
         valueCell.dataset.parameter,
-        valueCell.dataset.species,
         valueCell.dataset.source
     );
     const result = evaluateAgainstRange(value, range);
@@ -1005,15 +989,13 @@ async function renderCellEvaluation(valueCell) {
     applyValueColor(evalCell, result.status || null);
 }
 
-async function refreshEvaluations(scope) {
-    for (const valueCell of (scope || document).querySelectorAll('.value-col[data-value]')) {
-        await renderCellEvaluation(valueCell);
-    }
+function refreshEvaluations(scope) {
+    (scope || document).querySelectorAll('.value-col[data-value]').forEach(renderCellEvaluation);
 }
 
 // Ruční přepnutí laboratoře u jednoho odběru (sloupce) – platí jen pro zobrazení,
 // v databázi zůstává zdroj přiřazený při zadávání.
-async function changeTestSource(select) {
+function changeTestSource(select) {
     const section = select.closest('.section');
     if (!section) return;
 
@@ -1022,19 +1004,19 @@ async function changeTestSource(select) {
         cell.dataset.source = select.value;
     });
 
-    await refreshReferenceColumn(section);
-    await refreshEvaluations(section);
+    refreshReferenceColumn(section);
+    refreshEvaluations(section);
 }
 
 // Po úpravě hodnoty stačí přepočítat jednu buňku (meze se nemění).
-async function updateSingleCellEvaluation(cell) {
-    await renderCellEvaluation(cell);
+function updateSingleCellEvaluation(cell) {
+    renderCellEvaluation(cell);
 }
 
 document.addEventListener('DOMContentLoaded', function() {
-    document.querySelectorAll('.section[data-section-type]').forEach(async section => {
-        await refreshReferenceColumn(section);
-        await refreshEvaluations(section);
+    document.querySelectorAll('.section[data-section-type]').forEach(section => {
+        refreshReferenceColumn(section);
+        refreshEvaluations(section);
     });
 });
 
@@ -1249,7 +1231,7 @@ async function saveEdit(event) {
                 });
 
                 // Refresh the evaluation for this cell
-                await updateSingleCellEvaluation(window.currentEditCell);
+                updateSingleCellEvaluation(window.currentEditCell);
             }
 
             closeEditModal();

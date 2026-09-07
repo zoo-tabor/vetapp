@@ -223,6 +223,29 @@ class BiochemistryController {
             array_column($hematoTests, 'reference_source')
         ));
 
+        // Všechny meze dopředu (2 dotazy), jinak by si je stránka tahala po jedné
+        // přes /api/reference-ranges = desítky sériových requestů na jedno načtení.
+        // Načítáme pro všechny nabízené laboratoře, aby bylo přepnutí odběru okamžité.
+        $collectParams = function ($tests) {
+            $names = [];
+            foreach ($tests as $test) {
+                foreach ($test['results'] ?? [] as $result) {
+                    $names[] = $result['parameter_name'];
+                }
+            }
+            return $names;
+        };
+        $referenceRanges = [
+            'biochemistry' => $this->loadReferenceRangesBySource(
+                $db, 'biochemistry', $animal['species'],
+                $collectParams($biochemTests), $referenceSources
+            ),
+            'hematology' => $this->loadReferenceRangesBySource(
+                $db, 'hematology', $animal['species'],
+                $collectParams($hematoTests), $referenceSources
+            )
+        ];
+
         // Kanonický seznam parametrů je jediný zdroj pravdy pro nabídku v modálu.
         $labParam = new LabParameter();
 
@@ -233,6 +256,7 @@ class BiochemistryController {
             'biochemTests' => $biochemTests,
             'hematoTests' => $hematoTests,
             'referenceSources' => $referenceSources,
+            'referenceRanges' => $referenceRanges,
             'biochemParamList' => $labParam->all('biochemistry'),
             'hematoParamList' => $labParam->all('hematology'),
             'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry', 'edit')
@@ -431,44 +455,53 @@ class BiochemistryController {
         // Get results for each test
         $testResults = [];
 
+        // Výsledky všech odběrů jedním dotazem (dřív se ptalo zvlášť na každý odběr).
         foreach ($biochemTests as &$test) {
-            $stmt = $db->prepare("
-                SELECT id, parameter_name, value, unit
-                FROM biochemistry_results
-                WHERE test_id = ?
-            ");
-            $stmt->execute([$test['id']]);
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $test['key'] = 'biochem_' . $test['id'];
+            $testResults[$test['key']] = [];
+        }
+        unset($test);
 
-            $testResults['biochem_' . $test['id']] = [];
-            foreach ($results as $result) {
-                $testResults['biochem_' . $test['id']][$result['parameter_name']] = [
+        if (!empty($biochemTests)) {
+            $biochemIds = array_column($biochemTests, 'id');
+            $biochemPlaceholders = implode(',', array_fill(0, count($biochemIds), '?'));
+            $stmt = $db->prepare("
+                SELECT test_id, id, parameter_name, value, unit
+                FROM biochemistry_results
+                WHERE test_id IN ($biochemPlaceholders)
+            ");
+            $stmt->execute($biochemIds);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $result) {
+                $testResults['biochem_' . $result['test_id']][$result['parameter_name']] = [
                     'value' => $result['value'],
                     'id' => $result['id'],
                     'unit' => $result['unit']
                 ];
             }
-            $test['key'] = 'biochem_' . $test['id'];
         }
 
         foreach ($hematoTests as &$test) {
-            $stmt = $db->prepare("
-                SELECT id, parameter_name, value, unit
-                FROM hematology_results
-                WHERE test_id = ?
-            ");
-            $stmt->execute([$test['id']]);
-            $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            $test['key'] = 'hemato_' . $test['id'];
+            $testResults[$test['key']] = [];
+        }
+        unset($test);
 
-            $testResults['hemato_' . $test['id']] = [];
-            foreach ($results as $result) {
-                $testResults['hemato_' . $test['id']][$result['parameter_name']] = [
+        if (!empty($hematoTests)) {
+            $hematoIds = array_column($hematoTests, 'id');
+            $hematoPlaceholders = implode(',', array_fill(0, count($hematoIds), '?'));
+            $stmt = $db->prepare("
+                SELECT test_id, id, parameter_name, value, unit
+                FROM hematology_results
+                WHERE test_id IN ($hematoPlaceholders)
+            ");
+            $stmt->execute($hematoIds);
+            foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $result) {
+                $testResults['hemato_' . $result['test_id']][$result['parameter_name']] = [
                     'value' => $result['value'],
                     'id' => $result['id'],
                     'unit' => $result['unit']
                 ];
             }
-            $test['key'] = 'hemato_' . $test['id'];
         }
 
         // Nabídka laboratoří pro ruční přepnutí u konkrétního sloupce (odběru).
@@ -476,6 +509,20 @@ class BiochemistryController {
             array_column($biochemTests, 'reference_source'),
             array_column($hematoTests, 'reference_source')
         ));
+
+        // Všechny meze dopředu (2 dotazy), jinak by si je stránka tahala po jedné
+        // přes /api/reference-ranges = desítky sériových requestů na jedno načtení.
+        // Načítáme pro všechny nabízené laboratoře, aby bylo přepnutí sloupce okamžité.
+        $referenceRanges = [
+            'biochemistry' => $this->loadReferenceRangesBySource(
+                $db, 'biochemistry', $animal['species'],
+                array_column($biochemParams, 'parameter_name'), $referenceSources
+            ),
+            'hematology' => $this->loadReferenceRangesBySource(
+                $db, 'hematology', $animal['species'],
+                array_column($hematoParams, 'parameter_name'), $referenceSources
+            )
+        ];
 
         View::render('biochemistry/comprehensive_table', [
             'layout' => 'main',
@@ -485,7 +532,8 @@ class BiochemistryController {
             'hematoTests' => $hematoTests,
             'allParameters' => $allParameters,
             'testResults' => $testResults,
-            'referenceSources' => $referenceSources
+            'referenceSources' => $referenceSources,
+            'referenceRanges' => $referenceRanges
         ]);
     }
 
@@ -590,24 +638,29 @@ class BiochemistryController {
                 array_column($biochemTests, 'reference_source')
             );
 
+            // Výsledky všech odběrů jedním dotazem (dřív se ptalo zvlášť na každý odběr).
             foreach ($biochemTests as &$test) {
-                $stmt = $db->prepare("
-                    SELECT id, parameter_name, value, unit
-                    FROM biochemistry_results
-                    WHERE test_id = ?
-                ");
-                $stmt->execute([$test['id']]);
-                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $test['key'] = 'biochem_' . $test['id'];
+                $testResults[$test['key']] = [];
+            }
+            unset($test);
 
-                $testResults['biochem_' . $test['id']] = [];
-                foreach ($results as $result) {
-                    $testResults['biochem_' . $test['id']][$result['parameter_name']] = [
+            if (!empty($biochemTests)) {
+                $biochemIds = array_column($biochemTests, 'id');
+                $biochemPlaceholders = implode(',', array_fill(0, count($biochemIds), '?'));
+                $stmt = $db->prepare("
+                    SELECT test_id, id, parameter_name, value, unit
+                    FROM biochemistry_results
+                    WHERE test_id IN ($biochemPlaceholders)
+                ");
+                $stmt->execute($biochemIds);
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $result) {
+                    $testResults['biochem_' . $result['test_id']][$result['parameter_name']] = [
                         'value' => $result['value'],
                         'id' => $result['id'],
                         'unit' => $result['unit']
                     ];
                 }
-                $test['key'] = 'biochem_' . $test['id'];
             }
         }
 
@@ -662,23 +715,27 @@ class BiochemistryController {
             );
 
             foreach ($hematoTests as &$test) {
-                $stmt = $db->prepare("
-                    SELECT id, parameter_name, value, unit
-                    FROM hematology_results
-                    WHERE test_id = ?
-                ");
-                $stmt->execute([$test['id']]);
-                $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $test['key'] = 'hemato_' . $test['id'];
+                $testResults[$test['key']] = [];
+            }
+            unset($test);
 
-                $testResults['hemato_' . $test['id']] = [];
-                foreach ($results as $result) {
-                    $testResults['hemato_' . $test['id']][$result['parameter_name']] = [
+            if (!empty($hematoTests)) {
+                $hematoIds = array_column($hematoTests, 'id');
+                $hematoPlaceholders = implode(',', array_fill(0, count($hematoIds), '?'));
+                $stmt = $db->prepare("
+                    SELECT test_id, id, parameter_name, value, unit
+                    FROM hematology_results
+                    WHERE test_id IN ($hematoPlaceholders)
+                ");
+                $stmt->execute($hematoIds);
+                foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $result) {
+                    $testResults['hemato_' . $result['test_id']][$result['parameter_name']] = [
                         'value' => $result['value'],
                         'id' => $result['id'],
                         'unit' => $result['unit']
                     ];
                 }
-                $test['key'] = 'hemato_' . $test['id'];
             }
         }
 
@@ -721,7 +778,7 @@ class BiochemistryController {
         $sourcePlaceholders = implode(',', array_fill(0, count($sources), '?'));
 
         $stmt = $db->prepare("
-            SELECT parameter_name, source, min_value, max_value
+            SELECT parameter_name, source, min_value, max_value, unit
             FROM reference_ranges
             WHERE test_type = ? AND species = ?
               AND parameter_name IN ($paramPlaceholders)
@@ -733,7 +790,8 @@ class BiochemistryController {
         foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $row) {
             $ranges[$row['parameter_name']][$row['source']] = [
                 'min_value' => $row['min_value'],
-                'max_value' => $row['max_value']
+                'max_value' => $row['max_value'],
+                'unit' => $row['unit']
             ];
         }
         return $ranges;
