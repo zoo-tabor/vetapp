@@ -186,6 +186,16 @@
         ($tableType === 'hematology' || $tableType === 'both') ? $docHematoSources : []
     )));
 
+    // Když dokument míchá víc laboratoří, meze nedáváme do jedné víceřádkové buňky
+    // ("Laboklin: … / Idexx: …" bylo nečitelně nacpané), ale rozdělíme je na
+    // samostatný sloupec pro každou laboratoř. Sloupce mezí (a tím i počty buněk
+    // v hlavičce/tělu) musí být přes celý dokument stejné, jinak se tabulka rozbije.
+    $refSources = $docAllSources;
+    $multiRef = count($refSources) > 1;
+    $refColCount = max(1, count($refSources));
+    // Levé (opakující se) sloupce: parametr + sloupce mezí + jednotky.
+    $leftColCount = 2 + $refColCount;
+
     // Datumové sloupce rozdělíme po blocích na samostatné tiskové stránky, aby se
     // nic neslučovalo ani neusekávalo. Levé sloupce (parametr/meze/jednotky) se
     // opakují na každé stránce.
@@ -210,12 +220,18 @@
             <!-- Header -->
             <thead>
                 <tr class="main-header">
-                    <th class="title-cell" colspan="3">BIOCHEMIE A HEMATOLOGIE</th>
+                    <th class="title-cell" colspan="<?= $leftColCount ?>">BIOCHEMIE A HEMATOLOGIE</th>
                     <th class="animal-name" colspan="<?= max(1, count($allTests) * 2) ?>"><?= strtoupper(htmlspecialchars($animal['name'])) ?></th>
                 </tr>
                 <tr class="column-header">
                     <th class="param-col"></th>
-                    <th class="ref-col">Referenční meze<br><small>(<?= count($docAllSources) === 1 ? htmlspecialchars($docAllSources[0]) : 'dle laboratoře odběru' ?>)</small></th>
+                    <?php if ($multiRef): ?>
+                        <?php foreach ($refSources as $__refSrc): ?>
+                            <th class="ref-col ref-col-split"><small>Ref. meze</small><span class="ref-col-src"><?= htmlspecialchars($__refSrc) ?></span></th>
+                        <?php endforeach; ?>
+                    <?php else: ?>
+                        <th class="ref-col">Referenční meze<?php if (count($refSources) === 1): ?><br><small><?= htmlspecialchars($refSources[0]) ?></small><?php endif; ?></th>
+                    <?php endif; ?>
                     <th class="unit-col">Jednotky</th>
                     <?php foreach ($allTests as $colIdx => $test): ?>
                         <?php
@@ -226,22 +242,20 @@
                         ], 'strlen')));
                         ?>
                         <?php
-                        // Laboratoř vypisujeme jen když se sloupce liší (jinak je
-                        // uvedená v hlavičce sloupce s mezemi). Když se kryje s místem
-                        // odběru, povýšíme rovnou ten řádek – ať tam není dvakrát.
+                        // Hlavička sloupce: prominentně KDY a KDE se odebíralo (datum + místo),
+                        // teprve pod tím menším – ale čitelným – písmem, které referenční
+                        // meze se použily. Zdroj mezí ukazujeme jen když se v dokumentu
+                        // míchá víc laboratoří (jinak je jasný z hlavičky sloupce s mezemi).
                         $__loc = trim((string)($test['test_location'] ?? ''));
-                        $__showColSource = !empty($__colSources) && count($docAllSources) > 1;
-                        $__locIsSource = $__showColSource && $__loc !== '' && $__colSources === [$__loc];
+                        $__showColSource = !empty($__colSources) && $multiRef;
                         ?>
                         <th class="date-col">
-                            <?= date('d.m.Y', strtotime($test['test_date'])) ?>
-                            <?php if ($__locIsSource): ?>
-                                <span class="col-source"><?= htmlspecialchars($__loc) ?></span>
-                            <?php elseif ($__loc !== ''): ?>
-                                <br><small><?= htmlspecialchars($__loc) ?></small>
+                            <span class="col-date"><?= date('d.m.Y', strtotime($test['test_date'])) ?></span>
+                            <?php if ($__loc !== ''): ?>
+                                <span class="col-loc"><?= htmlspecialchars($__loc) ?></span>
                             <?php endif; ?>
-                            <?php if ($__showColSource && !$__locIsSource): ?>
-                                <span class="col-source"><?= htmlspecialchars(implode(' / ', $__colSources)) ?></span>
+                            <?php if ($__showColSource): ?>
+                                <span class="col-source">meze: <?= htmlspecialchars(implode(' / ', $__colSources)) ?></span>
                             <?php endif; ?>
                         </th>
                         <th class="eval-col alt-col">vs. referenční<br>meze</th>
@@ -277,7 +291,7 @@
                         if (isset($paramInfo['__section__'])):
                     ?>
                         <tr class="section-header">
-                            <td colspan="<?= 3 + count($allTests) * 2 ?>"><strong><?= htmlspecialchars($paramInfo['__section__']) ?></strong></td>
+                            <td colspan="<?= $leftColCount + count($allTests) * 2 ?>"><strong><?= htmlspecialchars($paramInfo['__section__']) ?></strong></td>
                         </tr>
                     <?php
                             continue;
@@ -291,7 +305,13 @@
                     ?>
                         <tr>
                             <td class="param-cell"><?= htmlspecialchars($paramName) ?></td>
-                            <td class="ref-cell<?= $refMulti ? ' ref-cell-multi' : '' ?>"><?= $refText ?></td>
+                            <?php if ($multiRef): ?>
+                                <?php foreach ($refSources as $__refSrc): $__rt = labRefRangeText($paramRanges[$__refSrc] ?? null); ?>
+                                    <td class="ref-cell ref-cell-split"><?= $__rt === '' ? '&ndash;' : htmlspecialchars($__rt) ?></td>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <td class="ref-cell<?= $refMulti ? ' ref-cell-multi' : '' ?>"><?= $refText ?></td>
+                            <?php endif; ?>
                             <td class="unit-cell"><?= htmlspecialchars($paramInfo['unit']) ?></td>
                             <?php foreach ($allTests as $colIdx => $test):
                                 $biochemTest = $colBiochemTest[$colIdx] ?? null;
@@ -373,7 +393,7 @@
                 <?php if ($tableType === 'hematology' || $tableType === 'both'): ?>
                     <!-- Hematology Section Header -->
                     <tr class="section-header">
-                        <td colspan="<?= 3 + count($allTests) * 2 ?>"><strong>Hematologie</strong></td>
+                        <td colspan="<?= $leftColCount + count($allTests) * 2 ?>"><strong>Hematologie</strong></td>
                     </tr>
                     <?php
                     $hematoParams = array_filter($allParameters, function($param) {
@@ -389,7 +409,13 @@
                     ?>
                         <tr>
                             <td class="param-cell"><?= htmlspecialchars($paramName) ?></td>
-                            <td class="ref-cell<?= $refMulti ? ' ref-cell-multi' : '' ?>"><?= $refText ?></td>
+                            <?php if ($multiRef): ?>
+                                <?php foreach ($refSources as $__refSrc): $__rt = labRefRangeText($paramRanges[$__refSrc] ?? null); ?>
+                                    <td class="ref-cell ref-cell-split"><?= $__rt === '' ? '&ndash;' : htmlspecialchars($__rt) ?></td>
+                                <?php endforeach; ?>
+                            <?php else: ?>
+                                <td class="ref-cell<?= $refMulti ? ' ref-cell-multi' : '' ?>"><?= $refText ?></td>
+                            <?php endif; ?>
                             <td class="unit-cell"><?= htmlspecialchars($paramInfo['unit']) ?></td>
                             <?php foreach ($allTests as $colIdx => $test):
                                 $hematoTest = $colHematoTest[$colIdx] ?? null;
@@ -770,7 +796,8 @@ body {
 
 .column-header th small {
     font-weight: normal;
-    font-size: 6px;
+    /* Relativně k písmu hlavičky – roste se zvolenou velikostí, nezůstane 6px. */
+    font-size: 0.82em;
 }
 
 .column-header .param-col {
@@ -780,6 +807,17 @@ body {
 
 .column-header .ref-col {
     min-width: 70px;
+}
+
+/* Meze rozdělené po laboratořích: každá laboratoř má svůj sloupec. Název
+   laboratoře čitelně (nadpis sloupce), popisek "Ref. meze" menším písmem. */
+.column-header .ref-col-split {
+    min-width: 56px;
+}
+
+.column-header .ref-col-src {
+    display: block;
+    font-weight: 700;
 }
 
 .column-header .unit-col {
@@ -827,11 +865,27 @@ body {
     color: #555;
 }
 
-/* Laboratoř sloupce – čte se stejně velká jako datum (ne <small>), na vlastním
-   řádku a v případě potřeby se zalomí do šířky sloupce. */
-.column-header .col-source {
+/* Hlavička data: nahoře prominentně datum a místo odběru (kdy + kde se
+   odebíralo), teprve pod tím menším – ale čitelným – písmem použité meze. */
+.column-header .col-date {
+    display: block;
+    font-weight: 700;
+}
+
+/* Místo odběru – čitelné (ne 6px <small>), na vlastním řádku, zalomí se do šířky. */
+.column-header .col-loc {
     display: block;
     font-weight: 600;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Použité referenční meze (laboratoř) – menší, ale čitelné; roste s písmem. */
+.column-header .col-source {
+    display: block;
+    font-weight: 400;
+    font-size: 0.8em;
+    color: #444;
     white-space: normal;
     overflow-wrap: anywhere;
 }
