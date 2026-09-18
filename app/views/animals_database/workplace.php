@@ -381,14 +381,8 @@
             <!-- Enclosures grid -->
             <div class="enclosures-grid">
                 <?php foreach ($enclosures as $enclosure): ?>
-                    <div class="enclosure-card<?= $canEdit ? ' clickable' : '' ?>"
-                         data-search="<?= strtolower(htmlspecialchars($enclosure['name'] . ' ' . ($enclosure['code'] ?? ''))) ?>"
-                         data-id="<?= (int)$enclosure['id'] ?>"
-                         data-name="<?= htmlspecialchars($enclosure['name']) ?>"
-                         data-code="<?= htmlspecialchars($enclosure['code'] ?? '') ?>"
-                         data-sample-type="<?= htmlspecialchars($enclosure['sample_type'] ?? 'individual') ?>"
-                         data-notes="<?= htmlspecialchars($enclosure['notes'] ?? '') ?>"
-                         <?= $canEdit ? 'onclick="showEditEnclosureModal(this)"' : '' ?>>
+                    <a href="/enclosures/detail/<?= (int)$enclosure['id'] ?>" class="enclosure-card clickable"
+                         data-search="<?= strtolower(htmlspecialchars($enclosure['name'] . ' ' . ($enclosure['code'] ?? ''))) ?>">
                         <div class="enclosure-card-header">
                             <h3 class="enclosure-name">
                                 <?= htmlspecialchars($enclosure['name']) ?>
@@ -413,12 +407,10 @@
                                 </div>
                             <?php endif; ?>
                         </div>
-                        <?php if ($canEdit): ?>
-                            <div class="enclosure-card-footer">
-                                <span class="edit-hint">Upravit / smazat →</span>
-                            </div>
-                        <?php endif; ?>
-                    </div>
+                        <div class="enclosure-card-footer">
+                            <span class="edit-hint">Detail →</span>
+                        </div>
+                    </a>
                 <?php endforeach; ?>
             </div>
 
@@ -924,6 +916,9 @@
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-left: 4px solid #8e44ad;
     transition: all 0.3s ease;
+    text-decoration: none;
+    color: inherit;
+    display: block;
 }
 
 .enclosure-card.clickable {
@@ -1264,19 +1259,6 @@ function showAddEnclosureModal() {
     document.getElementById('enclosureModalTitle').textContent = 'Přidat výběh';
     document.getElementById('enclosureSubmitBtn').textContent = 'Vytvořit výběh';
     document.getElementById('enclosureDeleteBtn').style.display = 'none';
-    document.getElementById('enclosureModal').style.display = 'block';
-}
-
-function showEditEnclosureModal(card) {
-    document.getElementById('enclosureForm').reset();
-    document.getElementById('enclosure_id').value = card.getAttribute('data-id');
-    document.getElementById('enclosure_name').value = card.getAttribute('data-name') || '';
-    document.getElementById('enclosure_code').value = card.getAttribute('data-code') || '';
-    document.getElementById('enclosure_sample_type').value = card.getAttribute('data-sample-type') || 'individual';
-    document.getElementById('enclosure_notes').value = card.getAttribute('data-notes') || '';
-    document.getElementById('enclosureModalTitle').textContent = 'Upravit výběh';
-    document.getElementById('enclosureSubmitBtn').textContent = 'Uložit změny';
-    document.getElementById('enclosureDeleteBtn').style.display = '';
     document.getElementById('enclosureModal').style.display = 'block';
 }
 
