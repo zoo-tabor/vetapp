@@ -26,21 +26,29 @@ foreach ($enclosures as $e) {
     </div>
 
     <div class="map-layout">
-        <div class="map-wrap" style="aspect-ratio: <?= (int)$mapWidth ?> / <?= (int)$mapHeight ?>;">
-            <img src="/assets/img/zoo-mapa-podklad.webp" alt="Mapa <?= htmlspecialchars($workplace['name']) ?>" class="map-bg">
-            <svg viewBox="0 0 <?= (int)$mapWidth ?> <?= (int)$mapHeight ?>" class="map-svg" role="img" aria-label="Výběhy">
-                <?php foreach ($enclosures as $e): ?>
-                    <path d="<?= htmlspecialchars($e['d']) ?>"
-                          class="vybeh <?= $e['clickable'] ? 'klik' : 'neklik' ?>"
-                          data-kod="<?= htmlspecialchars($e['kod']) ?>"></path>
-                <?php endforeach; ?>
-                <?php foreach ($enclosures as $e): ?>
-                    <?php if (!empty($e['label']) && $e['kod'] !== ''): ?>
-                        <text class="cislo" x="<?= (float)$e['label'][0] ?>" y="<?= (float)$e['label'][1] ?>"><?= htmlspecialchars($e['kod']) ?></text>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </svg>
+        <div class="map-wrap" id="mapWrap" style="aspect-ratio: <?= (int)$mapWidth ?> / <?= (int)$mapHeight ?>;">
+            <div class="map-content" id="mapContent">
+                <img src="/assets/img/zoo-mapa-podklad.webp" alt="Mapa <?= htmlspecialchars($workplace['name']) ?>" class="map-bg" draggable="false">
+                <svg viewBox="0 0 <?= (int)$mapWidth ?> <?= (int)$mapHeight ?>" class="map-svg" role="img" aria-label="Výběhy">
+                    <?php foreach ($enclosures as $e): ?>
+                        <path d="<?= htmlspecialchars($e['d']) ?>"
+                              class="vybeh <?= $e['clickable'] ? 'klik' : 'neklik' ?>"
+                              data-kod="<?= htmlspecialchars($e['kod']) ?>"></path>
+                    <?php endforeach; ?>
+                    <?php foreach ($enclosures as $e): ?>
+                        <?php if (!empty($e['label']) && $e['kod'] !== ''): ?>
+                            <text class="cislo" x="<?= (float)$e['label'][0] ?>" y="<?= (float)$e['label'][1] ?>"><?= htmlspecialchars($e['kod']) ?></text>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                </svg>
+            </div>
             <div id="mapTooltip" class="map-tooltip" style="display:none;"></div>
+            <div class="map-zoom">
+                <button type="button" id="zoomIn" title="Přiblížit">+</button>
+                <button type="button" id="zoomOut" title="Oddálit">&minus;</button>
+                <button type="button" id="zoomReset" title="Původní velikost">⟳</button>
+            </div>
+            <div class="map-hint">Ctrl + kolečko = přiblížit · tažením posun</div>
         </div>
 
         <aside class="map-side">
@@ -69,9 +77,16 @@ foreach ($enclosures as $e) {
 
 .map-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
 
-.map-wrap { position: relative; width: 100%; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.12); background: #eef; }
-.map-bg { width: 100%; height: 100%; display: block; }
+.map-wrap { position: relative; width: 100%; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.12); background: #eef; cursor: grab; touch-action: none; }
+.map-wrap.dragging { cursor: grabbing; }
+.map-content { position: absolute; inset: 0; transform-origin: 0 0; will-change: transform; }
+.map-bg { width: 100%; height: 100%; display: block; user-select: none; -webkit-user-drag: none; }
 .map-svg { position: absolute; inset: 0; width: 100%; height: 100%; }
+
+.map-zoom { position: absolute; right: 10px; bottom: 10px; z-index: 25; display: flex; flex-direction: column; gap: 6px; }
+.map-zoom button { width: 38px; height: 38px; border: none; border-radius: 8px; background: rgba(255,255,255,.93); color: #2c3e50; font-size: 20px; font-weight: 700; line-height: 1; cursor: pointer; box-shadow: 0 1px 5px rgba(0,0,0,.3); }
+.map-zoom button:hover { background: #fff; }
+.map-hint { position: absolute; left: 10px; bottom: 10px; z-index: 25; background: rgba(20,20,20,.68); color: #fff; font-size: 12px; padding: 4px 9px; border-radius: 6px; pointer-events: none; }
 
 .vybeh { fill: #688e3d; fill-opacity: .32; stroke: #14300f; stroke-width: 3; stroke-linejoin: round; transition: fill-opacity .12s, fill .12s; }
 .vybeh.klik { cursor: pointer; }
@@ -122,11 +137,66 @@ const GENDER = { male: '♂', female: '♀', unknown: '?' };
 
 const svg = document.querySelector('.map-svg');
 const wrap = document.querySelector('.map-wrap');
+const content = document.getElementById('mapContent');
 const tooltip = document.getElementById('mapTooltip');
 const sideDetail = document.getElementById('sideDetail');
 const searchInput = document.getElementById('mapSearch');
 const searchResults = document.getElementById('searchResults');
 let pinnedKod = null;
+let panMoved = false;
+
+// --- Zoom & posun ---
+let scale = 1, tx = 0, ty = 0;
+const MIN_SCALE = 1, MAX_SCALE = 8;
+
+function applyTransform() {
+    content.style.transform = 'translate(' + tx + 'px,' + ty + 'px) scale(' + scale + ')';
+}
+function clampPan() {
+    const w = wrap.clientWidth, h = wrap.clientHeight;
+    const minX = w - w * scale, minY = h - h * scale;
+    tx = Math.min(0, Math.max(minX, tx));
+    ty = Math.min(0, Math.max(minY, ty));
+}
+function zoomAt(cx, cy, factor) {
+    const ns = Math.min(MAX_SCALE, Math.max(MIN_SCALE, scale * factor));
+    if (ns === scale) return;
+    tx = cx - (cx - tx) * (ns / scale);
+    ty = cy - (cy - ty) * (ns / scale);
+    scale = ns;
+    clampPan();
+    applyTransform();
+}
+wrap.addEventListener('wheel', function (e) {
+    if (!e.ctrlKey) return; // zoom jen s Ctrl; bez něj normální scroll stránky
+    e.preventDefault();
+    const r = wrap.getBoundingClientRect();
+    zoomAt(e.clientX - r.left, e.clientY - r.top, e.deltaY < 0 ? 1.15 : 1 / 1.15);
+}, { passive: false });
+document.getElementById('zoomIn').addEventListener('click', () => zoomAt(wrap.clientWidth / 2, wrap.clientHeight / 2, 1.3));
+document.getElementById('zoomOut').addEventListener('click', () => zoomAt(wrap.clientWidth / 2, wrap.clientHeight / 2, 1 / 1.3));
+document.getElementById('zoomReset').addEventListener('click', () => { scale = 1; tx = 0; ty = 0; applyTransform(); });
+
+let dragging = false, lastX = 0, lastY = 0;
+wrap.addEventListener('mousedown', function (e) {
+    if (e.button !== 0 || e.target.closest('.map-zoom')) return;
+    dragging = true; panMoved = false; lastX = e.clientX; lastY = e.clientY;
+    wrap.classList.add('dragging');
+});
+window.addEventListener('mousemove', function (e) {
+    if (!dragging) return;
+    const dx = e.clientX - lastX, dy = e.clientY - lastY;
+    if (Math.abs(dx) > 4 || Math.abs(dy) > 4) panMoved = true;
+    lastX = e.clientX; lastY = e.clientY;
+    if (scale > 1) { tx += dx; ty += dy; clampPan(); applyTransform(); tooltip.style.display = 'none'; }
+});
+window.addEventListener('mouseup', function () {
+    if (dragging) { dragging = false; wrap.classList.remove('dragging'); }
+});
+
+function esc(s) {
+    return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+}
 
 function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
@@ -193,6 +263,7 @@ svg.querySelectorAll('.vybeh.klik').forEach(path => {
         if (pinnedKod === null) highlight(null);
     });
     path.addEventListener('click', () => {
+        if (panMoved) return; // po tažení neber jako klik
         pinnedKod = (pinnedKod === kod) ? null : kod;
         if (pinnedKod) { renderSideDetail(kod); highlight(kod); }
         else { highlight(null); resetSide(); }
