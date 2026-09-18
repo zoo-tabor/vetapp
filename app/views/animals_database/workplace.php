@@ -13,6 +13,11 @@
                     + Přidat výběh
                 </button>
             <?php endif; ?>
+            <?php if ((int)$workplace['id'] === 1): // mapu má zatím jen ZOO Tábor ?>
+                <a href="/animals/workplace/<?= $workplace['id'] ?>/mapa" class="btn btn-primary" id="mapEnclosureBtn" style="display: none;">
+                    🗺️ Mapa výběhů
+                </a>
+            <?php endif; ?>
             <a href="/animals" class="btn btn-secondary">← Zpět</a>
         </div>
     </div>
@@ -1193,16 +1198,20 @@ function switchTab(tabName) {
     // Toggle action buttons
     const addAnimalBtn = document.getElementById('addAnimalBtn');
     const addEnclosureBtn = document.getElementById('addEnclosureBtn');
+    const mapEnclosureBtn = document.getElementById('mapEnclosureBtn');
 
     if (tabName === 'animals') {
         if (addAnimalBtn) addAnimalBtn.style.display = '';
         if (addEnclosureBtn) addEnclosureBtn.style.display = 'none';
+        if (mapEnclosureBtn) mapEnclosureBtn.style.display = 'none';
     } else if (tabName === 'myanimals') {
         if (addAnimalBtn) addAnimalBtn.style.display = 'none';
         if (addEnclosureBtn) addEnclosureBtn.style.display = 'none';
+        if (mapEnclosureBtn) mapEnclosureBtn.style.display = 'none';
     } else if (tabName === 'enclosures') {
         if (addAnimalBtn) addAnimalBtn.style.display = 'none';
         if (addEnclosureBtn) addEnclosureBtn.style.display = '';
+        if (mapEnclosureBtn) mapEnclosureBtn.style.display = '';
     }
 
     // Apply current view to the newly shown tab

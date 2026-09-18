@@ -1,0 +1,1160 @@
+{
+ "width": 3386,
+ "height": 2042,
+ "enclosures": [
+  {
+   "id": "v0",
+   "kod": "0",
+   "num": 0,
+   "name": "Stáj 0",
+   "zvirata": "Morče domácí – samice",
+   "d": "M1393 920L1404 923L1392 976L1381 973Z",
+   "label": [
+    1393,
+    948
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v1",
+   "kod": "1",
+   "num": 1,
+   "name": "Stáj 1",
+   "zvirata": "",
+   "d": "M1404 923L1427 928L1414 981L1392 976Z",
+   "label": [
+    1409,
+    952
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v2",
+   "kod": "2",
+   "num": 2,
+   "name": "Stáj 2",
+   "zvirata": "Nosál červený – Sisi",
+   "d": "M1427 928L1449 933L1436 987L1414 981Z",
+   "label": [
+    1432,
+    957
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v3",
+   "kod": "3",
+   "num": 3,
+   "name": "Stáj 3",
+   "zvirata": "",
+   "d": "M1449 933L1472 939L1458 992L1436 987Z",
+   "label": [
+    1454,
+    963
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v4",
+   "kod": "4",
+   "num": 4,
+   "name": "Stáj 4",
+   "zvirata": "Morče domácí – samci",
+   "d": "M1472 939L1494 944L1480 998L1458 992Z",
+   "label": [
+    1476,
+    968
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v5",
+   "kod": "5",
+   "num": 5,
+   "name": "Karanténa 1",
+   "zvirata": "Mýval severní – Harry, Hermiona, Ron",
+   "d": "M1494 944L1517 949L1502 1003L1480 998Z",
+   "label": [
+    1498,
+    973
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v6",
+   "kod": "6",
+   "num": 6,
+   "name": "Karanténa 2",
+   "zvirata": "",
+   "d": "M1517 949L1539 955L1524 1009L1502 1003Z",
+   "label": [
+    1521,
+    979
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v7",
+   "kod": "7",
+   "num": 7,
+   "name": "Karanténa 3",
+   "zvirata": "Mýval severní – Lilo, Stitch",
+   "d": "M1539 955L1562 960L1546 1014L1524 1009Z",
+   "label": [
+    1543,
+    984
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v8",
+   "kod": "8",
+   "num": 8,
+   "name": "Staré voliéry 1",
+   "zvirata": "Sova pálená – samci",
+   "d": "M 177 764 L 178 788 L 236 787 L 236 763 Z",
+   "label": [
+    176,
+    775.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v9",
+   "kod": "9",
+   "num": 9,
+   "name": "Staré voliéry 2",
+   "zvirata": "",
+   "d": "M 164 859 L 163 830 L 197 828 L 197 857 Z",
+   "label": [
+    156,
+    855.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v10",
+   "kod": "10",
+   "num": 10,
+   "name": "Staré voliéry 3",
+   "zvirata": "Kolonok – Libuše, Teta",
+   "d": "M 156 934 L 153 882 L 180 881 L 182 933 Z",
+   "label": [
+    146,
+    922.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v11",
+   "kod": "11",
+   "num": 11,
+   "name": "Staré voliéry 4",
+   "zvirata": "Mýval severní – Bonnie, Ollie",
+   "d": "M 230 950 L 231 981 L 157 986 L 156 955 Z",
+   "label": [
+    193,
+    1002.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v12",
+   "kod": "12",
+   "num": 12,
+   "name": "Staré voliéry 5",
+   "zvirata": "Sovice sněžní – Ferdinand, Žofie",
+   "d": "M 251 859 L 279 871 L 250 948 L 221 936 Z",
+   "label": [
+    233,
+    906.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v13",
+   "kod": "13",
+   "num": 13,
+   "name": "Staré voliéry 6",
+   "zvirata": "Páv korunkatý – Ludvík",
+   "d": "M 295 767 L 325 780 L 287 858 L 258 845 Z",
+   "label": [
+    275,
+    811.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v14",
+   "kod": "14",
+   "num": 14,
+   "name": "Staré želvárium",
+   "zvirata": "Želva čtyřprstá, želva zelenavá, želva uhlířská",
+   "d": "M 345 835 L 373 768 L 444 798 L 417 866 Z",
+   "label": [
+    396,
+    830.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v15",
+   "kod": "15",
+   "num": 15,
+   "name": "Výběh 15",
+   "zvirata": "",
+   "d": "M 322 870 L 285 955 L 416 1009 L 453 923 Z",
+   "label": [
+    370,
+    952.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v16",
+   "kod": "16",
+   "num": 16,
+   "name": "Ovce kamerunské",
+   "zvirata": "Ovce kamerunské – Bohouš, Matouš",
+   "d": "M 270 995 L 184 1205 L 196 1221 L 374 1148 L 414 1043 Z",
+   "label": [
+    311,
+    1107.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v17",
+   "kod": "17",
+   "num": 17,
+   "name": "Guli",
+   "zvirata": "Prase divoké – Guli",
+   "d": "M 421 1044 L 382 1143 L 472 1112 L 499 1088 L 501 1050 Z",
+   "label": [
+    448,
+    1095.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v18",
+   "kod": "18",
+   "num": 18,
+   "name": "Kontaktní ZOO",
+   "zvirata": "Koza kašmírská (2 samci), Koza domácí Žofka, Koza burská Anežka, Koza kamerunská (1 samec), Koza domácí Eliška, Koza bílá krátkosrstá Líza, Koza anglonúbijská Avatarka",
+   "d": "M 406 721 L 577 486 L 655 461 L 683 586 L 697 669 Z",
+   "label": [
+    600,
+    612.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v19",
+   "kod": "19",
+   "num": 19,
+   "name": "Farma 1",
+   "zvirata": "Prase göttingenské – Roxy",
+   "d": "M809 601L816 645L705 668L697 624Z M745 616L778 609L784 637L751 644Z",
+   "label": [
+    725,
+    641
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v20",
+   "kod": "20",
+   "num": 20,
+   "name": "Farma 2",
+   "zvirata": "Prase göttingenské a vietnamské",
+   "d": "M823 644L946 622L927 548L905 470L945 458L937 436L914 428L831 449L824 463L842 568L831 591L816 599Z",
+   "label": [
+    886,
+    596.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v21",
+   "kod": "21",
+   "num": 21,
+   "name": "Farma 3",
+   "zvirata": "Prase göttingenské – Čunimír",
+   "d": "M 908 472 L 927 546 L 963 537 L 946 461 Z",
+   "label": [
+    957,
+    511.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v22",
+   "kod": "22",
+   "num": 22,
+   "name": "Farma 4",
+   "zvirata": "Prase göttingenské – Chrochta, Měchurka",
+   "d": "M927 548L965 539L984 613L946 622Z",
+   "label": [
+    974,
+    568.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v23",
+   "kod": "23",
+   "num": 23,
+   "name": "Farma 5",
+   "zvirata": "Ovce ouessantské + kozel bílý krátkosrstý – Imrich, Maroš, Kašpar, Melichar, Baltazar, Ojíř, Snížek",
+   "d": "M724 670L771 897L835 951L930 956L854 643Z M755 804L754 775L788 773L788 802Z",
+   "label": [
+    821,
+    801.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v24",
+   "kod": "24",
+   "num": 24,
+   "name": "Farma 6",
+   "zvirata": "Skot Cachena – Matylda, Mafalda",
+   "d": "M 861 642 L 937 956 L 991 956 L 1021 925 L 1068 788 L 1072 741 L 983 619 Z",
+   "label": [
+    975,
+    775.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v25",
+   "kod": "25",
+   "num": 25,
+   "name": "Lev 1",
+   "zvirata": "Lev pustinný – Luena",
+   "d": "M1132 358L1162 481L1030 512L1024 482L1002 472L984 447L984 413L1018 385L1059 379L1079 370L1103 368Z",
+   "label": [
+    1074,
+    436
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v26",
+   "kod": "26",
+   "num": 26,
+   "name": "Lev 2",
+   "zvirata": "Lev pustinný – Simba",
+   "d": "M1244 331L1301 575L1270 578L1246 591L1209 596L1189 606L1151 609L1140 614L1042 627L1027 598L1017 563L1033 546L1030 513L1163 481L1134 358L1145 358L1154 350L1189 346L1197 340L1224 338Z",
+   "label": [
+    1173,
+    502
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v27",
+   "kod": "27",
+   "num": 27,
+   "name": "Fosa",
+   "zvirata": "Fosa madagaskarská – Masotra",
+   "d": "M1365 302L1394 426L1274 454L1245 331L1266 329L1283 319Z",
+   "label": [
+    1320,
+    378
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v28",
+   "kod": "28",
+   "num": 28,
+   "name": "Puma 1",
+   "zvirata": "Puma americká – Baghíra",
+   "d": "M1394 427L1417 530L1377 542L1368 551L1330 558L1302 575L1274 455Z",
+   "label": [
+    1345,
+    496
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v29",
+   "kod": "29",
+   "num": 29,
+   "name": "Puma 2",
+   "zvirata": "Puma americká – Líla",
+   "d": "M1506 277L1520 300L1515 349L1512 348L1499 373L1491 378L1492 403L1395 426L1366 302L1475 274Z",
+   "label": [
+    1444,
+    344
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v30",
+   "kod": "30",
+   "num": 30,
+   "name": "Lev 3",
+   "zvirata": "Lev pustinný – Aisha; Lev jihoafrický bílý – Gandalf",
+   "d": "M1493 404L1501 431L1528 430L1518 464L1506 479L1471 505L1419 527L1395 427Z",
+   "label": [
+    1457,
+    460
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v31",
+   "kod": "31",
+   "num": 31,
+   "name": "Nosál 1",
+   "zvirata": "Nosál červený – Amálka, Leontýnka, Nova",
+   "d": "M 1044 1007 L 1166 1026 L 1182 947 L 1066 910 Z",
+   "label": [
+    1117,
+    983.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v32",
+   "kod": "32",
+   "num": 32,
+   "name": "Nosál 2",
+   "zvirata": "",
+   "d": "M 1163 935 L 1185 942 L 1191 933 L 1212 933 L 1219 901 L 1208 892 L 1199 884 L 1184 871 L 1179 864 Z",
+   "label": [
+    1229,
+    937.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v33",
+   "kod": "33",
+   "num": 33,
+   "name": "Nosál 3",
+   "zvirata": "",
+   "d": "M1209 950L1187 1032L1166 1026L1181 950Z",
+   "label": [
+    1186,
+    988
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v34",
+   "kod": "34",
+   "num": 34,
+   "name": "Malpy",
+   "zvirata": "Malpa hnědá – Páťa, Máťa",
+   "d": "M 1067 903 L 1158 933 L 1173 860 L 1138 821 L 1131 814 L 1118 817 L 1103 821 L 1091 831 L 1080 848 L 1076 855 Z",
+   "label": [
+    1123,
+    888.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v35",
+   "kod": "35",
+   "num": 35,
+   "name": "Mary",
+   "zvirata": "Mara stepní – Bobeš, Tom, Jerry",
+   "d": "M 1137 745 L 1209 831 L 1253 850 L 1267 790 L 1259 769 L 1168 699 Z",
+   "label": [
+    1209,
+    788.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v36",
+   "kod": "36",
+   "num": 36,
+   "name": "Jeřáb",
+   "zvirata": "Jeřáb mandžuský – Ina, Nik",
+   "d": "M 1171 695 L 1261 763 L 1271 744 L 1362 801 L 1356 751 L 1372 712 L 1398 666 L 1291 673 L 1282 669 L 1244 643 L 1203 649 Z",
+   "label": [
+    1285,
+    722.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v37",
+   "kod": "37",
+   "num": 37,
+   "name": "Emu 1",
+   "zvirata": "Emu hnědý – Oliver",
+   "d": "M 1384 885 L 1391 836 L 1420 862 L 1457 877 L 1498 886 L 1518 893 L 1515 908 Z",
+   "label": [
+    1435,
+    872.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v38",
+   "kod": "38",
+   "num": 38,
+   "name": "Emu 2",
+   "zvirata": "Emu hnědý – Emanuel",
+   "d": "M 1381 915 L 1575 960 L 1574 938 L 1568 927 L 1558 914 L 1549 907 L 1540 901 L 1522 895 L 1518 911 L 1383 888 Z",
+   "label": [
+    1567,
+    928.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v39",
+   "kod": "39",
+   "num": 39,
+   "name": "Vodní svět",
+   "zvirata": "vodní ptactvo",
+   "d": "M 1466 617 L 1414 711 L 1398 748 L 1399 788 L 1425 818 L 1476 845 L 1532 860 L 1569 865 L 1587 857 L 1610 803 L 1632 745 L 1659 690 L 1680 662 L 1625 641 L 1623 602 L 1574 576 L 1539 569 L 1512 570 L 1496 579 Z",
+   "label": [
+    1540,
+    733.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v40",
+   "kod": "40",
+   "num": 40,
+   "name": "Emu 3",
+   "zvirata": "Emu hnědý – Kevina",
+   "d": "M 2142 138 L 2173 308 L 2236 273 L 2301 247 L 2387 212 L 2470 185 L 2501 177 L 2512 161 L 2491 130 L 2473 120 L 2450 115 L 2394 115 L 2299 117 L 2155 118 Z",
+   "label": [
+    2296,
+    193.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v41",
+   "kod": "41",
+   "num": 41,
+   "name": "Mýval společný výběh",
+   "zvirata": "Mýval severní – Daisy, Frederyk, Rocket, Iggy, Sandy, Rachel, Roketa",
+   "d": "M 1617 895 L 1684 877 L 1703 866 L 1724 844 L 1743 817 L 1754 781 L 1755 740 L 1749 717 L 1741 690 L 1730 670 L 1725 666 L 1704 700 L 1680 740 L 1660 782 L 1638 834 Z",
+   "label": [
+    1703,
+    806.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v42",
+   "kod": "42",
+   "num": 42,
+   "name": "Mýval 1",
+   "zvirata": "Mýval severní – Alfie, Coco",
+   "d": "M1617 895L1692 872L1723 921L1634 951Z",
+   "label": [
+    1667,
+    911
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v43",
+   "kod": "43",
+   "num": 43,
+   "name": "Mýval 2",
+   "zvirata": "Mýval severní – RJ, Danny",
+   "d": "M1692 872L1744 815L1796 839L1723 921Z",
+   "label": [
+    1740,
+    863
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v44",
+   "kod": "44",
+   "num": 44,
+   "name": "Mýval 3",
+   "zvirata": "Mýval severní – Chip, Dale",
+   "d": "M1744 815L1754 738L1812 730L1796 839Z",
+   "label": [
+    1778,
+    781
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v45",
+   "kod": "45",
+   "num": 45,
+   "name": "Mýval 4",
+   "zvirata": "",
+   "d": "M1754 738L1725 666L1779 644L1812 730Z",
+   "label": [
+    1768,
+    694
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v46",
+   "kod": "46",
+   "num": 46,
+   "name": "Krkavci",
+   "zvirata": "Krkavec velký – pan Krákora, paní Krákorová",
+   "d": "M2187 345L2230 323L2276 301L2321 282L2371 264L2475 228L2487 262L2203 376Z",
+   "label": [
+    2337,
+    301
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v47",
+   "kod": "47",
+   "num": 47,
+   "name": "Jeleni a daňci",
+   "zvirata": "",
+   "d": "M1624 963L1646 980L1672 992L1725 1004L1836 1029L1975 1059L2111 1090L2212 1114L2313 1140L2450 910L2540 939L2577 814L2589 715L2612 614L2651 566L2711 580L2730 526L2748 496L2771 477L2796 460L2844 437L2847 335L2941 331L2937 242L2933 203L2918 175L2896 166L2840 172L2729 188L2604 203L2487 226L2500 267L2439 288L2306 338L2226 376L2199 388L2179 350L2136 391L2113 421L2089 457L2056 497L2008 529L1948 553L1877 582L1816 604L1766 631L1779 644L1812 730L1796 839L1723 921L1634 951Z",
+   "label": [
+    2289,
+    651.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v48",
+   "kod": "48",
+   "num": 48,
+   "name": "Tygr",
+   "zvirata": "Tygr ussurijský – Rocky",
+   "d": "M 2942 338 L 2854 341 L 2851 442 L 2789 474 L 2762 494 L 2741 522 L 2726 560 L 2720 583 L 2721 614 L 2727 659 L 2894 700 L 2884 602 L 2915 517 L 2942 454 L 2945 426 Z",
+   "label": [
+    2836,
+    552.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v49a",
+   "kod": "49a",
+   "num": 49,
+   "name": "Medvěd hnědý 1",
+   "zvirata": "Medvěd hnědý – Bubík",
+   "d": "M2570 866L2587 812L2598 715L2620 617L2655 575L2709 590L2716 663L2728 722L2814 747L2895 771L2893 853L2894 866Z",
+   "label": [
+    2713,
+    764
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v49b",
+   "kod": "49b",
+   "num": 49,
+   "name": "Medvěd hnědý 2",
+   "zvirata": "Medvěd hnědý – John, Max",
+   "d": "M2940 1063L2903 1047L2884 1087L2773 1033L2711 1005L2657 983L2547 942L2570 866L2894 866L2900 923L2933 992Z",
+   "label": [
+    2766,
+    950
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v50",
+   "kod": "50",
+   "num": 50,
+   "name": "Medvěd baribal",
+   "zvirata": "Medvěd baribal – Joey, Chandler",
+   "d": "M 2321 1142 L 2420 1189 L 2478 1231 L 2556 1293 L 2622 1356 L 2655 1388 L 2691 1393 L 2775 1312 L 2845 1245 L 2882 1205 L 2913 1149 L 2922 1119 L 2844 1075 L 2763 1038 L 2670 997 L 2590 965 L 2514 941 L 2453 921 Z",
+   "label": [
+    2635,
+    1156.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v51",
+   "kod": "51",
+   "num": 51,
+   "name": "Nové voliéry 1",
+   "zvirata": "Sovice sněžní – Pepin",
+   "d": "M 2936 1197 L 2982 1213 L 2991 1191 L 2946 1175 Z",
+   "label": [
+    2973,
+    1183.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v52",
+   "kod": "52",
+   "num": 52,
+   "name": "Nové voliéry 2",
+   "zvirata": "Puštík bradatý – Vilík",
+   "d": "M 2986 1214 L 3036 1233 L 3045 1211 L 2995 1193 Z",
+   "label": [
+    3025,
+    1201.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v53",
+   "kod": "53",
+   "num": 53,
+   "name": "Nové voliéry 3",
+   "zvirata": "Výr velký – pan Výr, paní Výrová",
+   "d": "M 3040 1234 L 3089 1250 L 3097 1229 L 3049 1213 Z",
+   "label": [
+    3078,
+    1222.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v54",
+   "kod": "54",
+   "num": 54,
+   "name": "Nové voliéry 4",
+   "zvirata": "Sova pálená – samice",
+   "d": "M 2910 1228 L 2942 1238 L 2929 1263 L 2897 1254 Z",
+   "label": [
+    2886,
+    1274.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v55",
+   "kod": "55",
+   "num": 55,
+   "name": "Nové voliéry 5",
+   "zvirata": "Puštík obecný – pár (*2015)",
+   "d": "M 2945 1239 L 2978 1250 L 2964 1275 L 2932 1265 Z",
+   "label": [
+    2927,
+    1291.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v56",
+   "kod": "56",
+   "num": 56,
+   "name": "Nové voliéry 6",
+   "zvirata": "Sovice sněžní – Hedvika, Nicholas",
+   "d": "M 2981 1251 L 3012 1262 L 2999 1286 L 2967 1276 Z",
+   "label": [
+    2970,
+    1306.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v57",
+   "kod": "57",
+   "num": 57,
+   "name": "Nové voliéry 7",
+   "zvirata": "Puštík obecný – mláďata (*2023, *2024)",
+   "d": "M 3015 1263 L 3046 1273 L 3034 1298 L 3002 1287 Z",
+   "label": [
+    3013,
+    1320.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v58",
+   "kod": "58",
+   "num": 58,
+   "name": "Nové voliéry 8",
+   "zvirata": "Sova pálená – chovný pár (*2022)",
+   "d": "M 3049 1274 L 3079 1285 L 3068 1310 L 3037 1299 Z",
+   "label": [
+    3051,
+    1332.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v59a",
+   "kod": "59a",
+   "num": 59,
+   "name": "Rys 1",
+   "zvirata": "Rys ostrovid – Zora",
+   "d": "M3010 1094L3143 1133L3161 1150L3166 1177L3182 1180L3182 1036L3030 1002Z",
+   "label": [
+    3106,
+    1075
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v59b",
+   "kod": "59b",
+   "num": 59,
+   "name": "Rys 2",
+   "zvirata": "Rys ostrovid – Lüneburger",
+   "d": "M3182 1180L3294 1198L3319 1067L3182 1036Z",
+   "label": [
+    3244,
+    1118
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v60",
+   "kod": "60",
+   "num": 60,
+   "name": "Prase 1",
+   "zvirata": "Prase divoké – Čenda, 4 samice",
+   "d": "M 3118 1310 L 3161 1199 L 3289 1222 L 3262 1352 Z",
+   "label": [
+    3211,
+    1284.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v61",
+   "kod": "61",
+   "num": 61,
+   "name": "Prase 2",
+   "zvirata": "Prase divoké – Jarda, 3 samice",
+   "d": "M 3053 1456 L 3229 1493 L 3261 1357 L 3116 1315 L 3097 1360 L 3075 1409 Z",
+   "label": [
+    3166,
+    1417.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v62",
+   "kod": "62",
+   "num": 62,
+   "name": "Surikaty",
+   "zvirata": "Surikata vlnkovaná – Žofré, Buddha, Barbosa (samice), Scar, Roman",
+   "d": "M2233 1342L2301 1237L2330 1217L2395 1252L2439 1285L2356 1423Z",
+   "label": [
+    2337,
+    1316
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v63",
+   "kod": "63",
+   "num": 63,
+   "name": "Leguán",
+   "zvirata": "Leguán zelený – Vlasta",
+   "d": "M2282 1547L2162 1514L2158 1502L2219 1364L2233 1342L2356 1423Z",
+   "label": [
+    2254,
+    1452
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v64",
+   "kod": "64",
+   "num": 64,
+   "name": "Záchranné centrum CITES",
+   "zvirata": "Puma americká – Dany",
+   "d": "M2621 1440L2596 1461L2546 1532L2520 1612L2282 1547L2439 1285L2600 1406Z",
+   "label": [
+    2456,
+    1463
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v65",
+   "kod": "65",
+   "num": 65,
+   "name": "Klokani",
+   "zvirata": "Klokan rudokrký",
+   "d": "M 2669 1475 L 2741 1552 L 2721 1666 L 2601 1635 Z",
+   "label": [
+    2683,
+    1596.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v66",
+   "kod": "66",
+   "num": 66,
+   "name": "Emu 4",
+   "zvirata": "Emu hnědý – Bubina, Emil, Mahonka",
+   "d": "M 2601 1643 L 2721 1674 L 2708 1759 L 2684 1898 L 2603 1893 Z",
+   "label": [
+    2654,
+    1781.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v67",
+   "kod": "67",
+   "num": 67,
+   "name": "Zubři",
+   "zvirata": "Zubr evropský – Poczekaj, Usjana, Uselina, Norma, Táňa, Taurus, Tami, Tali, Tajga",
+   "d": "M 2352 1938 L 2348 2054 L 2757 2058 L 2746 1938 Z",
+   "label": [
+    2553,
+    2008.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v68",
+   "kod": "68",
+   "num": 68,
+   "name": "Vlci",
+   "zvirata": "Vlk arktický – Bard, Jack, Matěj",
+   "d": "M 2054 1827 L 2171 1524 L 2527 1627 L 2521 1681 L 2520 1740 L 2527 1894 L 2299 1891 Z",
+   "label": [
+    2320,
+    1738.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v69",
+   "kod": "69",
+   "num": 69,
+   "name": "Velbloudi",
+   "zvirata": "Velbloud dvouhrbý – Amara, Frieda",
+   "d": "M 1762 1727 L 1991 1810 L 2070 1584 L 2124 1447 L 2146 1396 L 2162 1363 L 2182 1331 L 2128 1312 L 2087 1306 L 2046 1309 L 2018 1316 L 1993 1325 L 1964 1341 L 1934 1363 L 1912 1385 L 1895 1409 L 1879 1441 Z",
+   "label": [
+    1965,
+    1569.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v70a",
+   "kod": "70a",
+   "num": 70,
+   "name": "Lamy 1",
+   "zvirata": "Lama krotká – Chico, Navara, Čertík",
+   "d": "M1812 1579L1845 1498L1658 1434L1597 1579Z",
+   "label": [
+    1718,
+    1521
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v70b",
+   "kod": "70b",
+   "num": 70,
+   "name": "Lamy 2",
+   "zvirata": "Lama krotká – Martin",
+   "d": "M1565 1655L1752 1726L1812 1579L1597 1579Z",
+   "label": [
+    1692,
+    1637
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v71",
+   "kod": "71",
+   "num": 71,
+   "name": "Ptačí dům 1",
+   "zvirata": "Nestor kea – Tapu, Ikki",
+   "d": "M1672 1185L1672 1185L1788 1195L1785 1223L1670 1212Z",
+   "label": [
+    1729,
+    1204
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v72",
+   "kod": "72",
+   "num": 72,
+   "name": "Ptačí dům 2",
+   "zvirata": "",
+   "d": "M1785 1223L1783 1250L1667 1239L1670 1212Z",
+   "label": [
+    1726,
+    1231
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v73",
+   "kod": "73",
+   "num": 73,
+   "name": "Ptačí dům 3",
+   "zvirata": "Kakadu molucký – Janeček",
+   "d": "M1783 1250L1781 1277L1665 1266L1667 1239Z",
+   "label": [
+    1724,
+    1258
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v74",
+   "kod": "74",
+   "num": 74,
+   "name": "Ptačí dům 4",
+   "zvirata": "Kakadu molucký – Číro",
+   "d": "M1781 1277L1778 1304L1662 1294L1665 1266Z",
+   "label": [
+    1721,
+    1285
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v75",
+   "kod": "75",
+   "num": 75,
+   "name": "Ptačí dům 5",
+   "zvirata": "Turako bělolící – Fufí, 2, 3",
+   "d": "M1778 1304L1776 1331L1660 1321L1662 1294Z",
+   "label": [
+    1719,
+    1313
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v76",
+   "kod": "76",
+   "num": 76,
+   "name": "Ptačí dům 6",
+   "zvirata": "Ara arakanga – Franco, Sparťanka",
+   "d": "M1776 1331L1773 1358L1657 1348L1660 1321Z",
+   "label": [
+    1717,
+    1340
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v77",
+   "kod": "77",
+   "num": 77,
+   "name": "Ptačí dům 7",
+   "zvirata": "Ara ararauna – Magič, Martina",
+   "d": "M1773 1358L1772 1371L1769 1381L1766 1385L1659 1375L1657 1371L1656 1360L1657 1348Z",
+   "label": [
+    1714,
+    1366
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v78",
+   "kod": "78",
+   "num": 78,
+   "name": "Ptačí dům 8",
+   "zvirata": "Ara zelenokřídlý – Adolf, Eva",
+   "d": "M1766 1385L1762 1391L1752 1399L1740 1404L1725 1407L1710 1407L1695 1405L1682 1399L1670 1391L1662 1382L1659 1375Z",
+   "label": [
+    1711,
+    1391
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v79",
+   "kod": "79",
+   "num": 79,
+   "name": "Exotické ovce 1",
+   "zvirata": "Koza walliserská – Bob, Elvis; Ovce ouessantská (5 samic); Ovce kamerunská – Barunka, Bohunka, Jarunka, Marunka; Ovce Jákobova – Belzebub, Bonifác, 2 samci bez jména, 1 samice; Ovce cápová (5 samic, 1 samec); Ovce valašská – Dobby",
+   "d": "M1197 1329L1160 1457L1361 1590L1446 1622L1492 1511L1516 1419Z",
+   "label": [
+    1379,
+    1489.5
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v80",
+   "kod": "80",
+   "num": 80,
+   "name": "Exotické ovce 2",
+   "zvirata": "Koza bílá krátkosrstá – Libor",
+   "d": "M1492 1511L1602 1542L1555 1654L1446 1622Z",
+   "label": [
+    1524,
+    1582
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v81",
+   "kod": "81",
+   "num": 81,
+   "name": "Skleník",
+   "zvirata": "",
+   "d": "M1554 1058L1658 1074L1646 1160L1542 1144Z",
+   "label": [
+    1600,
+    1109
+   ],
+   "clickable": true
+  },
+  {
+   "id": "obj-ptaci-dum-obrys-budovy",
+   "kod": null,
+   "num": null,
+   "name": "Ptačí dům (obrys budovy)",
+   "zvirata": "",
+   "d": "M1672 1185L1788 1195L1772 1371L1769 1381L1762 1391L1752 1399L1740 1404L1725 1407L1710 1407L1695 1405L1682 1399L1670 1391L1662 1382L1657 1371L1656 1360Z",
+   "label": null,
+   "clickable": false
+  },
+  {
+   "id": "v82",
+   "kod": "82",
+   "num": 82,
+   "name": "Kočky domácí",
+   "zvirata": "Kočka domácí",
+   "d": "M1340 978L1335 1009L1270 996L1277 966Z",
+   "label": [
+    1306,
+    987
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v83",
+   "kod": "83",
+   "num": 83,
+   "name": "Kurník 1",
+   "zvirata": "Kur domácí – 3 ks",
+   "d": "M755 804L754 775L788 773L788 802Z",
+   "label": [
+    771,
+    788
+   ],
+   "clickable": true
+  },
+  {
+   "id": "v84",
+   "kod": "84",
+   "num": 84,
+   "name": "Kurník 2",
+   "zvirata": "",
+   "d": "M745 616L778 609L784 637L751 644Z",
+   "label": [
+    765,
+    627
+   ],
+   "clickable": true
+  }
+ ]
+}

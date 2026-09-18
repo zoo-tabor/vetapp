@@ -211,6 +211,13 @@ $router->post('/workplace/:workplace_id/enclosures/create', function($workplaceI
     $controller->create($workplaceId);
 });
 
+$router->get('/enclosures/detail/:id', function($id) {
+    $_SESSION['current_app'] = 'animals';
+    require_once APP_PATH . '/controllers/EnclosureController.php';
+    $controller = new EnclosureController();
+    $controller->detail($id);
+});
+
 $router->post('/enclosures/:id/update', function($id) {
     require_once APP_PATH . '/controllers/EnclosureController.php';
     $controller = new EnclosureController();
@@ -863,6 +870,13 @@ $router->get('/animals/central', function() {
     require_once APP_PATH . '/controllers/AnimalDatabaseController.php';
     $controller = new AnimalDatabaseController();
     $controller->central();
+});
+
+$router->get('/animals/workplace/:id/mapa', function($id) {
+    $_SESSION['current_app'] = 'animals';
+    require_once APP_PATH . '/controllers/EnclosureController.php';
+    $controller = new EnclosureController();
+    $controller->map($id);
 });
 
 $router->get('/animals/workplace/:id', function($id) {
