@@ -211,6 +211,18 @@ $router->post('/workplace/:workplace_id/enclosures/create', function($workplaceI
     $controller->create($workplaceId);
 });
 
+$router->post('/enclosures/:id/update', function($id) {
+    require_once APP_PATH . '/controllers/EnclosureController.php';
+    $controller = new EnclosureController();
+    $controller->update($id);
+});
+
+$router->post('/enclosures/:id/delete', function($id) {
+    require_once APP_PATH . '/controllers/EnclosureController.php';
+    $controller = new EnclosureController();
+    $controller->delete($id);
+});
+
 // Examination routes
 $router->post('/workplace/:workplace_id/examinations/create', function($workplaceId) {
     require_once APP_PATH . '/controllers/ExaminationController.php';

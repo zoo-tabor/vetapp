@@ -376,8 +376,14 @@
             <!-- Enclosures grid -->
             <div class="enclosures-grid">
                 <?php foreach ($enclosures as $enclosure): ?>
-                    <div class="enclosure-card"
-                         data-search="<?= strtolower(htmlspecialchars($enclosure['name'] . ' ' . ($enclosure['code'] ?? ''))) ?>">
+                    <div class="enclosure-card<?= $canEdit ? ' clickable' : '' ?>"
+                         data-search="<?= strtolower(htmlspecialchars($enclosure['name'] . ' ' . ($enclosure['code'] ?? ''))) ?>"
+                         data-id="<?= (int)$enclosure['id'] ?>"
+                         data-name="<?= htmlspecialchars($enclosure['name']) ?>"
+                         data-code="<?= htmlspecialchars($enclosure['code'] ?? '') ?>"
+                         data-sample-type="<?= htmlspecialchars($enclosure['sample_type'] ?? 'individual') ?>"
+                         data-notes="<?= htmlspecialchars($enclosure['notes'] ?? '') ?>"
+                         <?= $canEdit ? 'onclick="showEditEnclosureModal(this)"' : '' ?>>
                         <div class="enclosure-card-header">
                             <h3 class="enclosure-name">
                                 <?= htmlspecialchars($enclosure['name']) ?>
@@ -402,6 +408,11 @@
                                 </div>
                             <?php endif; ?>
                         </div>
+                        <?php if ($canEdit): ?>
+                            <div class="enclosure-card-footer">
+                                <span class="edit-hint">Upravit / smazat →</span>
+                            </div>
+                        <?php endif; ?>
                     </div>
                 <?php endforeach; ?>
             </div>
@@ -413,14 +424,15 @@
     </div>
 </div>
 
-<!-- Enclosure Modal -->
+<!-- Enclosure Modal (slouží pro přidání i úpravu) -->
 <div id="enclosureModal" class="modal">
     <div class="modal-content">
         <div class="modal-header">
-            <h2>Přidat výběh</h2>
+            <h2 id="enclosureModalTitle">Přidat výběh</h2>
             <span class="modal-close" onclick="closeAddEnclosureModal()">&times;</span>
         </div>
         <form id="enclosureForm">
+            <input type="hidden" id="enclosure_id" name="id" value="">
             <div class="form-group">
                 <label for="enclosure_name">Název výběhu: *</label>
                 <input type="text" id="enclosure_name" name="name" class="form-control" required>
@@ -445,7 +457,8 @@
             </div>
 
             <div class="form-actions">
-                <button type="submit" class="btn btn-primary">Vytvořit výběh</button>
+                <button type="button" class="btn btn-danger" id="enclosureDeleteBtn" onclick="deleteEnclosure()" style="display: none;">Smazat</button>
+                <button type="submit" class="btn btn-primary" id="enclosureSubmitBtn">Vytvořit výběh</button>
                 <button type="button" class="btn btn-outline" onclick="closeAddEnclosureModal()">Zrušit</button>
             </div>
         </form>
@@ -905,6 +918,35 @@
     padding: 20px;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     border-left: 4px solid #8e44ad;
+    transition: all 0.3s ease;
+}
+
+.enclosure-card.clickable {
+    cursor: pointer;
+}
+
+.enclosure-card.clickable:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 4px 16px rgba(142, 68, 173, 0.3);
+}
+
+.enclosure-card-footer {
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid #ecf0f1;
+    text-align: right;
+}
+
+.enclosure-card-footer .edit-hint {
+    color: #8e44ad;
+    font-weight: 600;
+    font-size: 14px;
+}
+
+.enclosures-grid.list-view .enclosure-card-footer {
+    margin-top: 0;
+    padding-top: 0;
+    border-top: none;
 }
 
 .enclosure-card-header {
@@ -996,6 +1038,16 @@ button.btn-primary {
 .btn-outline:hover {
     background-color: #8e44ad;
     color: white;
+}
+
+.btn-danger {
+    background-color: #c0392b;
+    color: white;
+    margin-right: auto;
+}
+
+.btn-danger:hover {
+    background-color: #a93226;
 }
 
 /* Modal */
@@ -1197,12 +1249,60 @@ function applyViewToCurrentTab() {
 }
 
 function showAddEnclosureModal() {
+    const form = document.getElementById('enclosureForm');
+    form.reset();
+    document.getElementById('enclosure_id').value = '';
+    document.getElementById('enclosureModalTitle').textContent = 'Přidat výběh';
+    document.getElementById('enclosureSubmitBtn').textContent = 'Vytvořit výběh';
+    document.getElementById('enclosureDeleteBtn').style.display = 'none';
+    document.getElementById('enclosureModal').style.display = 'block';
+}
+
+function showEditEnclosureModal(card) {
+    document.getElementById('enclosureForm').reset();
+    document.getElementById('enclosure_id').value = card.getAttribute('data-id');
+    document.getElementById('enclosure_name').value = card.getAttribute('data-name') || '';
+    document.getElementById('enclosure_code').value = card.getAttribute('data-code') || '';
+    document.getElementById('enclosure_sample_type').value = card.getAttribute('data-sample-type') || 'individual';
+    document.getElementById('enclosure_notes').value = card.getAttribute('data-notes') || '';
+    document.getElementById('enclosureModalTitle').textContent = 'Upravit výběh';
+    document.getElementById('enclosureSubmitBtn').textContent = 'Uložit změny';
+    document.getElementById('enclosureDeleteBtn').style.display = '';
     document.getElementById('enclosureModal').style.display = 'block';
 }
 
 function closeAddEnclosureModal() {
     document.getElementById('enclosureModal').style.display = 'none';
     document.getElementById('enclosureForm').reset();
+    document.getElementById('enclosure_id').value = '';
+}
+
+function deleteEnclosure() {
+    const id = document.getElementById('enclosure_id').value;
+    if (!id) return;
+    if (!confirm('Opravdu chcete smazat tento výběh?')) return;
+
+    fetch('/enclosures/' + id + '/delete', { method: 'POST' })
+        .then(response => response.text().then(text => {
+            try {
+                return JSON.parse(text);
+            } catch (e) {
+                console.error('Server returned invalid JSON:', text);
+                throw new Error('Server returned invalid JSON: ' + text.substring(0, 200));
+            }
+        }))
+        .then(data => {
+            if (data.success) {
+                closeAddEnclosureModal();
+                location.reload();
+            } else {
+                alert('Chyba při mazání výběhu: ' + (data.error || 'Neznámá chyba'));
+            }
+        })
+        .catch(error => {
+            alert('Chyba při komunikaci se serverem: ' + error.message);
+            console.error('Error:', error);
+        });
 }
 
 // Close modal when clicking outside
@@ -1351,8 +1451,12 @@ document.addEventListener('DOMContentLoaded', function() {
             e.preventDefault();
 
             const formData = new FormData(this);
+            const enclosureId = document.getElementById('enclosure_id').value;
+            const url = enclosureId
+                ? '/enclosures/' + enclosureId + '/update'
+                : '/workplace/<?= $workplace['id'] ?>/enclosures/create';
 
-            fetch('/workplace/<?= $workplace['id'] ?>/enclosures/create', {
+            fetch(url, {
                 method: 'POST',
                 body: formData
             })
@@ -1369,7 +1473,7 @@ document.addEventListener('DOMContentLoaded', function() {
                     closeAddEnclosureModal();
                     location.reload();
                 } else {
-                    alert('Chyba při vytváření výběhu: ' + (data.error || 'Neznámá chyba'));
+                    alert('Chyba při ukládání výběhu: ' + (data.error || 'Neznámá chyba'));
                 }
             })
             .catch(error => {

@@ -81,14 +81,43 @@ class Workplace extends Model {
 
     public function createEnclosure($data) {
         $sql = "
-            INSERT INTO enclosures (workplace_id, name, notes, is_active)
-            VALUES (?, ?, ?, 1)
+            INSERT INTO enclosures (workplace_id, name, code, sample_type, notes, is_active)
+            VALUES (?, ?, ?, ?, ?, 1)
         ";
         return $this->execute($sql, [
             $data['workplace_id'],
             $data['name'],
+            $data['code'] ?? null,
+            $data['sample_type'] ?? 'individual',
             $data['notes'] ?? null
         ]);
+    }
+
+    // Jeden výběh podle id (i neaktivní) – pro kontrolu oprávnění při editaci/mazání.
+    public function getEnclosureById($id) {
+        $rows = $this->query("SELECT * FROM enclosures WHERE id = ?", [$id]);
+        return $rows[0] ?? null;
+    }
+
+    public function updateEnclosure($id, $data) {
+        $sql = "
+            UPDATE enclosures
+            SET name = ?, code = ?, sample_type = ?, notes = ?
+            WHERE id = ?
+        ";
+        return $this->execute($sql, [
+            $data['name'],
+            $data['code'] ?? null,
+            $data['sample_type'] ?? 'individual',
+            $data['notes'] ?? null,
+            $id
+        ]);
+    }
+
+    // Soft-delete: examinations.enclosure_id na výběh odkazuje s RESTRICT, takže
+    // tvrdé DELETE by u použitých výběhů selhalo. Všechny výpisy filtrují is_active = 1.
+    public function deleteEnclosure($id) {
+        return $this->execute("UPDATE enclosures SET is_active = 0 WHERE id = ?", [$id]);
     }
     
     public function getStats($workplaceId) {
