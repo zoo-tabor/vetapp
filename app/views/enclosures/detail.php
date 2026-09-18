@@ -40,14 +40,6 @@
                     <span class="value view-mode"><?= htmlspecialchars($enclosure['code'] ?? '') ?: '—' ?></span>
                     <input type="text" name="code" class="form-control edit-mode" value="<?= htmlspecialchars($enclosure['code'] ?? '') ?>" style="display:none;">
                 </div>
-                <div class="info-item">
-                    <span class="label">Typ vzorkování:</span>
-                    <span class="value view-mode"><?= ($enclosure['sample_type'] ?? 'individual') === 'individual' ? 'Individuální' : 'Smíšený' ?></span>
-                    <select name="sample_type" class="form-control edit-mode" style="display:none;">
-                        <option value="individual" <?= ($enclosure['sample_type'] ?? 'individual') === 'individual' ? 'selected' : '' ?>>Individuální</option>
-                        <option value="mixed" <?= ($enclosure['sample_type'] ?? '') === 'mixed' ? 'selected' : '' ?>>Smíšený</option>
-                    </select>
-                </div>
                 <div class="info-item full-width">
                     <span class="label">Poznámky:</span>
                     <span class="value view-mode"><?= nl2br(htmlspecialchars($enclosure['notes'] ?? '')) ?: '—' ?></span>

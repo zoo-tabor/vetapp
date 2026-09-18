@@ -81,14 +81,13 @@ class Workplace extends Model {
 
     public function createEnclosure($data) {
         $sql = "
-            INSERT INTO enclosures (workplace_id, name, code, sample_type, notes, is_active)
-            VALUES (?, ?, ?, ?, ?, 1)
+            INSERT INTO enclosures (workplace_id, name, code, notes, is_active)
+            VALUES (?, ?, ?, ?, 1)
         ";
         return $this->execute($sql, [
             $data['workplace_id'],
             $data['name'],
             $data['code'] ?? null,
-            $data['sample_type'] ?? 'individual',
             $data['notes'] ?? null
         ]);
     }
@@ -102,13 +101,12 @@ class Workplace extends Model {
     public function updateEnclosure($id, $data) {
         $sql = "
             UPDATE enclosures
-            SET name = ?, code = ?, sample_type = ?, notes = ?
+            SET name = ?, code = ?, notes = ?
             WHERE id = ?
         ";
         return $this->execute($sql, [
             $data['name'],
             $data['code'] ?? null,
-            $data['sample_type'] ?? 'individual',
             $data['notes'] ?? null,
             $id
         ]);

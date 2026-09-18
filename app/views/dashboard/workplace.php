@@ -63,7 +63,6 @@
                 <tr>
                     <th>Název</th>
                     <th>Kód</th>
-                    <th>Typ vzorku</th>
                     <th>Poznámky</th>
                 </tr>
             </thead>
@@ -72,13 +71,6 @@
                 <tr>
                     <td><?= htmlspecialchars($enclosure['name']) ?></td>
                     <td><?= htmlspecialchars($enclosure['code'] ?? '-') ?></td>
-                    <td>
-                        <?php if ($enclosure['sample_type'] === 'individual'): ?>
-                            <span class="badge badge-info">Individuální</span>
-                        <?php else: ?>
-                            <span class="badge badge-warning">Směsný</span>
-                        <?php endif; ?>
-                    </td>
                     <td><?= htmlspecialchars($enclosure['notes'] ?? '-') ?></td>
                 </tr>
                 <?php endforeach; ?>

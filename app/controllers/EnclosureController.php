@@ -163,7 +163,6 @@ class EnclosureController {
             try {
                 $name = trim($_POST['name'] ?? '');
                 $code = trim($_POST['code'] ?? '');
-                $sampleType = $_POST['sample_type'] ?? 'individual';
                 $notes = trim($_POST['notes'] ?? '');
 
                 // Validate
@@ -172,9 +171,6 @@ class EnclosureController {
                     echo json_encode(['success' => false, 'error' => 'Název výběhu je povinný']);
                     return;
                 }
-                if (!in_array($sampleType, ['individual', 'mixed'], true)) {
-                    $sampleType = 'individual';
-                }
 
                 // Create enclosure
                 $workplaceModel = new Workplace();
@@ -182,7 +178,6 @@ class EnclosureController {
                     'workplace_id' => $workplaceId,
                     'name' => $name,
                     'code' => $code !== '' ? $code : null,
-                    'sample_type' => $sampleType,
                     'notes' => $notes !== '' ? $notes : null
                 ]);
 
@@ -225,7 +220,6 @@ class EnclosureController {
 
             $name = trim($_POST['name'] ?? '');
             $code = trim($_POST['code'] ?? '');
-            $sampleType = $_POST['sample_type'] ?? 'individual';
             $notes = trim($_POST['notes'] ?? '');
 
             if (empty($name)) {
@@ -233,14 +227,10 @@ class EnclosureController {
                 echo json_encode(['success' => false, 'error' => 'Název výběhu je povinný']);
                 return;
             }
-            if (!in_array($sampleType, ['individual', 'mixed'], true)) {
-                $sampleType = 'individual';
-            }
 
             $workplaceModel->updateEnclosure($id, [
                 'name' => $name,
                 'code' => $code !== '' ? $code : null,
-                'sample_type' => $sampleType,
                 'notes' => $notes !== '' ? $notes : null
             ]);
 

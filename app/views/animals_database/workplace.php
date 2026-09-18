@@ -394,12 +394,6 @@
                             <?php endif; ?>
                         </div>
                         <div class="enclosure-card-body">
-                            <div class="enclosure-info-row">
-                                <span class="label">Typ vzorkování:</span>
-                                <span class="value">
-                                    <?= $enclosure['sample_type'] === 'individual' ? 'Individuální' : 'Smíšený' ?>
-                                </span>
-                            </div>
                             <?php if ($enclosure['notes']): ?>
                                 <div class="enclosure-info-row">
                                     <span class="label">Poznámky:</span>
@@ -438,14 +432,6 @@
             <div class="form-group">
                 <label for="enclosure_code">Kód:</label>
                 <input type="text" id="enclosure_code" name="code" class="form-control">
-            </div>
-
-            <div class="form-group">
-                <label for="enclosure_sample_type">Typ vzorkování: *</label>
-                <select id="enclosure_sample_type" name="sample_type" class="form-control" required>
-                    <option value="individual">Individuální</option>
-                    <option value="mixed">Smíšený</option>
-                </select>
             </div>
 
             <div class="form-group">
