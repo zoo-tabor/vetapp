@@ -91,8 +91,8 @@ class UrineAnalysisController {
         $animalModel = new Animal();
         $userModel = new User();
 
-        // Get animal with workplace info
-        $animal = $animalModel->findById($id);
+        // Get animal with workplace + enclosure info (getDetail joins enclosure_name/workplace_name)
+        $animal = $animalModel->getDetail($id);
         if (!$animal) {
             View::render('error', [
                 'layout' => 'main',

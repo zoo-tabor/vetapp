@@ -80,6 +80,10 @@
                     ?>
                 </span>
             </div>
+            <div class="info-item">
+                <span class="label">Výběh:</span>
+                <span class="value"><?= htmlspecialchars($animal['enclosure_name'] ?? 'Nezařazeno') ?></span>
+            </div>
         </div>
     </div>
 

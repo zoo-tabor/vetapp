@@ -192,8 +192,8 @@ class AnimalDatabaseController {
         $userModel = new User();
         $workplaceModel = new Workplace();
 
-        // Get animal details
-        $animal = $animalModel->findById($id);
+        // Get animal details (getDetail joins enclosure_name + workplace_name)
+        $animal = $animalModel->getDetail($id);
         if (!$animal) {
             View::render('error', [
                 'layout' => 'main',
@@ -203,9 +203,11 @@ class AnimalDatabaseController {
             return;
         }
 
-        // Get workplace name
-        $workplace = $workplaceModel->findById($animal['workplace_id']);
-        $animal['workplace_name'] = $workplace['name'] ?? 'Neznámé pracoviště';
+        // Fallback pro název pracoviště (getDetail ho už zpravidla vrací)
+        if (empty($animal['workplace_name'])) {
+            $workplace = $workplaceModel->findById($animal['workplace_id']);
+            $animal['workplace_name'] = $workplace['name'] ?? 'Neznámé pracoviště';
+        }
 
         // Check permissions
         if (!$userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'animals')) {
