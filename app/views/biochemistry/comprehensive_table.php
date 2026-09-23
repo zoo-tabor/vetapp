@@ -140,9 +140,10 @@
                                             data-species="<?= htmlspecialchars($animal['species']) ?>"
                                             data-source="<?= htmlspecialchars($__testSource) ?>"
                                             data-test-type="biochemistry"
+                                            data-test-id="<?= $test['id'] ?>"
                                             data-result-id="<?= $resultId ?>"
                                             data-parameter="<?= htmlspecialchars($paramName) ?>"
-                                            data-unit="<?= htmlspecialchars($unit) ?>"
+                                            data-unit="<?= htmlspecialchars($unit !== '' ? $unit : ($paramInfo['unit'] ?? '')) ?>"
                                             onclick="openEditModal(this)">
                                             <?php
                                             if ($value !== null) {
@@ -167,6 +168,13 @@
                         </tbody>
                     </table>
                 </div>
+                <?php if (!empty($canEdit)): ?>
+                    <div class="add-param-bar">
+                        <button type="button" class="btn btn-success btn-add-param" onclick="openAddParamModal('biochemistry')">
+                            ➕ Přidat parametr
+                        </button>
+                    </div>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
 
@@ -248,9 +256,10 @@
                                             data-species="<?= htmlspecialchars($animal['species']) ?>"
                                             data-source="<?= htmlspecialchars($__testSource) ?>"
                                             data-test-type="hematology"
+                                            data-test-id="<?= $test['id'] ?>"
                                             data-result-id="<?= $resultId ?>"
                                             data-parameter="<?= htmlspecialchars($paramName) ?>"
-                                            data-unit="<?= htmlspecialchars($unit) ?>"
+                                            data-unit="<?= htmlspecialchars($unit !== '' ? $unit : ($paramInfo['unit'] ?? '')) ?>"
                                             onclick="openEditModal(this)">
                                             <?php
                                             if ($value !== null) {
@@ -275,6 +284,13 @@
                         </tbody>
                     </table>
                 </div>
+                <?php if (!empty($canEdit)): ?>
+                    <div class="add-param-bar">
+                        <button type="button" class="btn btn-success btn-add-param" onclick="openAddParamModal('hematology')">
+                            ➕ Přidat parametr
+                        </button>
+                    </div>
+                <?php endif; ?>
             </div>
         <?php endif; ?>
     <?php endif; ?>
@@ -329,7 +345,7 @@
 <div id="editModal" class="modal">
     <div class="modal-content" style="max-width: 500px;">
         <div class="modal-header">
-            <h2>Upravit hodnotu</h2>
+            <h2 id="editModalTitle">Upravit hodnotu</h2>
             <span class="modal-close" onclick="closeEditModal()">&times;</span>
         </div>
         <div class="modal-body">
@@ -352,6 +368,44 @@
                 <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
                     <button type="submit" class="btn btn-primary">Uložit</button>
                     <button type="button" class="btn btn-outline" onclick="closeEditModal()">Zrušit</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Add Parameter Modal -->
+<div id="addParamModal" class="modal">
+    <div class="modal-content" style="max-width: 500px;">
+        <div class="modal-header">
+            <h2 id="addParamTitle">Přidat parametr</h2>
+            <span class="modal-close" onclick="closeAddParamModal()">&times;</span>
+        </div>
+        <div class="modal-body">
+            <form id="addParamForm" onsubmit="saveAddParam(event)">
+                <div class="form-group">
+                    <label>Odběr (datum): *</label>
+                    <select id="addParamTest" class="form-control" required></select>
+                </div>
+                <div class="form-group">
+                    <label>Parametr: *</label>
+                    <input type="text" id="addParamName" class="form-control" list="addParamNameList" required
+                           placeholder="Vyberte nebo napište název" oninput="prefillAddParamUnit()" autocomplete="off">
+                    <datalist id="addParamNameList"></datalist>
+                    <small class="text-muted">Můžete vybrat existující parametr nebo zadat nový.</small>
+                </div>
+                <div class="form-group">
+                    <label>Hodnota: *</label>
+                    <input type="text" id="addParamValue" class="form-control" required placeholder="např. 5,4">
+                </div>
+                <div class="form-group">
+                    <label>Jednotka:</label>
+                    <input type="text" id="addParamUnit" class="form-control" placeholder="např. mmol/l">
+                </div>
+                <input type="hidden" id="addParamType">
+                <div style="margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end;">
+                    <button type="submit" class="btn btn-primary">Přidat</button>
+                    <button type="button" class="btn btn-outline" onclick="closeAddParamModal()">Zrušit</button>
                 </div>
             </form>
         </div>
@@ -434,6 +488,20 @@
 .table-responsive {
     overflow-x: auto;
     overflow-y: visible;
+}
+
+.add-param-bar {
+    margin-top: 10px;
+}
+
+.btn-add-param {
+    font-size: 14px;
+    padding: 6px 14px;
+}
+
+/* Prázdné buňky jde editorům doplnit – ukážeme to jemným zvýrazněním při najetí. */
+.editable-cell {
+    cursor: pointer;
 }
 
 /* Table headers - sticky */
@@ -868,6 +936,21 @@ th.sticky-col-2 {
 // Tvar: referenceRanges[typ testu][parametr][laboratoř] = {min_value, max_value, unit}
 const referenceRanges = <?= json_encode($referenceRanges ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
 
+// Oprávnění k editaci (přidávání/změny se ukládají do DB) + podklady pro "Přidat parametr".
+const canEdit = <?= !empty($canEdit) ? 'true' : 'false' ?>;
+const addParamTests = <?= json_encode([
+    'biochemistry' => array_map(function ($t) {
+        return ['id' => (int)$t['id'], 'label' => date('d.m.Y', strtotime($t['test_date'])) . (!empty($t['test_location']) ? ' – ' . $t['test_location'] : '')];
+    }, $biochemTests ?? []),
+    'hematology' => array_map(function ($t) {
+        return ['id' => (int)$t['id'], 'label' => date('d.m.Y', strtotime($t['test_date'])) . (!empty($t['test_location']) ? ' – ' . $t['test_location'] : '')];
+    }, $hematoTests ?? []),
+], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+const addParamCatalog = <?= json_encode([
+    'biochemistry' => array_map(function ($p) { return ['name' => $p['name'], 'unit' => $p['unit'] ?? '']; }, $biochemParamList ?? []),
+    'hematology' => array_map(function ($p) { return ['name' => $p['name'], 'unit' => $p['unit'] ?? '']; }, $hematoParamList ?? []),
+], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
+
 function getReferenceRange(testType, parameter, source) {
     if (!source) return null;
     const byParam = referenceRanges[testType];
@@ -1008,6 +1091,117 @@ function changeTestSource(select) {
 
     refreshReferenceColumn(section);
     refreshEvaluations(section);
+
+    // Editoři: uložit laboratoř natrvalo do DB (dřív jen dočasná změna náhledu).
+    if (canEdit) {
+        persistTestSource(select.dataset.testKey, select.value);
+    }
+}
+
+// Uloží zvolenou laboratoř k odběru. testKey má tvar "biochem_<id>" / "hemato_<id>".
+async function persistTestSource(testKey, source) {
+    const sep = testKey.indexOf('_');
+    const prefix = testKey.slice(0, sep);
+    const testId = testKey.slice(sep + 1);
+    const testType = prefix === 'hemato' ? 'hematology' : 'biochemistry';
+    try {
+        const response = await fetch(`/biochemistry/test/${testType}/${testId}/reference-source`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source: source })
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            alert('Laboratoř se nepodařilo uložit: ' + (err.error || 'neznámá chyba'));
+        }
+    } catch (e) {
+        console.error('persistTestSource error', e);
+        alert('Chyba při ukládání laboratoře.');
+    }
+}
+
+// --- Přidat parametr (nový řádek / hodnota k libovolnému odběru) ---
+function openAddParamModal(testType) {
+    if (!canEdit) return;
+
+    const tests = addParamTests[testType] || [];
+    const testSelect = document.getElementById('addParamTest');
+    testSelect.innerHTML = '';
+    tests.forEach(t => {
+        const opt = document.createElement('option');
+        opt.value = t.id;
+        opt.textContent = t.label;
+        testSelect.appendChild(opt);
+    });
+
+    const dl = document.getElementById('addParamNameList');
+    dl.innerHTML = '';
+    (addParamCatalog[testType] || []).forEach(p => {
+        const opt = document.createElement('option');
+        opt.value = p.name;
+        dl.appendChild(opt);
+    });
+
+    document.getElementById('addParamType').value = testType;
+    document.getElementById('addParamName').value = '';
+    document.getElementById('addParamValue').value = '';
+    document.getElementById('addParamUnit').value = '';
+    document.getElementById('addParamTitle').textContent =
+        testType === 'hematology' ? 'Přidat parametr – hematologie' : 'Přidat parametr – biochemie';
+
+    document.getElementById('addParamModal').style.display = 'block';
+    setTimeout(() => document.getElementById('addParamName').focus(), 50);
+}
+
+function closeAddParamModal() {
+    document.getElementById('addParamModal').style.display = 'none';
+    document.getElementById('addParamForm').reset();
+}
+
+// Předvyplní jednotku dle číselníku, když uživatel zadá známý parametr.
+function prefillAddParamUnit() {
+    const testType = document.getElementById('addParamType').value;
+    const name = document.getElementById('addParamName').value.trim().toLowerCase();
+    const unitField = document.getElementById('addParamUnit');
+    if (!name || unitField.value) return;
+    const match = (addParamCatalog[testType] || []).find(p => p.name.toLowerCase() === name);
+    if (match) unitField.value = match.unit || '';
+}
+
+async function saveAddParam(event) {
+    event.preventDefault();
+
+    const testType = document.getElementById('addParamType').value;
+    const payload = {
+        test_type: testType,
+        test_id: document.getElementById('addParamTest').value,
+        parameter_name: document.getElementById('addParamName').value.trim(),
+        value: document.getElementById('addParamValue').value.trim(),
+        unit: document.getElementById('addParamUnit').value.trim()
+    };
+
+    if (!payload.test_id || !payload.parameter_name || !payload.value) {
+        alert('Vyplňte odběr, parametr i hodnotu.');
+        return;
+    }
+
+    try {
+        const response = await fetch('/biochemistry/result/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload)
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            // Nový řádek/hodnota => tabulku překreslíme načtením stránky.
+            window.location.reload();
+        } else {
+            alert('Chyba při přidávání: ' + (data.error || 'Neznámá chyba'));
+        }
+    } catch (e) {
+        console.error('saveAddParam error', e);
+        alert('Chyba při přidávání parametru');
+    }
 }
 
 // Po úpravě hodnoty stačí přepočítat jednu buňku (meze se nemění).
@@ -1165,11 +1359,15 @@ function generateGraph() {
 window.addEventListener('click', function(event) {
     const graphModal = document.getElementById('graphModal');
     const editModal = document.getElementById('editModal');
+    const addParamModal = document.getElementById('addParamModal');
     if (event.target === graphModal) {
         closeGraphModal();
     }
     if (event.target === editModal) {
         closeEditModal();
+    }
+    if (event.target === addParamModal) {
+        closeAddParamModal();
     }
 });
 
@@ -1181,21 +1379,28 @@ function openEditModal(cell) {
     const resultId = cell.dataset.resultId;
     const testType = cell.dataset.testType;
 
-    if (!resultId || value === null || value === '') {
+    const hasValue = !!resultId && value !== '' && value !== null;
+
+    // Prázdná buňka: editoři mohou hodnotu doplnit (uloží se jako nový výsledek).
+    if (!hasValue && !canEdit) {
         alert('Tuto hodnotu nelze upravovat (není uložena v databázi)');
         return;
     }
 
+    const titleEl = document.getElementById('editModalTitle');
+    if (titleEl) titleEl.textContent = hasValue ? 'Upravit hodnotu' : 'Přidat hodnotu';
+
     document.getElementById('editParameter').value = parameter;
-    document.getElementById('editValue').value = value;
+    document.getElementById('editValue').value = hasValue ? value : '';
     document.getElementById('editUnit').value = unit;
-    document.getElementById('editResultId').value = resultId;
+    document.getElementById('editResultId').value = hasValue ? resultId : '';
     document.getElementById('editTestType').value = testType;
 
     // Store reference to the cell element
     window.currentEditCell = cell;
 
     document.getElementById('editModal').style.display = 'block';
+    setTimeout(() => { const v = document.getElementById('editValue'); if (v) v.focus(); }, 50);
 }
 
 function closeEditModal() {
@@ -1204,12 +1409,61 @@ function closeEditModal() {
     window.currentEditCell = null;
 }
 
+// Zobrazení hodnoty v buňce: číslo hezky zformátujeme, jinak necháme text.
+function applyCellValueText(cell, value) {
+    const num = parseFloat(String(value).replace(',', '.'));
+    if (String(value).trim() !== '' && !isNaN(num) && /^-?[\d.,]+$/.test(String(value).trim())) {
+        cell.textContent = num.toLocaleString('cs-CZ', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+    } else {
+        cell.textContent = value;
+    }
+}
+
+// Doplnění hodnoty do prázdné buňky = nový výsledek (INSERT) přes /result/add.
+async function saveNewValueForCell(newValue, testType) {
+    const cell = window.currentEditCell;
+    if (!cell) return;
+
+    try {
+        const response = await fetch('/biochemistry/result/add', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                test_type: testType,
+                test_id: cell.dataset.testId,
+                parameter_name: cell.dataset.parameter,
+                unit: cell.dataset.unit || '',
+                value: newValue
+            })
+        });
+        const data = await response.json();
+        if (response.ok && data.success) {
+            cell.dataset.resultId = data.result_id;
+            cell.dataset.value = data.value;
+            if (data.unit) cell.dataset.unit = data.unit;
+            applyCellValueText(cell, data.value);
+            updateSingleCellEvaluation(cell);
+            closeEditModal();
+        } else {
+            alert('Chyba při ukládání: ' + (data.error || 'Neznámá chyba'));
+        }
+    } catch (error) {
+        console.error('Error:', error);
+        alert('Chyba při ukládání hodnoty');
+    }
+}
+
 async function saveEdit(event) {
     event.preventDefault();
 
     const resultId = document.getElementById('editResultId').value;
     const newValue = document.getElementById('editValue').value;
     const testType = document.getElementById('editTestType').value;
+
+    // Bez resultId jde o doplnění nové hodnoty do prázdné buňky.
+    if (!resultId) {
+        return saveNewValueForCell(newValue, testType);
+    }
 
     try {
         const response = await fetch(`/biochemistry/result/${resultId}/update`, {

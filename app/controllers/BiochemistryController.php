@@ -524,6 +524,9 @@ class BiochemistryController {
             )
         ];
 
+        // Kanonický číselník parametrů pro nabídku v "Přidat parametr".
+        $labParam = new LabParameter();
+
         View::render('biochemistry/comprehensive_table', [
             'layout' => 'main',
             'title' => 'Kompletní tabulka - ' . $animal['name'],
@@ -533,7 +536,10 @@ class BiochemistryController {
             'allParameters' => $allParameters,
             'testResults' => $testResults,
             'referenceSources' => $referenceSources,
-            'referenceRanges' => $referenceRanges
+            'referenceRanges' => $referenceRanges,
+            'canEdit' => $userModel->hasPermission(Auth::userId(), $animal['workplace_id'], 'biochemistry', 'edit'),
+            'biochemParamList' => $labParam->all('biochemistry'),
+            'hematoParamList' => $labParam->all('hematology')
         ]);
     }
 
@@ -1450,6 +1456,176 @@ class BiochemistryController {
             error_log("BiochemistryController::updateResult error: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Chyba při aktualizaci hodnoty: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Přidání (nebo doplnění) jednoho výsledku ke konkrétnímu odběru.
+     *
+     * Slouží kompletní tabulce k doplnění hodnoty do prázdné buňky i k přidání
+     * úplně nového parametru. Parametr projde kanonickým číselníkem (resolveOrCreate),
+     * takže se název i jednotka sjednotí. ON DUPLICATE KEY (test_id + parameter_id)
+     * zajistí, že opětovné přidání stejného parametru hodnotu jen přepíše.
+     */
+    public function addResult() {
+        Auth::requireLogin();
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Pouze POST metoda']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $testType = $input['test_type'] ?? null;
+        $testId = $input['test_id'] ?? null;
+        $paramName = trim((string)($input['parameter_name'] ?? ''));
+        $value = isset($input['value']) ? trim((string)$input['value']) : '';
+        $unit = trim((string)($input['unit'] ?? ''));
+
+        if (!in_array($testType, ['biochemistry', 'hematology'], true) || !$testId || $paramName === '' || $value === '') {
+            http_response_code(400);
+            echo json_encode(['error' => 'Chybí povinné údaje (odběr, parametr, hodnota)']);
+            return;
+        }
+
+        $testsTable = $testType === 'biochemistry' ? 'biochemistry_tests' : 'hematology_tests';
+        $resultsTable = $testType === 'biochemistry' ? 'biochemistry_results' : 'hematology_results';
+
+        try {
+            $db = Database::getInstance()->getConnection();
+
+            // Ověřit existenci odběru a získat zvíře pro kontrolu oprávnění.
+            $stmt = $db->prepare("SELECT animal_id FROM {$testsTable} WHERE id = ?");
+            $stmt->execute([$testId]);
+            $test = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$test) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Odběr nenalezen']);
+                return;
+            }
+
+            $animalModel = new Animal();
+            $animal = $animalModel->findById($test['animal_id']);
+            if (!$animal) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Zvíře nenalezeno']);
+                return;
+            }
+
+            if (!userCan($animal['workplace_id'], 'biochemistry', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Nemáte oprávnění přidávat výsledky']);
+                return;
+            }
+
+            // Sjednotit hodnotu (desetinná čárka -> tečka) i parametr přes číselník.
+            $value = $this->normalizeResultValue($value);
+            $labParam = new LabParameter();
+            $param = $labParam->resolveOrCreate($testType, $paramName, $unit);
+            $unitFinal = $unit !== '' ? $unit : ($param['unit'] ?? '');
+
+            $stmt = $db->prepare("
+                INSERT INTO {$resultsTable} (test_id, parameter_id, parameter_name, value, unit)
+                VALUES (?, ?, ?, ?, ?)
+                ON DUPLICATE KEY UPDATE value = VALUES(value), unit = VALUES(unit)
+            ");
+            $stmt->execute([$testId, $param['id'], $param['name'], $value, $unitFinal]);
+
+            // lastInsertId je 0 při pouhém UPDATE – id pak dohledáme.
+            $resultId = (int)$db->lastInsertId();
+            if (!$resultId) {
+                $q = $db->prepare("SELECT id FROM {$resultsTable} WHERE test_id = ? AND parameter_id = ?");
+                $q->execute([$testId, $param['id']]);
+                $resultId = (int)$q->fetchColumn();
+            }
+
+            echo json_encode([
+                'success' => true,
+                'result_id' => $resultId,
+                'parameter_id' => (int)$param['id'],
+                'parameter_name' => $param['name'],
+                'unit' => $unitFinal,
+                'value' => $value
+            ]);
+        } catch (Exception $e) {
+            error_log('BiochemistryController::addResult error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'Chyba při ukládání výsledku: ' . $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Trvalá změna laboratoře (reference_source) přiřazené k odběru.
+     *
+     * V kompletní tabulce jde laboratoř přepnout u sloupce; tady se změna zapíše
+     * do DB (dřív šlo jen o dočasnou změnu náhledu). Vyhodnocení se pak řídí
+     * uloženou laboratoří u všech pohledů (tabulka, karta, tisk).
+     */
+    public function updateTestSource($testType, $testId) {
+        Auth::requireLogin();
+        header('Content-Type: application/json');
+
+        if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+            http_response_code(405);
+            echo json_encode(['error' => 'Pouze POST metoda']);
+            return;
+        }
+
+        if (!in_array($testType, ['biochemistry', 'hematology'], true)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Neplatný typ testu']);
+            return;
+        }
+
+        $input = json_decode(file_get_contents('php://input'), true);
+        $source = trim((string)($input['source'] ?? ''));
+        $testsTable = $testType === 'biochemistry' ? 'biochemistry_tests' : 'hematology_tests';
+
+        try {
+            $db = Database::getInstance()->getConnection();
+
+            $stmt = $db->prepare("SELECT animal_id FROM {$testsTable} WHERE id = ?");
+            $stmt->execute([$testId]);
+            $test = $stmt->fetch(PDO::FETCH_ASSOC);
+
+            if (!$test) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Odběr nenalezen']);
+                return;
+            }
+
+            $animalModel = new Animal();
+            $animal = $animalModel->findById($test['animal_id']);
+            if (!$animal) {
+                http_response_code(404);
+                echo json_encode(['error' => 'Zvíře nenalezeno']);
+                return;
+            }
+
+            if (!userCan($animal['workplace_id'], 'biochemistry', 'edit')) {
+                http_response_code(403);
+                echo json_encode(['error' => 'Nemáte oprávnění měnit laboratoř odběru']);
+                return;
+            }
+
+            // Povolit jen laboratoř z číselníku (nebo prázdno = nezadáno).
+            if ($source !== '' && !in_array($source, labReferenceSources(), true)) {
+                http_response_code(400);
+                echo json_encode(['error' => 'Neznámá laboratoř']);
+                return;
+            }
+
+            $stmt = $db->prepare("UPDATE {$testsTable} SET reference_source = ? WHERE id = ?");
+            $stmt->execute([$source !== '' ? $source : null, $testId]);
+
+            echo json_encode(['success' => true, 'source' => $source]);
+        } catch (Exception $e) {
+            error_log('BiochemistryController::updateTestSource error: ' . $e->getMessage());
+            http_response_code(500);
+            echo json_encode(['error' => 'Chyba při ukládání laboratoře: ' . $e->getMessage()]);
         }
     }
 

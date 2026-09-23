@@ -585,6 +585,18 @@ $router->post('/biochemistry/result/:id/update', function($id) {
     $controller->updateResult($id);
 });
 
+$router->post('/biochemistry/result/add', function() {
+    require_once APP_PATH . '/controllers/BiochemistryController.php';
+    $controller = new BiochemistryController();
+    $controller->addResult();
+});
+
+$router->post('/biochemistry/test/:type/:id/reference-source', function($type, $id) {
+    require_once APP_PATH . '/controllers/BiochemistryController.php';
+    $controller = new BiochemistryController();
+    $controller->updateTestSource($type, $id);
+});
+
 // Biochemistry Import routes
 $router->get('/biochemistry/import', function() {
     require_once APP_PATH . '/controllers/BiochemistryImportController.php';
