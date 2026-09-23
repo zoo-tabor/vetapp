@@ -93,9 +93,19 @@
                             <?php
                             $parameters = $testType === 'biochemistry' ? $biochemParams : $hematoParams;
                             foreach ($parameters as $param):
+                                // Meze párujeme primárně přes kanonické id parametru; u starších
+                                // dat bez id porovnáme názvy přes stejnou normalizaci jako číselník
+                                // (řeší velké/malé písmeno, např. "Retikulocyty" vs "retikulocyty").
                                 $existingRange = null;
                                 foreach ($ranges as $range) {
-                                    if ($range['parameter_name'] === $param['name'] && $range['source'] === $activeSource) {
+                                    if ($range['source'] !== $activeSource) {
+                                        continue;
+                                    }
+                                    $sameId = !empty($range['parameter_id'])
+                                        && (int)$range['parameter_id'] === (int)$param['id'];
+                                    $sameName = LabParameter::normalize($range['parameter_name'])
+                                        === LabParameter::normalize($param['name']);
+                                    if ($sameId || $sameName) {
                                         $existingRange = $range;
                                         break;
                                     }

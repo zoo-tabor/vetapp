@@ -333,40 +333,29 @@
                                     $min = $refRange['min_value'] !== null ? floatval($refRange['min_value']) : null;
                                     $max = $refRange['max_value'] !== null ? floatval($refRange['max_value']) : null;
 
-                                    if ($min !== null && $max !== null) {
-                                        if ($numValue < $min) {
-                                            // Nulová mez by znamenala dělení nulou -> "MIMO MEZ" červeně.
-                                            if ($min != 0) {
-                                                $percentage = ($min - $numValue) / $min * 100;
-                                                $evalText = labEvalArrow('down') . ' ' . number_format($percentage, 2, ',', '') . '%';
-                                                $evalClass = 'deviation-low';
-                                                $valueClass = 'deviation-low';
-                                            } else {
-                                                $evalText = 'MIMO MEZ';
-                                                $evalClass = 'deviation-high mimo';
-                                                $valueClass = 'deviation-high';
-                                            }
-                                        } elseif ($numValue > $max) {
-                                            if ($max != 0) {
-                                                $percentage = ($numValue - $max) / $max * 100;
-                                                $evalText = labEvalArrow('up') . ' ' . number_format($percentage, 2, ',', '') . '%';
-                                                $evalClass = 'deviation-high';
-                                            } else {
-                                                $evalText = 'MIMO MEZ';
-                                                $evalClass = 'deviation-high mimo';
-                                            }
-                                            $valueClass = 'deviation-high';
+                                    // Vyhodnocení funguje i při jedné zadané mezi – dřív se u samostatné
+                                    // dolní/horní meze procento nepočítalo (zobrazila se jen šipka).
+                                    if ($min !== null && $numValue < $min) {
+                                        // Nulová mez by znamenala dělení nulou -> "MIMO MEZ" červeně.
+                                        if ($min != 0) {
+                                            $percentage = ($min - $numValue) / abs($min) * 100;
+                                            $evalText = labEvalArrow('down') . ' ' . number_format($percentage, 2, ',', '') . '%';
+                                            $evalClass = 'deviation-low';
+                                            $valueClass = 'deviation-low';
                                         } else {
-                                            $evalText = 'OK';
-                                            $evalClass = 'ok';
+                                            $evalText = 'MIMO MEZ';
+                                            $evalClass = 'deviation-high mimo';
+                                            $valueClass = 'deviation-high';
                                         }
-                                    } elseif ($min !== null && $numValue < $min) {
-                                        $evalText = labEvalArrow('down');
-                                        $evalClass = 'deviation-low';
-                                        $valueClass = 'deviation-low';
                                     } elseif ($max !== null && $numValue > $max) {
-                                        $evalText = labEvalArrow('up');
-                                        $evalClass = 'deviation-high';
+                                        if ($max != 0) {
+                                            $percentage = ($numValue - $max) / abs($max) * 100;
+                                            $evalText = labEvalArrow('up') . ' ' . number_format($percentage, 2, ',', '') . '%';
+                                            $evalClass = 'deviation-high';
+                                        } else {
+                                            $evalText = 'MIMO MEZ';
+                                            $evalClass = 'deviation-high mimo';
+                                        }
                                         $valueClass = 'deviation-high';
                                     } else {
                                         $evalText = 'OK';
@@ -437,40 +426,29 @@
                                     $min = $refRange['min_value'] !== null ? floatval($refRange['min_value']) : null;
                                     $max = $refRange['max_value'] !== null ? floatval($refRange['max_value']) : null;
 
-                                    if ($min !== null && $max !== null) {
-                                        if ($numValue < $min) {
-                                            // Nulová mez by znamenala dělení nulou -> "MIMO MEZ" červeně.
-                                            if ($min != 0) {
-                                                $percentage = ($min - $numValue) / $min * 100;
-                                                $evalText = labEvalArrow('down') . ' ' . number_format($percentage, 2, ',', '') . '%';
-                                                $evalClass = 'deviation-low';
-                                                $valueClass = 'deviation-low';
-                                            } else {
-                                                $evalText = 'MIMO MEZ';
-                                                $evalClass = 'deviation-high mimo';
-                                                $valueClass = 'deviation-high';
-                                            }
-                                        } elseif ($numValue > $max) {
-                                            if ($max != 0) {
-                                                $percentage = ($numValue - $max) / $max * 100;
-                                                $evalText = labEvalArrow('up') . ' ' . number_format($percentage, 2, ',', '') . '%';
-                                                $evalClass = 'deviation-high';
-                                            } else {
-                                                $evalText = 'MIMO MEZ';
-                                                $evalClass = 'deviation-high mimo';
-                                            }
-                                            $valueClass = 'deviation-high';
+                                    // Vyhodnocení funguje i při jedné zadané mezi – dřív se u samostatné
+                                    // dolní/horní meze procento nepočítalo (zobrazila se jen šipka).
+                                    if ($min !== null && $numValue < $min) {
+                                        // Nulová mez by znamenala dělení nulou -> "MIMO MEZ" červeně.
+                                        if ($min != 0) {
+                                            $percentage = ($min - $numValue) / abs($min) * 100;
+                                            $evalText = labEvalArrow('down') . ' ' . number_format($percentage, 2, ',', '') . '%';
+                                            $evalClass = 'deviation-low';
+                                            $valueClass = 'deviation-low';
                                         } else {
-                                            $evalText = 'OK';
-                                            $evalClass = 'ok';
+                                            $evalText = 'MIMO MEZ';
+                                            $evalClass = 'deviation-high mimo';
+                                            $valueClass = 'deviation-high';
                                         }
-                                    } elseif ($min !== null && $numValue < $min) {
-                                        $evalText = labEvalArrow('down');
-                                        $evalClass = 'deviation-low';
-                                        $valueClass = 'deviation-low';
                                     } elseif ($max !== null && $numValue > $max) {
-                                        $evalText = labEvalArrow('up');
-                                        $evalClass = 'deviation-high';
+                                        if ($max != 0) {
+                                            $percentage = ($numValue - $max) / abs($max) * 100;
+                                            $evalText = labEvalArrow('up') . ' ' . number_format($percentage, 2, ',', '') . '%';
+                                            $evalClass = 'deviation-high';
+                                        } else {
+                                            $evalText = 'MIMO MEZ';
+                                            $evalClass = 'deviation-high mimo';
+                                        }
                                         $valueClass = 'deviation-high';
                                     } else {
                                         $evalText = 'OK';
