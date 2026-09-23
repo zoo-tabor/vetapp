@@ -648,43 +648,27 @@ async function loadEvaluations() {
                         const min = range.min_value !== null ? parseFloat(range.min_value) : null;
                         const max = range.max_value !== null ? parseFloat(range.max_value) : null;
 
-                        if (min !== null && max !== null) {
-                            if (numValue < min) {
-                                status = 'low';
-                                if (min != 0) {
-                                    const percentage = ((min - numValue) / min * 100).toFixed(1);
-                                    displayText = `↓ ${percentage}%`;
-                                } else {
-                                    displayText = '↓ Nízké';
-                                }
-                            } else if (numValue > max) {
-                                status = 'high';
-                                if (max != 0) {
-                                    const percentage = ((numValue - max) / max * 100).toFixed(1);
-                                    displayText = `↑ ${percentage}%`;
-                                } else {
-                                    displayText = `↑ ${numValue}`;
-                                }
+                        // Vyhodnocení funguje i při jedné zadané mezi – dřív se u samostatné
+                        // dolní/horní meze procento nepočítalo (jen "Nízké"/"Vysoké").
+                        if (min !== null && numValue < min) {
+                            status = 'low';
+                            if (min != 0) {
+                                const percentage = ((min - numValue) / Math.abs(min) * 100).toFixed(1);
+                                displayText = `↓ ${percentage}%`;
                             } else {
-                                status = 'normal';
-                                displayText = 'OK';
-                            }
-                        } else if (min !== null) {
-                            if (numValue < min) {
-                                status = 'low';
                                 displayText = '↓ Nízké';
-                            } else {
-                                status = 'normal';
-                                displayText = 'OK';
                             }
-                        } else if (max !== null) {
-                            if (numValue > max) {
-                                status = 'high';
-                                displayText = '↑ Vysoké';
+                        } else if (max !== null && numValue > max) {
+                            status = 'high';
+                            if (max != 0) {
+                                const percentage = ((numValue - max) / Math.abs(max) * 100).toFixed(1);
+                                displayText = `↑ ${percentage}%`;
                             } else {
-                                status = 'normal';
-                                displayText = 'OK';
+                                displayText = `↑ ${numValue}`;
                             }
+                        } else {
+                            status = 'normal';
+                            displayText = 'OK';
                         }
                     }
                 }
@@ -886,43 +870,27 @@ async function updateSingleCellEvaluation(cell) {
                 const min = range.min_value !== null ? parseFloat(range.min_value) : null;
                 const max = range.max_value !== null ? parseFloat(range.max_value) : null;
 
-                if (min !== null && max !== null) {
-                    if (numValue < min) {
-                        status = 'low';
-                        if (min != 0) {
-                            const percentage = ((min - numValue) / min * 100).toFixed(1);
-                            displayText = `↓ ${percentage}%`;
-                        } else {
-                            displayText = '↓ Nízké';
-                        }
-                    } else if (numValue > max) {
-                        status = 'high';
-                        if (max != 0) {
-                            const percentage = ((numValue - max) / max * 100).toFixed(1);
-                            displayText = `↑ ${percentage}%`;
-                        } else {
-                            displayText = `↑ ${numValue}`;
-                        }
+                // Vyhodnocení funguje i při jedné zadané mezi – dřív se u samostatné
+                // dolní/horní meze procento nepočítalo (jen "Nízké"/"Vysoké").
+                if (min !== null && numValue < min) {
+                    status = 'low';
+                    if (min != 0) {
+                        const percentage = ((min - numValue) / Math.abs(min) * 100).toFixed(1);
+                        displayText = `↓ ${percentage}%`;
                     } else {
-                        status = 'normal';
-                        displayText = 'OK';
-                    }
-                } else if (min !== null) {
-                    if (numValue < min) {
-                        status = 'low';
                         displayText = '↓ Nízké';
-                    } else {
-                        status = 'normal';
-                        displayText = 'OK';
                     }
-                } else if (max !== null) {
-                    if (numValue > max) {
-                        status = 'high';
-                        displayText = '↑ Vysoké';
+                } else if (max !== null && numValue > max) {
+                    status = 'high';
+                    if (max != 0) {
+                        const percentage = ((numValue - max) / Math.abs(max) * 100).toFixed(1);
+                        displayText = `↑ ${percentage}%`;
                     } else {
-                        status = 'normal';
-                        displayText = 'OK';
+                        displayText = `↑ ${numValue}`;
                     }
+                } else {
+                    status = 'normal';
+                    displayText = 'OK';
                 }
             }
         }
