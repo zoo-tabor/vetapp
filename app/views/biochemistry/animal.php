@@ -78,7 +78,7 @@
                             <label>Referenční meze:</label>
                             <?php $__testSource = trim((string)($test['reference_source'] ?? '')); ?>
                             <select class="test-source-select" onchange="changeTestSource(this)"
-                                    title="Laboratoř přiřazená k tomuto odběru – změna platí jen pro zobrazení">
+                                    title="Laboratoř přiřazená k tomuto odběru (u editorů se změna uloží)">
                                 <?php if ($__testSource === ''): ?>
                                     <option value="" selected>— nezadáno —</option>
                                 <?php endif; ?>
@@ -176,7 +176,7 @@
                             <label>Referenční meze:</label>
                             <?php $__testSource = trim((string)($test['reference_source'] ?? '')); ?>
                             <select class="test-source-select" onchange="changeTestSource(this)"
-                                    title="Laboratoř přiřazená k tomuto odběru – změna platí jen pro zobrazení">
+                                    title="Laboratoř přiřazená k tomuto odběru (u editorů se změna uloží)">
                                 <?php if ($__testSource === ''): ?>
                                     <option value="" selected>— nezadáno —</option>
                                 <?php endif; ?>
@@ -627,6 +627,9 @@
 // Tvar: referenceRanges[typ testu][parametr][laboratoř] = {min_value, max_value, unit}
 const referenceRanges = <?= json_encode($referenceRanges ?? [], JSON_UNESCAPED_UNICODE | JSON_HEX_TAG) ?>;
 
+// Editoři: změna laboratoře u odběru se ukládá do DB (ne jen do náhledu).
+const canEdit = <?= !empty($canEdit) ? 'true' : 'false' ?>;
+
 function getReferenceRange(testType, parameter, source) {
     if (!source) return null;
     const byParam = referenceRanges[testType];
@@ -707,6 +710,33 @@ function changeTestSource(select) {
         row.dataset.source = select.value;
     });
     updateReferenceRanges(card);
+
+    // Editoři: uložit laboratoř natrvalo do DB (dřív jen dočasná změna náhledu).
+    // Typ/ID odběru vezmeme z první výsledkové řádky karty.
+    if (canEdit) {
+        const row = card.querySelector('.result-row');
+        if (row && row.dataset.testId) {
+            persistTestSource(row.dataset.testType, row.dataset.testId, select.value);
+        }
+    }
+}
+
+async function persistTestSource(testType, testId, source) {
+    if (!testType || !testId) return;
+    try {
+        const response = await fetch(`/biochemistry/test/${testType}/${testId}/reference-source`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ source: source })
+        });
+        if (!response.ok) {
+            const err = await response.json().catch(() => ({}));
+            alert('Laboratoř se nepodařilo uložit: ' + (err.error || 'neznámá chyba'));
+        }
+    } catch (e) {
+        console.error('persistTestSource error', e);
+        alert('Chyba při ukládání laboratoře.');
+    }
 }
 
 // Load reference ranges on page load
