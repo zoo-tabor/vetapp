@@ -1,4 +1,8 @@
-<?php $perPage = isset($_GET['per_page']) ? max(1, min(60, (int)$_GET['per_page'])) : 10; ?>
+<?php
+$perPage = isset($_GET['per_page']) ? max(1, min(60, (int)$_GET['per_page'])) : 10;
+// Poslední N odběrů (0 = všechny). Vytiskne jen N nejnovějších sloupců.
+$lastN = isset($_GET['last_n']) ? max(0, (int)$_GET['last_n']) : 0;
+?>
 <!-- Print Settings Sidebar -->
 <div class="print-settings-sidebar">
     <h3>Nastavení tisku</h3>
@@ -120,6 +124,16 @@
         <small class="setting-hint">Libovolné číslo 1–60; datumy se rozdělí na víc stránek.</small>
     </div>
 
+    <div class="setting-group">
+        <label>Počet posledních odběrů:</label>
+        <div class="scale-row">
+            <input type="number" id="lastNInput" min="0" max="200" step="1" value="<?= $lastN > 0 ? $lastN : '' ?>"
+                   onchange="updatePreview()" placeholder="vše">
+            <span>ks</span>
+        </div>
+        <small class="setting-hint">Vytiskne jen N nejnovějších odběrů. Prázdné nebo 0 = všechny.</small>
+    </div>
+
     <div class="page-total" id="pageTotal"></div>
 
     <div class="button-group">
@@ -155,6 +169,13 @@
     }
     ksort($allTestsFull);
     $allTestsFull = array_values($allTestsFull);
+
+    // Volitelně jen posledních N odběrů = N nejnovějších sloupců (starší se
+    // vynechají). 0/prázdno = všechny. Ořezáváme tady, ať se to promítne i do
+    // referenčních mezí a stránkování bez další úpravy níže.
+    if ($lastN > 0 && count($allTestsFull) > $lastN) {
+        $allTestsFull = array_slice($allTestsFull, -$lastN);
+    }
 
     // Ke každému sloupci najdeme odpovídající odběr (datum + místo) – jednou pro
     // celý dokument, ne zvlášť pro každou stránku.
@@ -1072,9 +1093,16 @@ function updatePreview() {
     const perPageEl = document.getElementById('perPageInput');
     if (perPageEl) perPageEl.value = perPage;
 
+    // Poslední N odběrů: prázdné/0 = všechny (param se pak do URL nepřidává).
+    const lastNEl = document.getElementById('lastNInput');
+    let lastN = Math.round(readNumberInput('lastNInput', 0));
+    if (!isFinite(lastN) || lastN < 0) lastN = 0;
+    if (lastNEl) lastNEl.value = lastN > 0 ? lastN : '';
+
     const params = new URLSearchParams();
     params.set('table', table);
     params.set('per_page', perPage);
+    if (lastN > 0) params.set('last_n', lastN);
 
     // V URL veze jen skutečné přepnutí oproti laboratoři uložené u odběru
     // (do databáze se nic nezapisuje).
