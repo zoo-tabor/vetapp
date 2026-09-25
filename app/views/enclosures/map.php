@@ -121,12 +121,14 @@ foreach ($enclosures as $e) {
 .sd-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
 .sd-title { margin: 0; font-size: 18px; color: #2c3e50; }
 .sd-code { color: #7f8c8d; font-size: 13px; font-family: 'Courier New', monospace; }
-.sd-animals { list-style: none; padding: 0; margin: 10px 0 0 0; }
+.sd-count { margin: 10px 0 0 0; color: #8e44ad; font-weight: 700; font-size: 14px; }
+.sd-animals { list-style: none; padding: 0; margin: 8px 0 0 0; }
 .sd-animals li { padding: 0; }
-.sd-animals a { display: flex; justify-content: space-between; gap: 8px; padding: 8px 10px; border-radius: 6px; text-decoration: none; color: #2c3e50; border: 1px solid #f0f0f0; margin-bottom: 6px; }
+.sd-animals a { display: flex; align-items: baseline; gap: 8px; padding: 8px 10px; border-radius: 6px; text-decoration: none; color: #2c3e50; border: 1px solid #f0f0f0; margin-bottom: 6px; }
 .sd-animals a:hover { background: #f6effa; border-color: #d9c2ec; }
+.sd-animals .a-id { font-family: 'Courier New', monospace; color: #95a5a6; font-size: 12px; flex-shrink: 0; }
 .sd-animals .a-name { font-weight: 600; }
-.sd-animals .a-species { color: #7f8c8d; font-size: 13px; }
+.sd-animals .a-species { color: #7f8c8d; font-size: 13px; margin-left: auto; text-align: right; }
 .sd-empty { color: #7f8c8d; font-size: 14px; margin: 8px 0 0 0; }
 .sd-open { margin-top: 12px; display: inline-block; }
 
@@ -206,6 +208,12 @@ function esc(s) {
     return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
 }
 
+function animalCountWord(n) {
+    if (n === 1) return 'zvíře';
+    if (n >= 2 && n <= 4) return 'zvířata';
+    return 'zvířat';
+}
+
 function animalsSummary(animals) {
     if (!animals.length) return 'Žádná aktivní zvířata';
     return animals.map(a => esc(a.name || a.species)).join(', ');
@@ -225,9 +233,11 @@ function renderSideDetail(kod) {
     if (kod !== '') html += '<span class="sd-code">kód ' + esc(kod) + '</span>';
     html += '</div>';
     if (d.animals.length) {
+        html += '<div class="sd-count">' + d.animals.length + ' ' + animalCountWord(d.animals.length) + '</div>';
         html += '<ul class="sd-animals">';
         d.animals.forEach(a => {
             html += '<li><a href="/animals/detail/' + a.id + '">'
+                 + '<span class="a-id">#' + a.id + '</span>'
                  + '<span class="a-name">' + esc(a.name || 'Bez jména') + '</span>'
                  + '<span class="a-species">' + (GENDER[a.gender] || '') + ' ' + esc(a.species) + '</span></a></li>';
         });
