@@ -52,12 +52,16 @@ foreach ($enclosures as $e) {
         </div>
 
         <aside class="map-side">
-            <div class="search-box">
-                <input type="text" id="mapSearch" placeholder="Hledat výběh nebo zvíře…" autocomplete="off">
-            </div>
-            <div id="searchResults" class="search-results" style="display:none;"></div>
-            <div id="sideDetail" class="side-detail">
-                <p class="hint">Najeďte myší na výběh, nebo klikněte pro zobrazení detailu.</p>
+            <div class="map-side-inner">
+                <div class="map-side-search">
+                    <div class="search-box">
+                        <input type="text" id="mapSearch" placeholder="Hledat výběh nebo zvíře…" autocomplete="off">
+                    </div>
+                    <div id="searchResults" class="search-results" style="display:none;"></div>
+                </div>
+                <div id="sideDetail" class="side-detail">
+                    <p class="hint">Najeďte myší na výběh, nebo klikněte pro zobrazení detailu.</p>
+                </div>
             </div>
         </aside>
     </div>
@@ -75,7 +79,7 @@ foreach ($enclosures as $e) {
 .btn-primary { background: #8e44ad; color: #fff; }
 .btn-primary:hover { background: #7d3c98; }
 
-.map-layout { display: grid; grid-template-columns: 1fr 360px; gap: 20px; align-items: start; }
+.map-layout { display: flex; flex-direction: column; gap: 20px; }
 
 .map-wrap { position: relative; width: 100%; border-radius: 10px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.12); background: #eef; cursor: grab; touch-action: none; }
 .map-wrap.dragging { cursor: grabbing; }
@@ -101,7 +105,8 @@ foreach ($enclosures as $e) {
 .map-tooltip b { display: block; margin-bottom: 3px; font-size: 14px; }
 .map-tooltip .t-animals { color: #d8d8d8; line-height: 1.35; }
 
-.map-side { position: sticky; top: 16px; }
+.map-side { width: 100%; }
+.map-side-inner { display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
 .search-box input { width: 100%; padding: 11px 14px; border: 2px solid #ddd; border-radius: 8px; font-size: 15px; box-sizing: border-box; }
 .search-box input:focus { outline: none; border-color: #8e44ad; }
 .search-results { margin-top: 10px; max-height: 260px; overflow-y: auto; border: 1px solid #ecf0f1; border-radius: 8px; }
@@ -111,7 +116,7 @@ foreach ($enclosures as $e) {
 .search-results .res .r-name { font-weight: 600; color: #2c3e50; }
 .search-results .res .r-sub { color: #7f8c8d; font-size: 12px; }
 
-.side-detail { margin-top: 14px; background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); min-height: 120px; }
+.side-detail { background: #fff; border-radius: 10px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); min-height: 120px; }
 .side-detail .hint { color: #7f8c8d; margin: 0; }
 .sd-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; gap: 8px; }
 .sd-title { margin: 0; font-size: 18px; color: #2c3e50; }
@@ -126,8 +131,7 @@ foreach ($enclosures as $e) {
 .sd-open { margin-top: 12px; display: inline-block; }
 
 @media (max-width: 900px) {
-    .map-layout { grid-template-columns: 1fr; }
-    .map-side { position: static; }
+    .map-side-inner { grid-template-columns: 1fr; }
 }
 </style>
 
